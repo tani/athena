@@ -1,0 +1,13 @@
+*.ss~
+*.ss#*
+.#*.ss
+
+*.scm~
+*.scm#*
+.#*.scm
+
+*.sld~
+*.sld#*
+.#*.sld
+
+*.log

@@ -1,0 +1,54 @@
+# .github/workflows/ci.yml
+name: scheme-ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+            nix_system: x86_64-linux
+
+          # ★ Linux arm64  (Public repos only)
+          - os: ubuntu-22.04-arm
+            runner: ubuntu-22.04-arm
+            nix_system: aarch64-linux
+
+          # macOS Intel
+          - os: macos-latest
+            runner: macos-latest
+            nix_system: x86_64-darwin
+
+          # macOS Apple-Silicon
+          - os: macos-14
+            runner: macos-14
+            nix_system: aarch64-darwin
+
+        # ▸ Scheme implementations
+        impl: [gauche, guile, chicken, chibi, sagittarius, gambit]
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v31
+        with:
+          nix_conf: |
+            extra-experimental-features = nix-command flakes
+          daemon: ${{ startsWith(matrix.os, 'macos-') }}
+
+      - name: Run make for ${{ matrix.impl }} on ${{ matrix.os }}
+        run: |
+          nix develop --system ${{ matrix.nix_system }} -c make IMPLS=${{ matrix.impl }}
+        shell: bash
