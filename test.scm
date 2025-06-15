@@ -145,7 +145,8 @@
   (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
-  (test-assert "if/2 else fails" (null? (solve-first '((if (= a b) (= ?r ok))) '?r)))
+  (test-equal "if/2 else fails" #t (failure? (reset (prove-all '((if (= a b) (= ?r ok))) *empty-bindings*))))
+
 
   (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
   (test-equal "lisp/2" 10 (solve-first '((lisp ?res (* 5 2))) '?res))
