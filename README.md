@@ -79,10 +79,3 @@ Results will be displayed with variable bindings; press `;` for more solutions o
 This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for full terms.
 
 PAIP Prolog: [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE)
-
-## Contact
-
-For questions or contributions, please open an issue or email:
-
-* **Email:** [masaya.taniguchi@riken.jp](mailto:masaya.taniguchi@riken.jp)
-* **GitHub:** [https://github.com/your-org/athena-reasoner](https://github.com/your-org/athena-reasoner)
