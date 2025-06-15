@@ -1,337 +1,312 @@
+;; prolog.scm — Mini‑Prolog engine with R7RS records
+;; ------------------------------------------------------------
+;; Copyright © 2025 Masaya Taniguchi
+;; Released under the GNU General Public License v3.0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Library declaration
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-library (prolog)
+  ;; Public symbols -----------------------------------------------------------
   (export
-    variable?
-    named-variable?
-    atom?
-    failure
-    *empty-bindings*
-    failure?
-    extend-bindings
-    substitute-bindings
-    variables-in
-    replace-anonymous-variables
-    unify
-    *prompt-stack*
-    *failure-object*
-    clause-database
-    add-clause!
-    get-clauses
-    define-predicate
-    object->string
-    <-
-    <--
-    ?-
-    prove-all
-    reset
-    shift)
+    ;; basic helpers
+    variable? named-variable? atom?
+    failure? success? failure success
+    *failure-object* *empty-bindings*
+    extend-bindings substitute-bindings variables-in
+    replace-anonymous-variables unify object->string
+    ;; delimited continuations
+    reset shift *prompt-stack*
+    ;; clause DB API
+    clause-database add-clause! get-clauses <- <-- define-predicate
+    ;; prover / query
+    prove-all ?-
+    ;; accessors for <success>
+    success-bindings success-continuation)
+
+  ;; Imports ------------------------------------------------------------------
   (import (scheme base)
           (scheme eval)
           (scheme write)
           (only (srfi 1) alist-delete filter delete-duplicates))
+
+  ;; Optional SRFI‑132 list-sort for each implementation
   (cond-expand
-   (chicken
-    (import scheme (only (srfi 132) list-sort)))
-   (guile
-    (import (only (rnrs sorting (6)) list-sort)))
-   (gauche
-    (import (only (scheme sort) list-sort)))
-   (chibi
-    (import (only (scheme sort) list-sort)))
-   (gambit
-    (import (only (srfi 132) list-sort)))
-   (sagittarius
-    (import (only (scheme sort) list-sort))))
+   (chicken     (import scheme (only (srfi 132) list-sort)))
+   (guile       (import (only (rnrs sorting (6)) list-sort)))
+   (gauche      (import (only (scheme sort) list-sort)))
+   (chibi       (import (only (scheme sort) list-sort)))
+   (gambit      (import (only (srfi 132) list-sort)))
+   (sagittarius (import (only (scheme sort) list-sort))))
+
+  ;; Implementation -----------------------------------------------------------
   (begin
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 1. Records for success / failure objects
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (define-record-type <failure>
+      (make-failure)
+      failure?)
+
+    (define-record-type <success>
+      (make-success bindings continuation)
+      success?
+      (bindings     success-bindings)
+      (continuation success-continuation))
+
+    ;; Convenience wrappers ---------------------------------------------------
+    (define (failure) (make-failure))
+    (define (success b k) (make-success b k))
+    (define *failure-object* (failure))      ; kept for backward‑compat tests
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 2. Utility procedures
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ;; gensym -----------------------------------------------------------------
     (define gensym-counter 0)
     (define (gensym prefix)
       (let ((name (string-append prefix (number->string gensym-counter))))
         (set! gensym-counter (+ gensym-counter 1))
         (string->symbol name)))
 
-    (define (object->string term)
+    ;; object->string ---------------------------------------------------------
+    (define (object->string x)
       (parameterize ((current-output-port (open-output-string)))
-        (display term)
+        (write x)
         (get-output-string (current-output-port))))
 
-    (define *prompt-stack* (make-parameter (list)))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 3. reset / shift
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (define *prompt-stack* (make-parameter '()))
 
     (define-syntax reset
       (syntax-rules ()
         ((_ body ...)
          (call/cc
-          (lambda (prompt-continuation)
-            (parameterize ((*prompt-stack* (cons prompt-continuation (*prompt-stack*))))
-              (begin body ...)))))))
+          (lambda (prompt)
+            (parameterize ((*prompt-stack* (cons prompt (*prompt-stack*))))
+              body ...))))))
 
     (define-syntax shift
       (syntax-rules ()
-        ((_ k-arg body ...)
+        ((_ k body ...)
          (call/cc
-          (lambda (escape-continuation)
-            (let ((prompts (*prompt-stack*)))
-              (if (null? prompts)
-                  (error "shift: no corresponding reset found")
-                  (let ((prompt (car prompts))
-                        (rest-prompts (cdr prompts)))
-                    (parameterize ((*prompt-stack* rest-prompts))
+          (lambda (escape)
+            (let ((ps (*prompt-stack*)))
+              (if (null? ps)
+                  (error "shift: no enclosing reset")
+                  (let ((prompt (car ps)))
+                    (parameterize ((*prompt-stack* (cdr ps)))
                       (prompt
-                       (let ((k-arg (lambda (value)
-                                      (escape-continuation value))))
+                       (let ((k (lambda (v) (escape v))))
                          body ...)))))))))))
 
-    ;; Core data structures and helpers
-    (define *failure-tag* (list 'fail))
-    (define *failure-object* (cons *failure-tag* #f))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 4. Bindings and unification
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
     (define *empty-bindings* '((#t . #t)))
 
-    (define (success bindings continuation)
-      (cons bindings continuation))
+    ;; predicates -------------------------------------------------------------
+    (define (variable? x)
+      (and (symbol? x)
+           (let ((s (symbol->string x)))
+             (and (> (string-length s) 0)
+                  (char=? (string-ref s 0) #\?)))))
 
-    (define (failure)
-      *failure-object*)
+    (define (named-variable? x) (and (variable? x) (not (eq? x '?))))
+    (define (atom? x) (not (pair? x)))
 
-    (define (variable? term)
-      (and (symbol? term)
-           (let ((symbol-string (symbol->string term)))
-             (and (> (string-length symbol-string) 0)
-                  (char=? (string-ref symbol-string 0) #\?)))))
+    ;; binding helpers --------------------------------------------------------
+    (define (get-binding v bs) (assoc v bs))
+    (define (lookup-variable v bs) (cdr (get-binding v bs)))
 
-    (define (named-variable? term)
-      (and (variable? term) (not (eq? term '?))))
+    (define (extend-bindings v val bs)
+      (cons (cons v val) (if (eq? bs *empty-bindings*) '() bs)))
 
-    (define (atom? term)
-      (not (pair? term)))
+    (define (substitute-bindings bs expr)
+      (cond ((failure? bs) (failure))
+            ((eq? bs *empty-bindings*) expr)
+            ((and (variable? expr) (get-binding expr bs))
+             (substitute-bindings bs (lookup-variable expr bs)))
+            ((atom? expr) expr)
+            (else (cons (substitute-bindings bs (car expr))
+                        (substitute-bindings bs (cdr expr))))))
 
-    (define (failure? result)
-      (and (pair? result)
-           (eq? (car result) *failure-tag*)))
+    ;; variable collection ----------------------------------------------------
+    (define (collect-unique-if pred tree)
+      (let loop ((t tree) (acc '()))
+        (if (atom? t)
+            (if (and (pred t) (not (memq t acc))) (cons t acc) acc)
+            (loop (cdr t) (loop (car t) acc)))))
 
-    (define (get-binding variable bindings)
-      (assoc variable bindings))
+    (define (variables-in expr) (reverse (collect-unique-if named-variable? expr)))
 
-    (define (lookup-variable variable bindings)
-      (cdr (get-binding variable bindings)))
+    (define (replace-anonymous-variables expr)
+      (cond ((eq? expr '?) (gensym "?"))
+            ((atom? expr) expr)
+            (else (cons (replace-anonymous-variables (car expr))
+                        (replace-anonymous-variables (cdr expr))))))
 
-    (define (extend-bindings variable value bindings)
-      (cons (cons variable value)
-            (if (eq? bindings *empty-bindings*)
-                (list)
-                bindings)))
-
-    (define (substitute-bindings bindings expression)
-      (cond
-       ((failure? bindings) (failure))
-       ((eq? bindings *empty-bindings*) expression)
-       ((and (variable? expression)
-             (get-binding expression bindings))
-        (substitute-bindings bindings
-                             (lookup-variable expression bindings)))
-       ((atom? expression) expression)
-       (else
-        (cons (substitute-bindings bindings (car expression))
-              (substitute-bindings bindings (cdr expression))))))
-
-    (define (collect-unique-if predicate tree)
-      (let loop ((subtree tree) (found (list)))
-        (if (atom? subtree)
-            (if (and (predicate subtree) (not (memq subtree found)))
-                (cons subtree found)
-                found)
-            (loop (cdr subtree) (loop (car subtree) found)))))
-
-    (define (variables-in expression)
-      (reverse (collect-unique-if named-variable? expression)))
-
-    (define (replace-anonymous-variables expression)
-      (cond
-       ((eq? expression '?) (gensym "?"))
-       ((atom? expression) expression)
-       (else
-        (cons (replace-anonymous-variables (car expression))
-              (replace-anonymous-variables (cdr expression))))))
-
-    (define current-bindings (make-parameter *empty-bindings*))
-    (define current-goals (make-parameter (list)))
+    ;; unify ------------------------------------------------------------------
     (define *occurs-check* (make-parameter #t))
 
-    (define (unify term1 term2 bindings)
-      (cond
-       ((failure? bindings) (failure))
-       ((equal? term1 term2) bindings)
-       ((variable? term1) (unify-variable term1 term2 bindings))
-       ((variable? term2) (unify-variable term2 term1 bindings))
-       ((and (pair? term1) (pair? term2))
-        (unify (cdr term1) (cdr term2)
-               (unify (car term1) (car term2) bindings)))
-       (else (failure))))
+    (define (occurs-check? v expr bs)
+      (cond ((eq? v expr) #t)
+            ((and (variable? expr) (get-binding expr bs))
+             (occurs-check? v (lookup-variable expr bs) bs))
+            ((pair? expr)
+             (or (occurs-check? v (car expr) bs)
+                 (occurs-check? v (cdr expr) bs)))
+            (else #f)))
 
-    (define (unify-variable variable value bindings)
-      (cond
-       ((get-binding variable bindings)
-        (unify (lookup-variable variable bindings) value bindings))
-       ((and (variable? value) (get-binding value bindings))
-        (unify variable (lookup-variable value bindings) bindings))
-       ((and (*occurs-check*)
-             (occurs-check? variable value bindings))
-        (failure))
-       (else
-        (extend-bindings variable value bindings))))
+    (define (unify-var v value bs)
+      (cond ((get-binding v bs) (unify (lookup-variable v bs) value bs))
+            ((and (variable? value) (get-binding value bs))
+             (unify v (lookup-variable value bs) bs))
+            ((and (*occurs-check*) (occurs-check? v value bs)) (failure))
+            (else (extend-bindings v value bs))))
 
-    (define (occurs-check? variable expression bindings)
-      (cond
-       ((eq? variable expression) #t)
-       ((and (variable? expression)
-             (get-binding expression bindings))
-        (occurs-check? variable (lookup-variable expression bindings) bindings))
-       ((pair? expression)
-        (or (occurs-check? variable (car expression) bindings)
-            (occurs-check? variable (cdr expression) bindings)))
-       (else #f)))
+    (define (unify a b bs)
+      (cond ((failure? bs) (failure))
+            ((equal? a b) bs)
+            ((variable? a) (unify-var a b bs))
+            ((variable? b) (unify-var b a bs))
+            ((and (pair? a) (pair? b))
+             (unify (cdr a) (cdr b) (unify (car a) (car b) bs)))
+            (else (failure))))
 
-    (define clause-database (make-parameter (list)))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 5. Clause database
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (define (get-clauses predicate)
-      (let ((entry (assoc predicate (clause-database))))
-        (if entry (cdr entry) (list))))
+    (define clause-database (make-parameter '()))
 
-    (define (set-clauses! predicate clauses)
-      (clause-database
-            (cons (cons predicate clauses)
-                  (alist-delete predicate (clause-database) eq?))))
+    (define (get-clauses pred)
+      (let ((e (assoc pred (clause-database)))) (if e (cdr e) '())))
+
+    (define (set-clauses! pred clauses)
+      (clause-database (cons (cons pred clauses)
+                             (alist-delete pred (clause-database) eq?))))
 
     (define (add-clause! clause)
-      (let ((predicate (caar clause)))
-        (set-clauses! predicate
-                      (append (get-clauses predicate)
-                              (list clause)))))
+      (let ((pred (caar clause)))
+        (set-clauses! pred (append (get-clauses pred) (list clause)))))
 
+    ;; syntactic sugar --------------------------------------------------------
     (define-syntax <-
-      (syntax-rules ()
-        ((_ head . body)
-         (add-clause! (replace-anonymous-variables '(head . body))))))
+      (syntax-rules () ((_ head . body)
+                        (add-clause! (replace-anonymous-variables '(head . body))))))
 
-    (define (remove-clauses-with-arity! predicate arity)
-      (let ((test (lambda (clause) (not (= (length (cdar clause)) arity)))))
-        (set-clauses! predicate (filter test (get-clauses predicate)))))
+    (define (remove-clauses-with-arity! pred arity)
+      (set-clauses! pred (filter (lambda (c) (not (= (length (cdar c)) arity)))
+                                 (get-clauses pred))))
 
     (define-syntax <--
-      (syntax-rules ()
-        ((_ head . body)
-         (begin
-           (remove-clauses-with-arity!
-            (car 'head)
-            (length (cdr 'head)))
-           (add-clause! (replace-anonymous-variables '(head . body)))))))
+      (syntax-rules () ((_ head . body)
+                        (begin (remove-clauses-with-arity! (car 'head) (length (cdr 'head)))
+                               (add-clause! (replace-anonymous-variables '(head . body)))))))
 
-    ;; Prolog engine
-    (define (sublis alist tree)
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 6. Prover engine
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (define current-bindings (make-parameter *empty-bindings*))
+    (define current-goals    (make-parameter '()))
+
+    ;; variable‑renaming ------------------------------------------------------
+    (define (sublis al tree)
       (if (atom? tree)
-          (let ((binding (assoc tree alist)))
-            (if binding (cdr binding) tree))
-          (cons (sublis alist (car tree))
-                (sublis alist (cdr tree)))))
+          (let ((b (assoc tree al))) (if b (cdr b) tree))
+          (cons (sublis al (car tree)) (sublis al (cdr tree)))))
 
-    (define (rename-variables expression)
-      (let ((variables (variables-in expression))
-            (renamer (lambda (v) (cons v (gensym (symbol->string v))))))
-        (sublis (map renamer variables) expression)))
+    (define (rename-vars expr)
+      (let* ((vs (variables-in expr))
+             (al (map (lambda (v) (cons v (gensym (symbol->string v)))) vs)))
+        (sublis al expr)))
 
-    (define (process-one-clause goal clause bindings other-goals)
-      (let* ((renamed-clause (rename-variables clause))
-             (head (car renamed-clause))
-             (body (cdr renamed-clause))
-             (new-bindings (unify goal head bindings)))
-        (prove-all (append body other-goals) new-bindings)))
+    ;; core recursion ---------------------------------------------------------
+    (define (process-one goal clause bs rest)
+      (let* ((cl      (rename-vars clause))
+             (head    (car cl))
+             (body    (cdr cl))
+             (new-bs  (unify goal head bs)))
+        (prove-all (append body rest) new-bs)))
 
-    (define (combine-choices choice-a choice-b)
+    (define (combine a b)
       (lambda ()
-        (let ((result-a (and choice-a (choice-a))))
-          (if (or (not result-a) (failure? result-a))
-              (and choice-b (choice-b))
-              result-a))))
+        (let ((ra (and a (a))))
+          (if (or (not ra) (failure? ra)) (and b (b)) ra))))
 
-    (define (try-clauses goal bindings other-goals clauses)
+    (define (try-clauses goal bs rest clauses)
       (if (null? clauses)
           (failure)
-          (let* ((current-clause (car clauses))
-                 (remaining-clauses (cdr clauses))
-                 (result (process-one-clause goal current-clause bindings other-goals))
-                 (try-remaining-clauses
-                   (lambda () (try-clauses goal bindings other-goals remaining-clauses))))
+          (let* ((cl  (car clauses))
+                 (rem (cdr clauses))
+                 (res (process-one goal cl bs rest))
+                 (next (lambda () (try-clauses goal bs rest rem))))
+            (if (failure? res)
+                (next)
+                (success (success-bindings res)
+                         (combine (success-continuation res) next))))))
 
-            (if (failure? result)
-                (try-remaining-clauses)
-                (let ((solution-bindings (car result))
-                      (more-solutions-from-this-clause (cdr result)))
-                  (success solution-bindings
-                           (combine-choices more-solutions-from-this-clause
-                                            try-remaining-clauses)))))))
+    (define (prove goal bs rest)
+      (parameterize ((current-goals rest) (current-bindings bs))
+        (let* ((pred (if (pair? goal) (car goal) goal))
+               (cls  (get-clauses pred)))
+          (if (procedure? cls)
+              (apply cls (if (pair? goal) (cdr goal) '()))
+              (reset (try-clauses goal bs rest cls))))))
 
-    (define (prove goal bindings other-goals)
-      (parameterize ((current-goals other-goals)
-                     (current-bindings bindings))
-        (let* ((predicate (if (pair? goal) (car goal) goal))
-               (clauses (get-clauses predicate)))
-          (if (procedure? clauses)
-              (apply clauses (if (pair? goal) (cdr goal) (list)))
-              (reset (try-clauses goal bindings other-goals clauses))))))
+    (define (prove-all goals bs)
+      (cond ((failure? bs) (failure))
+            ((null? goals) (success bs #f))
+            (else (prove (car goals) bs (cdr goals)))))
 
-    (define (prove-all goals bindings)
-      (cond
-       ((failure? bindings) (failure))
-       ((null? goals) (success bindings #f))
-       (else (prove (car goals)
-                    bindings
-                    (cdr goals)))))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 7. Interactive query syntax (?-)
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define-syntax ?-
-      (syntax-rules ()
-        ((_ . goals)
-         (run-query (replace-anonymous-variables 'goals)))))
+      (syntax-rules () ((_ . goals)
+                        (run-query (replace-anonymous-variables 'goals)))))
 
-    (define (run-query goals)
-      (let ((query-variables (variables-in goals)))
-        (reset
-         (let loop ((query-continuation (lambda ()
-                                          (prove-all goals *empty-bindings*))))
-           (let ((result (query-continuation)))
-             (if (failure? result)
-                 (begin (display "No.")
-                        (newline)
-                        (newline))
-                 (let ((solution-bindings (car result))
-                       (next-continuation (cdr result)))
-                   (display-solution query-variables solution-bindings)
-                   (if (and next-continuation (continue-prompt?))
-                       (loop next-continuation)
-                       (newline)))))))))
-
-    (define (display-solution variables bindings)
-      (if (null? variables)
+    (define (display-solution vars bs)
+      (if (null? vars)
           (display "Yes.")
-          (for-each (lambda (variable)
-                      (display variable)
-                      (display " = ")
-                      (write (substitute-bindings bindings variable))
-                      (newline))
-                    variables)))
+          (for-each (lambda (v) (display v) (display " = ")
+                      (write (substitute-bindings bs v)) (newline)) vars)))
 
     (define (continue-prompt?)
-      (display " ")
-      (flush-output-port)
-      (let ((input-char (read-char)))
-        (case input-char
-          ((#\;) #t)
-          ((#\.) #f)
-          ((#\newline) (continue-prompt?))
-          (else (display " Type ; for more, or . to stop.")
-                (newline)
-                (continue-prompt?)))))
+      (display " ") (flush-output-port)
+      (case (read-char)
+        ((#\;) #t) ((#\.) #f) ((#\newline) (continue-prompt?))
+        (else (display " Type ; for more, or . to stop.") (newline) (continue-prompt?))))
+
+    (define (run-query goals)
+      (let ((vars (variables-in goals)))
+        (reset (let loop ((k (lambda () (prove-all goals *empty-bindings*))))
+                 (let ((r (k)))
+                   (if (failure? r)
+                       (begin (display "No.") (newline) (newline))
+                       (begin (display-solution vars (success-bindings r))
+                              (newline)
+                              (when (and (success-continuation r) (continue-prompt?))
+                                (loop (success-continuation r))))))))))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; 8. Macro for defining pure Scheme predicates
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define-syntax define-predicate
-      (syntax-rules ()
-        ((_ (name . args) . body)
-         (set-clauses! 'name (lambda args . body)))))
+      (syntax-rules () ((_ (name . args) . body)
+                        (set-clauses! 'name (lambda args . body)))))
 
     (define (resolve-binding bindings term)
       (let ((value (substitute-bindings bindings term)))
