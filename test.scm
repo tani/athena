@@ -81,10 +81,10 @@
 (let ((test-cl '( (parent alice bob) )))
   (test-group "clause-db"
     ;; Test operation
-    (add-clause! test-cl)
-    (test-equal "get-clauses returns inserted clause"
-                (list test-cl) (get-clauses 'parent))
-    (clear-database!)))
+    (parameterize ((clause-database (clause-database)))
+      (add-clause! test-cl)
+      (test-equal "get-clauses returns inserted clause"
+                  (list test-cl) (get-clauses 'parent)))))
 
 ;;; ------------------------------------------------------------
 ;;; 6. Prolog engine (prove-all, etc.)

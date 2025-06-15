@@ -13,7 +13,7 @@
     unify
     *prompt-stack*
     *failure-object*
-    clear-database!
+    clause-database
     add-clause!
     get-clauses
     define-predicate
@@ -188,16 +188,16 @@
             (occurs-check? variable (cdr expression) bindings)))
        (else #f)))
 
-    (define *clause-database* (list))
+    (define clause-database (make-parameter (list)))
 
     (define (get-clauses predicate)
-      (let ((entry (assoc predicate *clause-database*)))
+      (let ((entry (assoc predicate (clause-database))))
         (if entry (cdr entry) (list))))
 
     (define (set-clauses! predicate clauses)
-      (set! *clause-database*
+      (clause-database
             (cons (cons predicate clauses)
-                  (alist-delete predicate *clause-database* eq?))))
+                  (alist-delete predicate (clause-database) eq?))))
 
     (define (add-clause! clause)
       (let ((predicate (caar clause)))
@@ -468,9 +468,5 @@
     (<-- (if ?cond ?then) (call ?cond) (call ?then))
     (<-- (not ?goal) (call ?goal) (cut) (fail))
     (<- (not ?goal))
-
-    (define *builtin-clause-databse* (list-copy *clause-database*))
-    (define (clear-database!)
-      (set! *clause-database* (list-copy *builtin-clause-databse*)))
   )
 )
