@@ -23,7 +23,5 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: extra-experimental-features = nix-command flakes
-          daemon: ${{ startsWith(matrix.os, 'macos-') }}
 
       - run: nix develop -c make IMPLS=${{ matrix.impl }}
-        shell: bash
