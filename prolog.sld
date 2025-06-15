@@ -4,26 +4,26 @@
 ;; Released under the GNU General Public License v3.0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  Library declaration
+;; Library declaration
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-library (prolog)
   ;; Public symbols -----------------------------------------------------------
   (export
-    ;; basic helpers
-    variable? named-variable? atom?
-    failure? success?
-    *empty-bindings*
-    extend-bindings substitute-bindings variables-in
-    replace-anonymous-variables unify object->string
-    ;; delimited continuations
-    reset shift *prompt-stack*
-    ;; clause DB API
-    clause-database add-clause! get-clauses <- <-- define-predicate
-    ;; prover / query
-    prove-all ?-
-    ;; accessors for <success>
-    success-bindings success-continuation)
+   ;; basic helpers
+   variable? named-variable? atom?
+   failure? success?
+   *empty-bindings*
+   extend-bindings substitute-bindings variables-in
+   replace-anonymous-variables unify object->string
+   ;; delimited continuations
+   reset shift *prompt-stack*
+   ;; clause DB API
+   clause-database add-clause! get-clauses <- <-- define-predicate
+   ;; prover / query
+   prove-all ?-
+   ;; accessors for <success>
+   success-bindings success-continuation)
 
   ;; Imports ------------------------------------------------------------------
   (import (scheme base)
@@ -33,12 +33,12 @@
 
   ;; Optional SRFI‑132 list-sort for each implementation
   (cond-expand
-   (chicken     (import scheme (only (srfi 132) list-sort)))
-   (guile       (import (only (rnrs sorting (6)) list-sort)))
-   (gauche      (import (only (scheme sort) list-sort)))
-   (chibi       (import (only (scheme sort) list-sort)))
-   (gambit      (import (only (srfi 132) list-sort)))
-   (sagittarius (import (only (scheme sort) list-sort))))
+    (chicken (import scheme (only (srfi 132) list-sort)))
+    (guile (import (only (rnrs sorting (6)) list-sort)))
+    (gauche (import (only (scheme sort) list-sort)))
+    (chibi (import (only (scheme sort) list-sort)))
+    (gambit (import (only (srfi 132) list-sort)))
+    (sagittarius (import (only (scheme sort) list-sort))))
 
   ;; Implementation -----------------------------------------------------------
   (begin
@@ -54,7 +54,7 @@
     (define-record-type <success>
       (make-success bindings continuation)
       success?
-      (bindings     success-bindings)
+      (bindings success-bindings)
       (continuation success-continuation))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,24 +198,26 @@
 
     ;; syntactic sugar --------------------------------------------------------
     (define-syntax <-
-      (syntax-rules () ((_ head . body)
-                        (add-clause! (replace-anonymous-variables '(head . body))))))
-
+      (syntax-rules ()
+        ((_ head . body)
+         (add-clause! (replace-anonymous-variables '(head . body))))))
+    
     (define (remove-clauses-with-arity! predicate-symbol arity)
       (set-clauses! predicate-symbol (filter (lambda (clause) (not (= (length (cdar clause)) arity)))
                                              (get-clauses predicate-symbol))))
 
     (define-syntax <--
-      (syntax-rules () ((_ head . body)
-                        (begin (remove-clauses-with-arity! (car 'head) (length (cdr 'head)))
-                               (add-clause! (replace-anonymous-variables '(head . body)))))))
-
+      (syntax-rules ()
+        ((_ head . body)
+         (begin (remove-clauses-with-arity! (car 'head) (length (cdr 'head)))
+                (add-clause! (replace-anonymous-variables '(head . body)))))))
+    
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 6. Prover engine
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define current-bindings (make-parameter *empty-bindings*))
-    (define current-goals    (make-parameter '()))
+    (define current-goals (make-parameter '()))
 
     ;; variable‑renaming ------------------------------------------------------
     (define (sublis alist tree)
@@ -231,9 +233,9 @@
     ;; core recursion ---------------------------------------------------------
     (define (process-one goal clause bindings remaining-goals)
       (let* ((renamed-clause (rename-vars clause))
-             (head           (car renamed-clause))
-             (clause-body    (cdr renamed-clause))
-             (new-bindings   (unify goal head bindings)))
+             (head (car renamed-clause))
+             (clause-body (cdr renamed-clause))
+             (new-bindings (unify goal head bindings)))
         (prove-all (append clause-body remaining-goals) new-bindings)))
 
     (define (combine continuation-a continuation-b)
@@ -241,25 +243,27 @@
         (let ((result-a (and continuation-a (continuation-a))))
           (if (or (not result-a) (failure? result-a))
               (and continuation-b (continuation-b))
-              result-a))))
+              (make-success
+               (success-bindings result-a)
+               (combine (success-continuation result-a) continuation-b))))))
 
     (define (try-clauses goal bindings remaining-goals clauses)
       (if (null? clauses)
           (make-failure)
-          (let* ((current-clause   (car clauses))
+          (let* ((current-clause (car clauses))
                  (remaining-clauses (cdr clauses))
-                 (result            (process-one goal current-clause bindings remaining-goals))
+                 (result (process-one goal current-clause bindings remaining-goals))
                  (next-continuation (lambda () (try-clauses goal bindings remaining-goals remaining-clauses))))
             (if (failure? result)
                 (next-continuation)
                 (make-success
-                  (success-bindings result)
-                  (combine (success-continuation result) next-continuation))))))
+                 (success-bindings result)
+                 (combine (success-continuation result) next-continuation))))))
 
     (define (prove goal bindings remaining-goals)
       (parameterize ((current-goals remaining-goals) (current-bindings bindings))
         (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-               (clauses          (get-clauses predicate-symbol)))
+               (clauses (get-clauses predicate-symbol)))
           (if (procedure? clauses)
               (apply clauses (if (pair? goal) (cdr goal) '()))
               (reset (try-clauses goal bindings remaining-goals clauses))))))
@@ -449,5 +453,5 @@
     (<-- (if ?cond ?then) (call ?cond) (call ?then))
     (<-- (not ?goal) (call ?goal) (cut) (fail))
     (<- (not ?goal))
+    )
   )
-)
