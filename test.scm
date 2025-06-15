@@ -201,4 +201,24 @@
                                     (loop (success-continuation r) (+ n 1))))))))
   (test-assert "true/0 always succeeds" (not (failure? (reset (prove-all '((true)) *empty-bindings*)))))
 
+;; -----------------------------------------------------------
+
+;; 8. Advanced backtracking and cut propagation
+
+;; -----------------------------------------------------------
+
+(test-group "advanced-cut-behavior"
+
+  ;; テスト用の述語を定義
+  (<- (q 1))
+  (<- (q 2))
+
+
+  (<-- (p ?x) (= ?x 1) (cut) (fail)) ; p(1) はハードな失敗を引き起こす
+  (<- (p ?x) (= ?x 2))             ; p(2) は成功する
+
+  (test-equal "hard failure in p(x) should not block backtracking in q(y)"
+              2
+              (solve-first '((q ?y) (p ?y)) '?y)))
+
 (test-end "prolog")
