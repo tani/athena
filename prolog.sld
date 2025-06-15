@@ -12,8 +12,8 @@
   (export
     ;; basic helpers
     variable? named-variable? atom?
-    failure? success? failure success
-    *failure-object* *empty-bindings*
+    failure? success?
+    *empty-bindings*
     extend-bindings substitute-bindings variables-in
     replace-anonymous-variables unify object->string
     ;; delimited continuations
@@ -56,11 +56,6 @@
       success?
       (bindings     success-bindings)
       (continuation success-continuation))
-
-    ;; Convenience wrappers ---------------------------------------------------
-    (define (failure) (make-failure))
-    (define (success b k) (make-success b k))
-    (define *failure-object* (failure))      ; kept for backward‑compat tests
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 2. Utility procedures
@@ -131,7 +126,7 @@
       (cons (cons v val) (if (eq? bs *empty-bindings*) '() bs)))
 
     (define (substitute-bindings bs expr)
-      (cond ((failure? bs) (failure))
+      (cond ((failure? bs) (make-failure))
             ((eq? bs *empty-bindings*) expr)
             ((and (variable? expr) (get-binding expr bs))
              (substitute-bindings bs (lookup-variable expr bs)))
@@ -170,17 +165,17 @@
       (cond ((get-binding v bs) (unify (lookup-variable v bs) value bs))
             ((and (variable? value) (get-binding value bs))
              (unify v (lookup-variable value bs) bs))
-            ((and (*occurs-check*) (occurs-check? v value bs)) (failure))
+            ((and (*occurs-check*) (occurs-check? v value bs)) (make-failure))
             (else (extend-bindings v value bs))))
 
     (define (unify a b bs)
-      (cond ((failure? bs) (failure))
+      (cond ((failure? bs) (make-failure))
             ((equal? a b) bs)
             ((variable? a) (unify-var a b bs))
             ((variable? b) (unify-var b a bs))
             ((and (pair? a) (pair? b))
              (unify (cdr a) (cdr b) (unify (car a) (car b) bs)))
-            (else (failure))))
+            (else (make-failure))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 5. Clause database
@@ -246,14 +241,14 @@
 
     (define (try-clauses goal bs rest clauses)
       (if (null? clauses)
-          (failure)
+          (make-failure)
           (let* ((cl  (car clauses))
                  (rem (cdr clauses))
                  (res (process-one goal cl bs rest))
                  (next (lambda () (try-clauses goal bs rest rem))))
             (if (failure? res)
                 (next)
-                (success (success-bindings res)
+                (make-success (success-bindings res)
                          (combine (success-continuation res) next))))))
 
     (define (prove goal bs rest)
@@ -265,8 +260,8 @@
               (reset (try-clauses goal bs rest cls))))))
 
     (define (prove-all goals bs)
-      (cond ((failure? bs) (failure))
-            ((null? goals) (success bs #f))
+      (cond ((failure? bs) (make-failure))
+            ((null? goals) (make-success bs #f))
             (else (prove (car goals) bs (cdr goals)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,7 +328,7 @@
               (*dynamic-parameters* (cons (cons var-symbol new-param) alist))
               new-param))))
 
-    (define-predicate (fail) (failure))
+    (define-predicate (fail) (make-failure))
 
     (define-predicate (cut) (shift k (prove-all (current-goals) (current-bindings))))
 
@@ -344,7 +339,7 @@
       (if (equal? (substitute-bindings (current-bindings) term1)
                   (substitute-bindings (current-bindings) term2))
           (prove-all (current-goals) (current-bindings))
-          (failure)))
+          (make-failure)))
 
     (define-predicate (call goal)
       (prove-all (cons (substitute-bindings (current-bindings) goal) (current-goals))
@@ -367,29 +362,29 @@
       (let ((v (substitute-bindings (current-bindings) term)))
         (if (and (symbol? v) (not (variable? v)))
             (prove-all (current-goals) (current-bindings))
-            (failure))))
+            (make-failure))))
 
     (define-predicate (atomic term)
       (let ((v (substitute-bindings (current-bindings) term)))
         (if (and (not (variable? v)) (not (pair? v)))
             (prove-all (current-goals) (current-bindings))
-            (failure))))
+            (make-failure))))
 
     (define-predicate (var term)
       (if (variable? (resolve-binding (current-bindings) term))
           (prove-all (current-goals) (current-bindings))
-          (failure)))
+          (make-failure)))
 
     (define-predicate (ground term)
       (if (ground? (current-bindings) term)
           (prove-all (current-goals) (current-bindings))
-          (failure)))
+          (make-failure)))
 
     (define-predicate (number term)
       (let ((v (substitute-bindings (current-bindings) term)))
         (if (number? v)
             (prove-all (current-goals) (current-bindings))
-            (failure))))
+            (make-failure))))
 
     (define-predicate (dynamic-put var-symbol value-form)
       (let* ((param (get-dynamic-parameter var-symbol))
@@ -414,7 +409,7 @@
       (solutions-accumulator
        (cons (substitute-bindings (current-bindings) template)
              (solutions-accumulator)))
-      (failure))
+      (make-failure))
 
     (define-predicate (bagof template goal result-bag)
       (parameterize ((solutions-accumulator (list)))

@@ -33,7 +33,6 @@
   (test-equal "named-variable? '?x" #t (named-variable? '?x))
 
   (test-equal "atom? for pair" #f (atom? '(a b)))
-  (test-assert "failure? tag" (failure? (failure)))
 
   (test-equal "extend-bindings" '((?x . 1)) (extend-bindings '?x 1 *empty-bindings*))
 
