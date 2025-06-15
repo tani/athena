@@ -23,7 +23,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 
 1. Clone the repository
 
-   ```bash
+```bash
    git clone https://github.com/tani/athena-reasoner.git
    cd athena-reasoner
 ````
