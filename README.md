@@ -1,4 +1,3 @@
-````markdown
 # Athena Reasoner
 
 Athena Reasoner is a lightweight Prolog-inspired logic programming engine implemented in Scheme. It supports multiple Scheme implementations and provides a consistent interface for defining predicates, running queries, and extending the clause database. The project uses Nix for development environments and GitHub Actions for continuous integration. This project draws inspiration from the PAIP Prolog implementation and, in homage to AllegroProlog, ports its convenient functions.
