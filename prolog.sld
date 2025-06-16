@@ -49,9 +49,8 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define-record-type <failure>
-      (make-failure hard?)
-      failure?
-      (hard? failure-hard?))
+      (make-failure)
+      failure?)
 
     (define-record-type <success>
       (make-success bindings continuation)
@@ -128,7 +127,7 @@
       (cons (cons variable value) (if (eq? bindings *empty-bindings*) '() bindings)))
 
     (define (substitute-bindings bindings expression)
-      (cond ((failure? bindings) (make-failure #f))
+      (cond ((failure? bindings) (make-failure))
             ((eq? bindings *empty-bindings*) expression)
             ((and (variable? expression) (get-binding expression bindings))
              (substitute-bindings bindings (lookup-variable expression bindings)))
@@ -169,17 +168,17 @@
       (cond ((get-binding variable bindings) (unify (lookup-variable variable bindings) value bindings))
             ((and (variable? value) (get-binding value bindings))
              (unify variable (lookup-variable value bindings) bindings))
-            ((and (*occurs-check*) (occurs-check? variable value bindings)) (make-failure #f))
+            ((and (*occurs-check*) (occurs-check? variable value bindings)) (make-failure))
             (else (extend-bindings variable value bindings))))
 
     (define (unify term1 term2 bindings)
-      (cond ((failure? bindings) (make-failure #f))
+      (cond ((failure? bindings) (make-failure))
             ((equal? term1 term2) bindings)
             ((variable? term1) (unify-var term1 term2 bindings))
             ((variable? term2) (unify-var term2 term1 bindings))
             ((and (pair? term1) (pair? term2))
              (unify (cdr term1) (cdr term2) (unify (car term1) (car term2) bindings)))
-            (else (make-failure #f))))
+            (else (make-failure))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 5. Clause database
@@ -233,6 +232,7 @@
         (sublis alist expression)))
 
     ;; core recursion ---------------------------------------------------------
+
     (define (process-one goal clause bindings remaining-goals)
       (let* ((renamed-clause (rename-vars clause))
              (head (car renamed-clause))
@@ -246,62 +246,36 @@
           (if (or (not result-a) (failure? result-a))
               (and continuation-b (continuation-b))
               (make-success
-               (success-bindings result-a)
-               (combine (success-continuation result-a) continuation-b))))))
+                (success-bindings result-a)
+                (combine (success-continuation result-a) continuation-b))))))
 
      (define (prove goal bindings remaining-goals)
        (parameterize ((current-goals remaining-goals) (current-bindings bindings))
          (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-                (clauses (get-clauses predicate-symbol))
-                (goal-arity (if (pair? goal) (length (cdr goal)) 0)))
+                (clauses (get-clauses predicate-symbol)))
            (if (procedure? clauses)
                (apply clauses (if (pair? goal) (cdr goal) '()))
-               (reset (try-clauses goal goal-arity bindings remaining-goals clauses))))))
+               (reset (try-clauses goal bindings remaining-goals clauses))))))
 
-     (define (try-clauses goal goal-arity bindings remaining-goals all-clauses)
-       (let ((clauses (filter (lambda (clause)
-                                (= (length (cdr (car clause))) goal-arity))
-                              all-clauses)))
+     (define (try-clauses goal bindings remaining-goals all-clauses)
+       (let* ((goal-arity (if (pair? goal) (length (cdr goal)) 0))
+              (same-arity? (lambda (clause) (= (length (cdar clause)) goal-arity)))
+              (clauses (filter same-arity? all-clauses)))
          (let loop ((clauses-to-try clauses))
            (if (null? clauses-to-try)
-               (make-failure #f)
+               (make-failure)
                (let* ((current-clause (car clauses-to-try))
                       (remaining-clauses (cdr clauses-to-try))
                       (result (process-one goal current-clause bindings remaining-goals))
                       (next-continuation (lambda () (loop remaining-clauses))))
                  (if (failure? result)
-                     (if (failure-hard? result)
-                         result
-                         (next-continuation))
-                     (make-success
-                      (success-bindings result)
-                      (combine (success-continuation result) next-continuation))))))))
-    ;
-    ; (define (try-clauses goal bindings remaining-goals clauses)
-    ;    (if (null? clauses)
-    ;        (make-failure #f)
-    ;        (let* ((current-clause (car clauses))
-    ;               (remaining-clauses (cdr clauses))
-    ;               (result (process-one goal current-clause bindings remaining-goals))
-    ;               (next-continuation (lambda () (try-clauses goal bindings remaining-goals remaining-clauses))))
-    ;          (if (failure? result)
-    ;              (if (failure-hard? result)
-    ;                  result
-    ;                  (next-continuation))
-    ;              (make-success
-    ;               (success-bindings result)
-    ;               (combine (success-continuation result) next-continuation))))))
-    ;
-    ; (define (prove goal bindings remaining-goals)
-    ;   (parameterize ((current-goals remaining-goals) (current-bindings bindings))
-    ;     (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-    ;            (clauses (get-clauses predicate-symbol)))
-    ;       (if (procedure? clauses)
-    ;           (apply clauses (if (pair? goal) (cdr goal) '()))
-    ;           (reset (try-clauses goal bindings remaining-goals clauses))))))
+                   (next-continuation)
+                   (make-success
+                     (success-bindings result)
+                     (combine (success-continuation result) next-continuation))))))))
 
     (define (prove-all goals bindings)
-      (cond ((failure? bindings) (make-failure #f))
+      (cond ((failure? bindings) (make-failure))
             ((null? goals) (make-success bindings #f))
             (else (prove (car goals) bindings (cdr goals)))))
 
@@ -310,8 +284,9 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define-syntax ?-
-      (syntax-rules () ((_ . goals)
-                        (run-query (replace-anonymous-variables 'goals)))))
+      (syntax-rules ()
+        ((_ . goals)
+         (run-query (replace-anonymous-variables 'goals)))))
 
     (define (display-solution variables bindings)
       (if (null? variables)
@@ -347,8 +322,9 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define-syntax define-predicate
-      (syntax-rules () ((_ (name . arguments) . body)
-                        (set-clauses! 'name (lambda arguments . body)))))
+      (syntax-rules ()
+        ((_ (name . arguments) . body)
+         (set-clauses! 'name (lambda arguments . body)))))
 
     (define (resolve-binding bindings term)
       (let ((resolved-value (substitute-bindings bindings term)))
@@ -375,16 +351,10 @@
               (dynamic-parameters (cons (cons variable-symbol new-parameter) alist))
               new-parameter))))
 
-    (define-predicate (fail) (make-failure #f))
+    (define-predicate (fail) (make-failure))
 
     (define-predicate (cut)
-      (shift k
-        (reset
-          (let ((result (prove-all (current-goals) (current-bindings))))
-            (if (failure? result)
-                (make-failure #t)
-                result)))))
-
+      (shift k (prove-all (current-goals) (current-bindings))))
 
     (define-predicate (= term1 term2)
       (prove-all (current-goals) (unify term1 term2 (current-bindings))))
@@ -393,7 +363,7 @@
       (if (equal? (substitute-bindings (current-bindings) term1)
                   (substitute-bindings (current-bindings) term2))
           (prove-all (current-goals) (current-bindings))
-          (make-failure #f)))
+          (make-failure)))
 
     (define-predicate (call goal)
       (prove-all (cons (substitute-bindings (current-bindings) goal) (current-goals))
@@ -416,29 +386,29 @@
       (let ((value (substitute-bindings (current-bindings) term)))
         (if (and (symbol? value) (not (variable? value)))
             (prove-all (current-goals) (current-bindings))
-            (make-failure #f))))
+            (make-failure))))
 
     (define-predicate (atomic term)
       (let ((value (substitute-bindings (current-bindings) term)))
         (if (and (not (variable? value)) (not (pair? value)))
             (prove-all (current-goals) (current-bindings))
-            (make-failure #f))))
+            (make-failure))))
 
     (define-predicate (var term)
       (if (variable? (resolve-binding (current-bindings) term))
           (prove-all (current-goals) (current-bindings))
-          (make-failure #f)))
+          (make-failure)))
 
     (define-predicate (ground term)
       (if (ground? (current-bindings) term)
           (prove-all (current-goals) (current-bindings))
-          (make-failure #f)))
+          (make-failure)))
 
     (define-predicate (number term)
       (let ((value (substitute-bindings (current-bindings) term)))
         (if (number? value)
             (prove-all (current-goals) (current-bindings))
-            (make-failure #f))))
+            (make-failure))))
 
     (define-predicate (dynamic-put variable-symbol value-expression)
       (let* ((parameter (get-dynamic-parameter variable-symbol))
@@ -463,7 +433,7 @@
       (solutions-accumulator
        (cons (substitute-bindings (current-bindings) template)
              (solutions-accumulator)))
-      (make-failure #f))
+      (make-failure))
 
     (define-predicate (bagof template goal result-bag)
       (parameterize ((solutions-accumulator (list)))
