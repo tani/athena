@@ -11,7 +11,7 @@
 ;; Helpers
 ;; -----------------------------------------------------------
 (define (solve-first goals term)
-  (let ((result (reset (prove-all goals *empty-bindings*))))
+  (let ((result (prove-all goals *empty-bindings*)))
     (and (not (failure? result))
          (substitute-bindings (success-bindings result) term))))
 
@@ -127,17 +127,17 @@
 (<- (bar ?x) (foo ?x) (cut) (= ?x 1))
 
 (test-group "built-ins"
-  (test-assert "fail predicate" (failure? (reset (prove-all '((fail)) *empty-bindings*))))
-  (test-assert "true predicate" (not (failure? (reset (prove-all '((true)) *empty-bindings*)))))
+  (test-assert "fail predicate" (failure? (prove-all '((fail)) *empty-bindings*)))
+  (test-assert "true predicate" (not (failure? (prove-all '((true)) *empty-bindings*))))
 
   (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
   (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
 
-  (test-assert "== succeeds for bound vars" (not (failure? (reset (prove-all '((= ?x foo) (== ?x foo)) *empty-bindings*)))))
-  (test-assert "== fails for different vals" (failure? (reset (prove-all '((= ?x foo) (== ?x bar)) *empty-bindings*)))))
+  (test-assert "== succeeds for bound vars" (not (failure? (prove-all '((= ?x foo) (== ?x foo)) *empty-bindings*))))
+  (test-assert "== fails for different vals" (failure? (prove-all '((= ?x foo) (== ?x bar)) *empty-bindings*))))
 
-  (test-assert "not/1 succeeds" (not (failure? (reset (prove-all '((not (parent susan ?_))) *empty-bindings*)))))
-  (test-assert "not/1 fails" (failure? (reset (prove-all '((not (parent john mary))) *empty-bindings*))))
+  (test-assert "not/1 succeeds" (not (failure? (prove-all '((not (parent susan ?_))) *empty-bindings*))))
+  (test-assert "not/1 fails" (failure? (prove-all '((not (parent john mary))) *empty-bindings*)))
 
   (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
   (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
@@ -145,7 +145,7 @@
   (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
-  (test-equal "if/2 else fails" #t (failure? (reset (prove-all '((if (= a b) (= ?r ok))) *empty-bindings*))))
+  (test-equal "if/2 else fails" #t (failure? (prove-all '((if (= a b) (= ?r ok))) *empty-bindings*)))
 
 
   (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
@@ -163,16 +163,16 @@
 ;; 6. Type & Dynamic predicates
 ;; -----------------------------------------------------------
 (test-group "type-and-dynamic-predicates"
-  (test-assert "atom/1 success" (not (failure? (reset (prove-all '((atom foo)) *empty-bindings*)))))
-  (test-assert "atom/1 failure on var" (failure? (reset (prove-all '((atom ?X)) *empty-bindings*))))
-  (test-assert "atomic/1 success on number" (not (failure? (reset (prove-all '((atomic 123)) *empty-bindings*)))))
-  (test-assert "atomic/1 failure on list" (failure? (reset (prove-all '((atomic (a b))) *empty-bindings*))))
-  (test-assert "var/1 success on unbound" (not (failure? (reset (prove-all '((var ?X)) *empty-bindings*)))))
-  (test-assert "var/1 failure on bound" (failure? (reset (prove-all '((= ?X 1) (var ?X)) *empty-bindings*))))
-  (test-assert "ground/1 success on bound var" (not (failure? (reset (prove-all '((= ?X (a b)) (ground ?X)) *empty-bindings*)))))
-  (test-assert "ground/1 failure on partial" (failure? (reset (prove-all '((ground (a ?Y))) *empty-bindings*))))
-  (test-assert "number/1 success" (not (failure? (reset (prove-all '((number 42)) *empty-bindings*)))))
-  (test-assert "number/1 failure on atom" (failure? (reset (prove-all '((number abc)) *empty-bindings*))))
+  (test-assert "atom/1 success" (not (failure? (prove-all '((atom foo)) *empty-bindings*))))
+  (test-assert "atom/1 failure on var" (failure? (prove-all '((atom ?X)) *empty-bindings*)))
+  (test-assert "atomic/1 success on number" (not (failure? (prove-all '((atomic 123)) *empty-bindings*))))
+  (test-assert "atomic/1 failure on list" (failure? (prove-all '((atomic (a b))) *empty-bindings*)))
+  (test-assert "var/1 success on unbound" (not (failure? (prove-all '((var ?X)) *empty-bindings*))))
+  (test-assert "var/1 failure on bound" (failure? (prove-all '((= ?X 1) (var ?X)) *empty-bindings*)))
+  (test-assert "ground/1 success on bound var" (not (failure? (prove-all '((= ?X (a b)) (ground ?X)) *empty-bindings*))))
+  (test-assert "ground/1 failure on partial" (failure? (prove-all '((ground (a ?Y))) *empty-bindings*)))
+  (test-assert "number/1 success" (not (failure? (prove-all '((number 42)) *empty-bindings*))))
+  (test-assert "number/1 failure on atom" (failure? (prove-all '((number abc)) *empty-bindings*)))
   
   (test-equal "dynamic-put/get" 42 (solve-first '((dynamic-put my-var 42) (dynamic-get my-var ?V)) '?V))
   (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V)))
@@ -185,8 +185,8 @@
   (test-equal "or/2 second succeeds" 'ok (solve-first '((or (= 1 2) (= ?r ok))) '?r))
   (test-equal "or/2 all solutions" '(ok also-ok) (solve-all '((or (= ?r ok) (= ?r also-ok))) '?r))
 
-  (test-assert "member/2 success" (not (failure? (reset (prove-all '((member b (a b c))) *empty-bindings*)))))
-  (test-assert "member/2 failure" (failure? (reset (prove-all '((member x (a b c))) *empty-bindings*)))))
+  (test-assert "member/2 success" (not (failure? (prove-all '((member b (a b c))) *empty-bindings*))))
+  (test-assert "member/2 failure" (failure? (prove-all '((member x (a b c))) *empty-bindings*))))
   (test-equal "member/2 generate" '(a b c) (solve-all '((member ?x (a b c))) '?x))
 
   (test-equal "append/3 forward" '(a b c d) (solve-first '((append (a b) (c d) ?x)) '?x))
@@ -199,7 +199,7 @@
                        (else (let ((r (cont)))
                                (and (not (failure? r))
                                     (loop (success-continuation r) (+ n 1))))))))
-  (test-assert "true/0 always succeeds" (not (failure? (reset (prove-all '((true)) *empty-bindings*)))))
+  (test-assert "true/0 always succeeds" (not (failure? (prove-all '((true)) *empty-bindings*))))
 
 ;; -----------------------------------------------------------
 

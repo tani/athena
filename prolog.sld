@@ -16,8 +16,6 @@
    *empty-bindings*
    extend-bindings substitute-bindings variables-in
    replace-anonymous-variables unify object->string
-   ;; delimited continuations
-   reset shift *prompt-stack*
    ;; clause DB API
    remove-clauses-with-arity!
    clause-database add-clause! get-clauses <- <-- define-predicate
@@ -74,34 +72,6 @@
       (parameterize ((current-output-port (open-output-string)))
         (write object)
         (get-output-string (current-output-port))))
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; 3. reset / shift
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    (define *prompt-stack* (make-parameter '()))
-
-    (define-syntax reset
-      (syntax-rules ()
-        ((_ body ...)
-         (call/cc
-          (lambda (prompt)
-            (parameterize ((*prompt-stack* (cons prompt (*prompt-stack*))))
-              body ...))))))
-
-    (define-syntax shift
-      (syntax-rules ()
-        ((_ k body ...)
-         (call/cc
-          (lambda (escape)
-            (let ((prompt-stack (*prompt-stack*)))
-              (if (null? prompt-stack)
-                  (error "shift: no enclosing reset")
-                  (let ((prompt (car prompt-stack)))
-                    (parameterize ((*prompt-stack* (cdr prompt-stack)))
-                      (prompt
-                       (let ((k (lambda (value) (escape value))))
-                         body ...)))))))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 4. Bindings and unification
@@ -242,41 +212,52 @@
 
     (define (combine continuation-a continuation-b)
       (lambda ()
-        (let ((result-a (and continuation-a (continuation-a))))
+        (let ((result-a (continuation-a)))
           (if (or (not result-a) (failure? result-a))
-              (and continuation-b (continuation-b))
+              (continuation-b)
               (make-success
-                (success-bindings result-a)
-                (combine (success-continuation result-a) continuation-b))))))
+               (success-bindings result-a)
+               (combine (success-continuation result-a) continuation-b))))))
 
-     (define (prove goal bindings remaining-goals)
-       (parameterize ((current-goals remaining-goals) (current-bindings bindings))
-         (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-                (clauses (get-clauses predicate-symbol)))
-           (if (procedure? clauses)
-               (apply clauses (if (pair? goal) (cdr goal) '()))
-               (reset (try-clauses goal bindings remaining-goals clauses))))))
+    (define (prove goal bindings remaining-goals)
+      (parameterize ((current-goals remaining-goals) (current-bindings bindings))
+        (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
+               (clauses (get-clauses predicate-symbol)))
+          (if (procedure? clauses)
+              (apply clauses (if (pair? goal) (cdr goal) '()))
+              (try-clauses goal bindings remaining-goals clauses)))))
 
-     (define (try-clauses goal bindings remaining-goals all-clauses)
-       (let* ((goal-arity (if (pair? goal) (length (cdr goal)) 0))
-              (same-arity? (lambda (clause) (= (length (cdar clause)) goal-arity)))
-              (clauses (filter same-arity? all-clauses)))
-         (let loop ((clauses-to-try clauses))
-           (if (null? clauses-to-try)
-               (make-failure)
-               (let* ((current-clause (car clauses-to-try))
-                      (remaining-clauses (cdr clauses-to-try))
-                      (result (process-one goal current-clause bindings remaining-goals))
-                      (next-continuation (lambda () (loop remaining-clauses))))
-                 (if (failure? result)
-                   (next-continuation)
-                   (make-success
-                     (success-bindings result)
-                     (combine (success-continuation result) next-continuation))))))))
+    (define (insert-cut-point clause cut-point)
+      (let ((insert-cut-point-term
+             (lambda (term)
+               (cond ((and (pair? term) (eq? 'cut (car term)))
+                      (list 'cut cut-point))
+                     ((and (atom? term) (eq? 'cut term))
+                      (list 'cut cut-point))
+                     (else term)))))
+        (map insert-cut-point-term clause)))
+
+    (define (try-clauses goal bindings remaining-goals all-clauses)
+      (call/cc (lambda (cut-point)
+                 (let* ((goal-arity (if (pair? goal) (length (cdr goal)) 0))
+                        (same-arity? (lambda (clause) (= (length (cdar clause)) goal-arity)))
+                        (clauses (filter same-arity? all-clauses)))
+                   (let loop ((clauses-to-try clauses))
+                     (if (null? clauses-to-try)
+                         (make-failure)
+                         (let* ((current-clause (insert-cut-point (car clauses-to-try) cut-point))
+                                (remaining-clauses (cdr clauses-to-try))
+                                (next-continuation (lambda () (loop remaining-clauses)))
+                                (result (process-one goal current-clause bindings remaining-goals)))
+                           (if (failure? result)
+                               (next-continuation)
+                               (make-success
+                                (success-bindings result)
+                                (combine (success-continuation result) next-continuation))))))))))
 
     (define (prove-all goals bindings)
       (cond ((failure? bindings) (make-failure))
-            ((null? goals) (make-success bindings #f))
+            ((null? goals) (make-success bindings (lambda () (make-failure))))
             (else (prove (car goals) bindings (cdr goals)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -308,14 +289,14 @@
 
     (define (run-query goals)
       (let ((variables (variables-in goals)))
-        (reset (let loop ((continuation (lambda () (prove-all goals *empty-bindings*))))
-                 (let ((result (continuation)))
-                   (if (failure? result)
-                       (begin (display "No.") (newline) (newline))
-                       (begin (display-solution variables (success-bindings result))
-                              (newline)
-                              (when (and (success-continuation result) (continue-prompt?))
-                                (loop (success-continuation result))))))))))
+        (let loop ((continuation (lambda () (prove-all goals *empty-bindings*))))
+          (let ((result (continuation)))
+            (if (failure? result)
+                (begin (display "No.") (newline) (newline))
+                (begin (display-solution variables (success-bindings result))
+                       (newline)
+                       (when (and (success-continuation result) (continue-prompt?))
+                         (loop (success-continuation result)))))))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; 8. Macro for defining pure Scheme predicates
@@ -353,8 +334,8 @@
 
     (define-predicate (fail) (make-failure))
 
-    (define-predicate (cut)
-      (shift k (prove-all (current-goals) (current-bindings))))
+    (define-predicate (cut cut-point)
+      (cut-point (prove-all (current-goals) (current-bindings))))
 
     (define-predicate (= term1 term2)
       (prove-all (current-goals) (unify term1 term2 (current-bindings))))
@@ -437,12 +418,12 @@
 
     (define-predicate (bagof template goal result-bag)
       (parameterize ((solutions-accumulator (list)))
-        (reset (prove-all (list goal (list 'add-solution-and-fail template) 'fail) (current-bindings)))
+        (prove-all (list goal (list 'add-solution-and-fail template) 'fail) (current-bindings))
         (prove-all (current-goals) (unify result-bag (reverse (solutions-accumulator)) (current-bindings)))))
 
     (define-predicate (setof template goal result-set)
       (parameterize ((solutions-accumulator (list)))
-        (reset (prove-all (list goal (list 'add-solution-and-fail template) 'fail) (current-bindings)))
+        (prove-all (list goal (list 'add-solution-and-fail template) 'fail) (current-bindings))
         (let* ((sorter (lambda (a b) (string<? (object->string a) (object->string b))))
                (values (list-sort sorter (delete-duplicates (reverse (solutions-accumulator)) equal?)))
                (new-bindings (unify result-set values (current-bindings))))
