@@ -23,7 +23,7 @@ sagittarius:
 	sagittarius -S .sld -r 7 -L . test7.scm
 
 chez:
-	CHEZSCHEMELIBDIRS=${CHEZSCHEMELIBDIRS}:$(shell pwd) scheme --script test6.scm
+	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD --script test6.scm
 
 clean:
 	rm -f *.log
