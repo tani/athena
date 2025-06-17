@@ -16,11 +16,11 @@
 
           rlwrapPkgs = {
             gauche = makeRlwrap "gosh" "${pkgs.gauche}/bin/gosh";
-            gambit = makeRlwrap "gsi" "${pkgs.gambit}/bin/gsi";
             chicken = makeRlwrap "csi" "${pkgs.chicken}/bin/csi";
             sagittarius-scheme = makeRlwrap "sagittarius" "${pkgs.sagittarius-scheme}/bin/sagittarius";
             chibi = makeRlwrap "chibi-scheme" "${pkgs.chibi}/bin/chibi-scheme";
             guile = makeRlwrap "guile" "${pkgs.guile}/bin/guile";
+            chez = makeRlwrap "scheme" "${pkgs.chez}/bin/scheme";
           };
 
           chickenEggs = pkgs.chickenPackages_5.chickenEggs;
@@ -28,11 +28,13 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               rlwrap
-              gauche gambit chicken sagittarius-scheme chibi guile
+              gauche chicken sagittarius-scheme chibi guile chez
             ] ++ (with rlwrapPkgs; [
-              gauche gambit chicken sagittarius-scheme chibi guile
+              gauche chicken sagittarius-scheme chibi guile chez
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 awful r7rs
+            ]) ++ (with akkuPackages; [
+              chez-srfi
             ]);
 
             shellHook = ''

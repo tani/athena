@@ -1,10 +1,3 @@
-;; test.scm — SRFI‑64 tests for mini‑Prolog (record‑based version)
-;; Expanded version with more tests.
-
-(import (scheme base)
-        (srfi 64)
-        (prolog))
-
 (test-begin "prolog")
 
 ;; -----------------------------------------------------------
@@ -90,7 +83,7 @@
       (add-clause! clause2)
       (test-equal "get-clauses after two adds" (list clause1 clause2) (get-clauses 'parent))
       (test-equal "get-clauses for unknown pred" '() (get-clauses 'unknown))
-      
+
       (<-- (father ?x ?y) (male ?x) (parent ?x ?y))
       (test-equal "<- overwrites" 1 (length (get-clauses 'father))))))
 
@@ -134,7 +127,7 @@
   (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
 
   (test-assert "== succeeds for bound vars" (not (failure? (prove-all '((= ?x foo) (== ?x foo)) *empty-bindings*))))
-  (test-assert "== fails for different vals" (failure? (prove-all '((= ?x foo) (== ?x bar)) *empty-bindings*))))
+  (test-assert "== fails for different vals" (failure? (prove-all '((= ?x foo) (== ?x bar)) *empty-bindings*)))
 
   (test-assert "not/1 succeeds" (not (failure? (prove-all '((not (parent susan ?_))) *empty-bindings*))))
   (test-assert "not/1 fails" (failure? (prove-all '((not (parent john mary))) *empty-bindings*)))
@@ -155,9 +148,9 @@
   (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
   (test-equal "setof gets unique sorted" '(david mary michael susan) (solve-first '((setof ?x (ancestor john ?x) ?o)) '?o))
   (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '((bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
-  
+
   (test-equal "cut prunes choices" '(1) (solve-all '((bar ?v)) '?v))
-  (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x))
+  (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
 
 ;; -----------------------------------------------------------
 ;; 6. Type & Dynamic predicates
@@ -186,7 +179,7 @@
   (test-equal "or/2 all solutions" '(ok also-ok) (solve-all '((or (= ?r ok) (= ?r also-ok))) '?r))
 
   (test-assert "member/2 success" (not (failure? (prove-all '((member b (a b c))) *empty-bindings*))))
-  (test-assert "member/2 failure" (failure? (prove-all '((member x (a b c))) *empty-bindings*))))
+  (test-assert "member/2 failure" (failure? (prove-all '((member x (a b c))) *empty-bindings*)))
   (test-equal "member/2 generate" '(a b c) (solve-all '((member ?x (a b c))) '?x))
 
   (test-equal "append/3 forward" '(a b c d) (solve-first '((append (a b) (c d) ?x)) '?x))
@@ -199,7 +192,7 @@
                        (else (let ((r (cont)))
                                (and (not (failure? r))
                                     (loop (success-continuation r) (+ n 1))))))))
-  (test-assert "true/0 always succeeds" (not (failure? (prove-all '((true)) *empty-bindings*))))
+  (test-assert "true/0 always succeeds" (not (failure? (prove-all '((true)) *empty-bindings*)))))
 
 ;; -----------------------------------------------------------
 
