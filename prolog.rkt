@@ -1,20 +1,41 @@
-#lang racket/base
-(require racket/include
-         racket/port
-         (only-in srfi/1 alist-delete filter delete-duplicates alist-cons))
+#!r6rs
+(library (prolog)
+  ;; Public symbols -----------------------------------------------------------
+  (export
+    variable? named-variable? atom?
+    failure? success?
+    *empty-bindings*
+    extend-bindings substitute-bindings variables-in
+    replace-anonymous-variables unify object->string
+    remove-clauses-with-arity!
+    clause-database add-clause! get-clauses <- <-- define-predicate
+    prove-all ?-
+    success-bindings success-continuation prolog)
 
-(struct failure () #:transparent #:constructor-name make-failure)
-(struct success (bindings continuation) #:transparent #:constructor-name make-success)
+  ;; Imports ------------------------------------------------------------------
+  (import (rnrs)
+          (rnrs eval)
+          (only (srfi :1) alist-delete alist-cons delete-duplicates)
+          (only (srfi :39) parameterize make-parameter)
+          (only (racket include) include))
 
-(define (object->string object)
-  (with-output-to-string (lambda () (write object))))
+  ;; Implementation -----------------------------------------------------------
+  (begin
+    (define-record-type (<failure> make-failure failure?)
+      (fields))
 
-(define (list-sort comparator lst)
-  (sort lst comparator))
-(define flush-output-port flush-output)
+    (define-record-type (<success> make-success success?)
+      (fields
+        (immutable bindings success-bindings)
+        (immutable continuation success-continuation)))
 
-(include "prolog.scm")
+    (define (object->string object)
+      (call-with-string-output-port
+        (lambda (p) (write object p))))
 
-(*current-lisp-environment* (make-base-namespace))
+    (include "prolog.scm")
 
-(provide (all-defined-out))
+    (*current-lisp-environment*
+      (environment '(rnrs base)))
+  )
+)

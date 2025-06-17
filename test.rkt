@@ -1,7 +1,8 @@
 #lang racket/base
-(require racket/include
+(require rnrs
+         srfi/64
          "prolog.rkt"
-         srfi/64)
+         racket/include)
 
 (include "test.scm")
 
