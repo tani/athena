@@ -12,10 +12,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-22.04-arm, macos-latest, macos-14]
-        runner: [ubuntu-latest, ubuntu-22.04-arm, macos-latest, macos-14]
-        impl: [gauche, guile, chicken, chibi, sagittarius, gambit]
+        impl: [gauche, guile, chicken, chibi, sagittarius, gambit, racket]
+        exclude:
+          - os: macos-latest
+            impl: racket
+          - os: macos-14
+            impl: racket
 
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -24,4 +28,4 @@ jobs:
         with:
           nix_conf: extra-experimental-features = nix-command flakes
 
-      - run: nix develop -c make IMPLS=${{ matrix.impl }}
+      - run: nix develop -c make ${{ matrix.impl }}

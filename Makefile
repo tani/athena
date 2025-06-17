@@ -1,4 +1,4 @@
-IMPLS=gauche guile chicken chibi sagittarius gambit chez
+IMPLS=racket gauche guile chicken chibi sagittarius gambit chez
 
 all: $(IMPLS)
 
@@ -9,6 +9,7 @@ gauche:
 
 chicken:
 	csi -R r7rs -e '(include "prolog.sld")' -s test7.scm
+
 racket:
 	racket test.rkt
 

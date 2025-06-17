@@ -28,15 +28,15 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               rlwrap
-              gauche chicken sagittarius-scheme chibi guile chez
+              gauche chicken sagittarius-scheme chibi guile chez chez-srfi
             ] ++ (with rlwrapPkgs; [
               gauche chicken sagittarius-scheme chibi guile chez
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 awful r7rs
-            ]) ++ (with akkuPackages; [
-              chez-srfi
+            ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
+              racket
             ]);
-
+            CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''
               echo "Scheme dev shell loaded"
             '';
