@@ -9,6 +9,8 @@ gauche:
 
 chicken:
 	csi -R r7rs -e '(include "prolog.sld")' -s test7.scm
+racket:
+	racket test.rkt
 
 guile:
 	guile -x .sld -L . test7.scm
