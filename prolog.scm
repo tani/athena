@@ -337,13 +337,11 @@
         (*dynamic-parameters* new-dynamic-parameters)
         new-parameter))))
 
-(define-syntax prolog
-  (syntax-rules ()
-    ((_ body ...)
-     (call/cc
-       (lambda (cut-point)
-         (let ((goals (insert-cut-point '(body ...) cut-point)))
-           (prove-all goals *empty-bindings*)))))))
+(define (prolog body)
+  (call/cc
+    (lambda (cut-point)
+      (let ((goals (insert-cut-point body cut-point)))
+        (prove-all goals *empty-bindings*)))))
 
 (define *solution-accumulator* (make-parameter (list)))
 (define *current-lisp-environment* (make-parameter #f))

@@ -8,7 +8,7 @@
     replace-anonymous-variables unify object->string
     remove-clauses-with-arity!
     clause-database add-clause! get-clauses <- <-- define-predicate
-    prove-all ?-
+    prove-all ?- *current-lisp-environment*
     success-bindings success-continuation prolog)
 
   ;; Imports ------------------------------------------------------------------

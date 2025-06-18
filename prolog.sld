@@ -5,6 +5,7 @@
     extend-bindings substitute-bindings variables-in replace-anonymous-variables
     unify object->string remove-clauses-with-arity! clause-database
     add-clause! get-clauses <- <-- define-predicate prove-all ?-
+    *current-lisp-environment*
     success-bindings success-continuation prolog)
 
   (import (scheme base)
