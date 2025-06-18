@@ -364,7 +364,7 @@
   (cut-point (prove-all (*current-remaining-goals*) (*current-bindings*))))
 
 (define-predicate (= term1 term2)
-  (let* ((new-bindings (unify term1 term2 (*current-bindings*))))
+  (let ((new-bindings (unify term1 term2 (*current-bindings*))))
     (prove-all (*current-remaining-goals*) new-bindings)))
 
 (define-predicate (== term1 term2)
@@ -388,13 +388,13 @@
     (prove-all (*current-remaining-goals*) new-bindings)))
 
 (define-predicate (atom term)
-  (let* ((value (substitute-bindings (*current-bindings*) term)))
+  (let ((value (substitute-bindings (*current-bindings*) term)))
     (if (and (symbol? value) (not (variable? value)))
       (prove-all (*current-remaining-goals*) (*current-bindings*))
       (make-failure))))
 
 (define-predicate (atomic term)
-  (let* ((value (substitute-bindings (*current-bindings*) term)))
+  (let ((value (substitute-bindings (*current-bindings*) term)))
     (if (and (not (variable? value)) (not (pair? value)))
       (prove-all (*current-remaining-goals*) (*current-bindings*))
       (make-failure))))
@@ -410,7 +410,7 @@
     (make-failure)))
 
 (define-predicate (number term)
-  (let* ((value (substitute-bindings (*current-bindings*) term)))
+  (let*((value (substitute-bindings (*current-bindings*) term)))
     (if (number? value)
       (prove-all (*current-remaining-goals*) (*current-bindings*))
       (make-failure))))
