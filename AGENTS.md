@@ -4,17 +4,13 @@ This repository implements the Athena logic programming engine in Scheme.
 
 ## Development
 
-1. Enter the Nix development environment:
+1. Run any command within the Nix development environment using the `nix develop -c` prefix. For example, to run tests for a specific implementation:
    ```bash
-   nix develop
+   nix develop -c make IMPLS=gauche
    ```
-2. Run tests for a specific implementation:
+   To execute the full test matrix:
    ```bash
-   make IMPLS=gauche
-   ```
-   or run the full matrix with:
-   ```bash
-   make all
+   nix develop -c make all
    ```
 
 ## Guidelines for Contributors
