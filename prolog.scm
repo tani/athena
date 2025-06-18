@@ -343,9 +343,6 @@
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))
 
-(define-predicate (fail)
-  (make-failure))
-
 (define-predicate (cut cut-point)
   (cut-point (prove-all (current-remaining-goals) (current-bindings))))
 
@@ -465,12 +462,13 @@
 
 (primitive-clause-database (current-clause-database))
 
+(<-- fail or)
+(<-- true and)
+
 (<-- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
 (<-- (lisp ?expression) (--lisp-eval-internal ? ?expression))
 
 (<-- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
-
-
 
 (<-- (member ?item (?item . ?)))
 (<- (member ?item (? . ?rest)) (member ?item ?rest))
@@ -481,8 +479,6 @@
 
 (<-- (repeat))
 (<- (repeat) (repeat))
-
-(<-- (true))
 
 (<-- (if ?cond ?then ?else) (call ?cond) (cut) (call ?then))
 (<- (if ?cond ?then ?else) (call ?else))
