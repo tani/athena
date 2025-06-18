@@ -199,9 +199,21 @@
 ;; 7. Library predicates (or/member/append/repeat/true)
 ;; -----------------------------------------------------------
 (test-group "library"
-  (test-equal "or/2 first succeeds" 'ok (solve-first '((or (= ?r ok) (= ?r ng))) '?r))
-  (test-equal "or/2 second succeeds" 'ok (solve-first '((or (= 1 2) (= ?r ok))) '?r))
-  (test-equal "or/2 all solutions" '(ok also-ok) (solve-all '((or (= ?r ok) (= ?r also-ok))) '?r))
+  (test-equal "or variadic first succeeds"
+              'ok
+              (solve-first '((or (= ?r ok) (= ?r ng) (= ?r nope))) '?r))
+  (test-equal "or variadic middle succeeds"
+              'ok
+              (solve-first '((or (= 1 2) (= ?r ok) (= ?r ng))) '?r))
+  (test-equal "or variadic all solutions"
+              '(ok also-ok stop)
+              (solve-all '((or (= ?r ok) (= ?r also-ok) (= ?r stop))) '?r))
+
+  (test-equal "and variadic success"
+              '(ok yes)
+              (solve-first '((and (= ?a ok) (= ?b yes))) '(?a ?b)))
+  (test-assert "and variadic failure"
+               (null? (solve-all '((and (= 1 2) (= ?x 3))) '?x)))
 
   (test-assert "member/2 success" (not (null? (solve-all '((member b (a b c))) 'dummy))))
   (test-assert "member/2 failure" (null? (solve-all '((member x (a b c))) 'dummy)))
