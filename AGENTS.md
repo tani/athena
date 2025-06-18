@@ -13,6 +13,8 @@ This repository implements the Athena logic programming engine in Scheme.
    nix develop -c make all
    ```
 
+2. You need to finalize editing with the full test matrix.
+
 ## Guidelines for Contributors
 
 - Ensure all tests pass before committing.
