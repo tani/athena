@@ -52,7 +52,8 @@
   (test-assert "unify list-list failure (element)" (failure? (unify '(a x) '(a y) *empty-bindings*)))
 
   (test-assert "occurs-check simple" (failure? (unify '?x '(foo ?x) *empty-bindings*)))
-  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) *empty-bindings*))))
+  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) *empty-bindings*)))
+  )
 
 ;; -----------------------------------------------------------
 ;; 3. Clause DB operations
@@ -103,17 +104,17 @@
 (<- (bar ?x) (foo ?x) (cut) (= ?x 1))
 
 (test-group "built-ins"
-  (test-assert "fail predicate" (failure? (prove-all '((fail)) *empty-bindings*)))
-  (test-assert "true predicate" (not (failure? (prove-all '((true)) *empty-bindings*))))
+  (test-assert "fail predicate" (null? (solve-all '((fail)) 'dummy)))
+  (test-assert "true predicate" (not (null? (solve-all '((true)) 'dummy))))
 
   (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
   (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
 
-  (test-assert "== succeeds for bound vars" (not (failure? (prove-all '((= ?x foo) (== ?x foo)) *empty-bindings*))))
-  (test-assert "== fails for different vals" (failure? (prove-all '((= ?x foo) (== ?x bar)) *empty-bindings*)))
+  (test-assert "== succeeds for bound vars" (not (null? (solve-all '((= ?x foo) (== ?x foo)) 'dummy))))
+  (test-assert "== fails for different vals" (null? (solve-all '((= ?x foo) (== ?x bar)) 'dummy)))
 
-  (test-assert "not/1 succeeds" (not (failure? (prove-all '((not (parent susan ?_))) *empty-bindings*))))
-  (test-assert "not/1 fails" (failure? (prove-all '((not (parent john mary))) *empty-bindings*)))
+  (test-assert "not/1 succeeds" (not (null? (solve-all '((not (parent susan ?_))) 'dummy))))
+  (test-assert "not/1 fails" (null? (solve-all '((not (parent john mary))) 'dummy)))
 
   (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
   (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
@@ -121,7 +122,7 @@
   (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
-  (test-equal "if/2 else fails" #t (failure? (prove-all '((if (= a b) (= ?r ok))) *empty-bindings*)))
+  (test-equal "if/2 else fails" #t (null? (solve-all '((if (= a b) (= ?r ok))) 'dummy)))
 
 
   (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
@@ -139,19 +140,20 @@
 ;; 6. Type & Dynamic predicates
 ;; -----------------------------------------------------------
 (test-group "type-and-dynamic-predicates"
-  (test-assert "atom/1 success" (not (failure? (prove-all '((atom foo)) *empty-bindings*))))
-  (test-assert "atom/1 failure on var" (failure? (prove-all '((atom ?X)) *empty-bindings*)))
-  (test-assert "atomic/1 success on number" (not (failure? (prove-all '((atomic 123)) *empty-bindings*))))
-  (test-assert "atomic/1 failure on list" (failure? (prove-all '((atomic (a b))) *empty-bindings*)))
-  (test-assert "var/1 success on unbound" (not (failure? (prove-all '((var ?X)) *empty-bindings*))))
-  (test-assert "var/1 failure on bound" (failure? (prove-all '((= ?X 1) (var ?X)) *empty-bindings*)))
-  (test-assert "ground/1 success on bound var" (not (failure? (prove-all '((= ?X (a b)) (ground ?X)) *empty-bindings*))))
-  (test-assert "ground/1 failure on partial" (failure? (prove-all '((ground (a ?Y))) *empty-bindings*)))
-  (test-assert "number/1 success" (not (failure? (prove-all '((number 42)) *empty-bindings*))))
-  (test-assert "number/1 failure on atom" (failure? (prove-all '((number abc)) *empty-bindings*)))
+  (test-assert "atom/1 success" (not (null? (solve-all '((atom foo)) 'dummy))))
+  (test-assert "atom/1 failure on var" (null? (solve-all '((atom ?X)) 'dummy)))
+  (test-assert "atomic/1 success on number" (not (null? (solve-all '((atomic 123)) 'dummy))))
+  (test-assert "atomic/1 failure on list" (null? (solve-all '((atomic (a b))) 'dummy)))
+  (test-assert "var/1 success on unbound" (not (null? (solve-all '((var ?X)) 'dummy))))
+  (test-assert "var/1 failure on bound" (null? (solve-all '((= ?X 1) (var ?X)) 'dummy)))
+  (test-assert "ground/1 success on bound var" (not (null? (solve-all '((= ?X (a b)) (ground ?X)) 'dummy))))
+  (test-assert "ground/1 failure on partial" (null? (solve-all '((ground (a ?Y))) 'dummy)))
+  (test-assert "number/1 success" (not (null? (solve-all '((number 42)) 'dummy))))
+  (test-assert "number/1 failure on atom" (null? (solve-all '((number abc)) 'dummy)))
   
   (test-equal "dynamic-put/get" 42 (solve-first '((dynamic-put my-var 42) (dynamic-get my-var ?V)) '?V))
-  (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V)))
+  (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V))
+  )
 
 ;; -----------------------------------------------------------
 ;; 7. Library predicates (or/member/append/repeat/true)
@@ -161,8 +163,8 @@
   (test-equal "or/2 second succeeds" 'ok (solve-first '((or (= 1 2) (= ?r ok))) '?r))
   (test-equal "or/2 all solutions" '(ok also-ok) (solve-all '((or (= ?r ok) (= ?r also-ok))) '?r))
 
-  (test-assert "member/2 success" (not (failure? (prove-all '((member b (a b c))) *empty-bindings*))))
-  (test-assert "member/2 failure" (failure? (prove-all '((member x (a b c))) *empty-bindings*)))
+  (test-assert "member/2 success" (not (null? (solve-all '((member b (a b c))) 'dummy))))
+  (test-assert "member/2 failure" (null? (solve-all '((member x (a b c))) 'dummy)))
   (test-equal "member/2 generate" '(a b c) (solve-all '((member ?x (a b c))) '?x))
 
   (test-equal "append/3 forward" '(a b c d) (solve-first '((append (a b) (c d) ?x)) '?x))
@@ -170,12 +172,13 @@
   (test-equal "append/3 all splits" 4 (length (solve-all '((append ?x ?y (a b c))) '(?x ?y))))
 
   (test-assert "repeat generates multiple solutions"
-               (let loop ((cont (lambda () (prove-all '((repeat)) *empty-bindings*))) (n 0))
-                 (cond ((>= n 5) #t) ; check for at least 5 solutions
-                       (else (let ((r (cont)))
-                               (and (not (failure? r))
-                                    (loop (success-continuation r) (+ n 1))))))))
-  (test-assert "true/0 always succeeds" (not (failure? (prove-all '((true)) *empty-bindings*)))))
+               (let loop ((n 0))
+                 (if (>= n 5)
+                     #t
+                     (and (solve-first '((repeat)) 'dummy)
+                          (loop (+ n 1))))))
+  (test-assert "true/0 always succeeds" (not (null? (solve-all '((true)) 'dummy))))
+  )
 
 ;; -----------------------------------------------------------
 
@@ -185,7 +188,7 @@
 
 (test-group "advanced-cut-behavior"
 
-  ;; テスト用の述語を定義
+  ;; test predicates
   (<- (q 1))
   (<- (q 2))
 
@@ -195,6 +198,7 @@
 
   (test-equal "hard failure in p(x) should not block backtracking in q(y)"
               2
-              (solve-first '((q ?y) (p ?y)) '?y)))
+              (solve-first '((q ?y) (p ?y)) '?y))
+  )
 
 (test-end "prolog")
