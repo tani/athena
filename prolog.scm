@@ -382,7 +382,7 @@
          (next-goals (cons substituted-goal (current-remaining-goals))))
     (prove-all next-goals (current-bindings))))
 
-(define-predicate (lisp-eval-internal result-variable expression)
+(define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
          (evaluated-result (eval scheme-expression (current-lisp-environment)))
          (result-term (substitute-bindings (current-bindings) result-variable))
@@ -430,7 +430,7 @@
     (prove-all (current-remaining-goals) new-bindings)))
 
 
-(define-predicate (add-solution-and-fail template)
+(define-predicate (--add-solution-and-fail template)
   (let* ((substituted-template (substitute-bindings (current-bindings) template))
          (new-solutions (cons substituted-template (current-solution-accumulator))))
     (current-solution-accumulator new-solutions))
@@ -438,7 +438,7 @@
 
 (define-predicate (bagof template goal result-bag)
   (parameterize ((current-solution-accumulator '()))
-    (let ((new-goals (list goal (list 'add-solution-and-fail template) 'fail)))
+    (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
       (prove-all new-goals (current-bindings)))
     (let* ((reversed-solutions (reverse (current-solution-accumulator)))
            (new-bindings (unify result-bag reversed-solutions (current-bindings)))
@@ -451,7 +451,7 @@
           (string-b (object->string b)))
       (string<? string-a string-b)))
   (parameterize ((current-solution-accumulator '()))
-    (let ((new-goals (list goal (list 'add-solution-and-fail template) 'fail)))
+    (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
       (prove-all new-goals (current-bindings)))
     (let* ((collected-solutions (current-solution-accumulator))
            (unique-solutions (delete-duplicates collected-solutions equal?))
@@ -459,10 +459,12 @@
            (new-bindings (unify result-set sorted-solutions (current-bindings)))
            (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
+
 (primitive-clause-database (current-clause-database))
-(<-- (lisp ?result ?expression) (lisp-eval-internal ?result ?expression))
-(<-- (is ?result ?expression) (lisp-eval-internal ?result ?expression))
-(<-- (lisp ?expression) (lisp-eval-internal ? ?expression))
+
+(<-- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
+(<-- (lisp ?expression) (--lisp-eval-internal ? ?expression))
+(<-- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
 
 (<-- (or ?goal-a ?goal-b) (call ?goal-a))
 (<- (or ?goal-a ?goal-b) (call ?goal-b))
@@ -486,4 +488,5 @@
 
 (<-- (not ?goal) (call ?goal) (cut) (fail))
 (<- (not ?goal))
+
 (standard-clause-database (current-clause-database))
