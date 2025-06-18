@@ -310,14 +310,8 @@
     ((_ (name . arguments) . body)
      (set-clauses! 'name (lambda arguments . body)))))
 
-(define (resolve-binding bindings term)
-  (let ((resolved-value (substitute-bindings bindings term)))
-    (if (variable? resolved-value)
-      resolved-value
-      (substitute-bindings bindings resolved-value))))
-
 (define (ground? bindings term)
-  (let ((resolved-term (resolve-binding bindings term)))
+  (let ((resolved-term (substitute-bindings bindings term)))
     (cond
       ((variable? resolved-term) #f)
       ((pair? resolved-term)
@@ -406,7 +400,7 @@
       (make-failure))))
 
 (define-predicate (var term)
-  (if (variable? (resolve-binding (*current-bindings*) term))
+  (if (variable? (substitute-bindings (*current-bindings*) term))
     (prove-all (*current-remaining-goals*) (*current-bindings*))
     (make-failure)))
 
