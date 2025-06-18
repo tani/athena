@@ -18,7 +18,7 @@ END {
 
     # 4. Replace any sequence of whitespace with a single newline so that all tokens
     #    are separated by newlines.
-    gsub(/[ \t\r\n]+/, "\n", code)
+    gsub(/[ \t\r\n]+/, "", code)
 
     # 5. Split `code` into array `tokens` using newline as separator.
     n = split(code, tokens, "\n")
