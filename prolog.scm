@@ -21,7 +21,6 @@
 ;; 4. Bindings and unification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define *empty-bindings* '((#t . #t)))
 
 (define (variable? term)
   (and (symbol? term)
@@ -44,12 +43,12 @@
 
 (define (extend-bindings variable value bindings)
   (cons (cons variable value)
-        (if (eq? bindings *empty-bindings*) '() bindings)))
+        (if (null? bindings) '() bindings)))
 
 (define (substitute-bindings bindings expression)
   (cond
     ((failure? bindings) (make-failure))
-    ((eq? bindings *empty-bindings*) expression)
+    ((null? bindings) expression)
     ((and (variable? expression) (get-binding expression bindings))
      (let ((value (lookup-variable expression bindings)))
        (substitute-bindings bindings value)))
@@ -79,7 +78,7 @@
             (cdr-replaced (replace-anonymous-variables (cdr expression))))
        (cons car-replaced cdr-replaced)))))
 
-(define *occurs-check* (make-parameter #t))
+(define current-occurs-check (make-parameter #t))
 
 (define (unify term1 term2 bindings)
   (define (occurs-check? variable expression bindings)
@@ -101,7 +100,7 @@
       ((and (variable? value) (get-binding value bindings))
        (let ((bound-term (lookup-variable value bindings)))
          (unify variable bound-term bindings)))
-      ((and (*occurs-check*) (occurs-check? variable value bindings))
+      ((and (current-occurs-check) (occurs-check? variable value bindings))
        (make-failure))
       (else (extend-bindings variable value bindings))))
   (cond
@@ -118,17 +117,17 @@
 ;; 5. Clause database
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define clause-database (make-parameter '()))
+(define current-clause-database (make-parameter '()))
 
 (define (get-clauses predicate-symbol)
-  (let ((entry (assoc predicate-symbol (clause-database))))
+  (let ((entry (assoc predicate-symbol (current-clause-database))))
     (if entry (cdr entry) '())))
 
 (define (set-clauses! predicate-symbol clauses)
-  (let* ((current-db (clause-database))
+  (let* ((current-db (current-clause-database))
          (cleaned-db (alist-delete predicate-symbol current-db eq?))
          (new-db (alist-cons predicate-symbol clauses cleaned-db)))
-    (clause-database new-db)))
+    (current-clause-database new-db)))
 
 (define (add-clause! clause)
   (let* ((predicate-symbol (caar clause))
@@ -159,8 +158,8 @@
 ;; 6. Prover engine
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define *current-bindings* (make-parameter *empty-bindings*))
-(define *current-remaining-goals* (make-parameter '()))
+(define current-bindings (make-parameter '()))
+(define current-remaining-goals (make-parameter '()))
 
 (define (rename-vars expression)
   (define (sublis alist tree)
@@ -196,8 +195,8 @@
           (make-success bindings new-continuation))))))
 
 (define (prove goal bindings remaining-goals)
-  (parameterize ((*current-remaining-goals* remaining-goals)
-                 (*current-bindings* bindings))
+  (parameterize ((current-remaining-goals remaining-goals)
+                 (current-bindings bindings))
     (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
            (predicate-handler (get-clauses predicate-symbol)))
       (if (procedure? predicate-handler)
@@ -296,7 +295,7 @@
   (define (initial-continuation)
     (define (prove-with-cut cut-point)
       (let ((new-goals (insert-cut-point goals cut-point)))
-        (prove-all new-goals *empty-bindings*)))
+        (prove-all new-goals '())))
     (call/cc prove-with-cut))
 
   (query-loop initial-continuation))
@@ -320,15 +319,15 @@
          (and car-ground? cdr-ground?)))
       (else #t))))
 
-(define *dynamic-parameters* (make-parameter (list)))
+(define current-dynamic-parameters (make-parameter '()))
 
 (define (get-dynamic-parameter variable-symbol)
-  (let ((entry (assoc variable-symbol (*dynamic-parameters*))))
+  (let ((entry (assoc variable-symbol (current-dynamic-parameters))))
     (if entry
       (cdr entry)
       (let* ((new-parameter (make-parameter #f))
-             (new-dynamic-parameters (alist-cons variable-symbol new-parameter (*dynamic-parameters*))))
-        (*dynamic-parameters* new-dynamic-parameters)
+             (new-dynamic-parameters (alist-cons variable-symbol new-parameter (current-dynamic-parameters))))
+        (current-dynamic-parameters new-dynamic-parameters)
         new-parameter))))
 
 (define (solve-first goals term)
@@ -336,7 +335,7 @@
           (call/cc
             (lambda (cut-point)
               (let ((new-goals (insert-cut-point (replace-anonymous-variables goals) cut-point)))
-                (prove-all new-goals *empty-bindings*))))))
+                (prove-all new-goals '()))))))
     (and (not (failure? result))
          (substitute-bindings (success-bindings result) term))))
 
@@ -346,7 +345,7 @@
                  (call/cc
                    (lambda (cut-point)
                      (let ((new-goals (insert-cut-point (replace-anonymous-variables goals) cut-point)))
-                       (prove-all new-goals *empty-bindings*))))))
+                       (prove-all new-goals '()))))))
              (accumulator '()))
     (let ((result (continuation)))
       (if (failure? result)
@@ -354,78 +353,78 @@
           (loop (success-continuation result)
                 (cons (substitute-bindings (success-bindings result) term) accumulator))))))
 
-(define *solution-accumulator* (make-parameter (list)))
-(define *current-lisp-environment* (make-parameter #f))
+(define current-solution-accumulator (make-parameter '()))
+(define current-lisp-environment (make-parameter #f))
 
 (define-predicate (fail)
   (make-failure))
 
 (define-predicate (cut cut-point)
-  (cut-point (prove-all (*current-remaining-goals*) (*current-bindings*))))
+  (cut-point (prove-all (current-remaining-goals) (current-bindings))))
 
 (define-predicate (= term1 term2)
-  (let ((new-bindings (unify term1 term2 (*current-bindings*))))
-    (prove-all (*current-remaining-goals*) new-bindings)))
+  (let ((new-bindings (unify term1 term2 (current-bindings))))
+    (prove-all (current-remaining-goals) new-bindings)))
 
 (define-predicate (== term1 term2)
-  (let* ((substituted-term1 (substitute-bindings (*current-bindings*) term1))
-         (substituted-term2 (substitute-bindings (*current-bindings*) term2)))
+  (let* ((substituted-term1 (substitute-bindings (current-bindings) term1))
+         (substituted-term2 (substitute-bindings (current-bindings) term2)))
     (if (equal? substituted-term1 substituted-term2)
-      (let ((goals (*current-remaining-goals*)))
-        (prove-all goals (*current-bindings*)))
+      (let ((goals (current-remaining-goals)))
+        (prove-all goals (current-bindings)))
       (make-failure))))
 
 (define-predicate (call goal)
-  (let* ((substituted-goal (substitute-bindings (*current-bindings*) goal))
-         (next-goals (cons substituted-goal (*current-remaining-goals*))))
-    (prove-all next-goals (*current-bindings*))))
+  (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
+         (next-goals (cons substituted-goal (current-remaining-goals))))
+    (prove-all next-goals (current-bindings))))
 
 (define-predicate (lisp-eval-internal result-variable expression)
-  (let* ((scheme-expression (substitute-bindings (*current-bindings*) expression))
-         (evaluated-result (eval scheme-expression (*current-lisp-environment*)))
-         (result-term (substitute-bindings (*current-bindings*) result-variable))
-         (new-bindings (unify result-term evaluated-result (*current-bindings*))))
-    (prove-all (*current-remaining-goals*) new-bindings)))
+  (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
+         (evaluated-result (eval scheme-expression (current-lisp-environment)))
+         (result-term (substitute-bindings (current-bindings) result-variable))
+         (new-bindings (unify result-term evaluated-result (current-bindings))))
+    (prove-all (current-remaining-goals) new-bindings)))
 
 (define-predicate (atom term)
-  (let ((value (substitute-bindings (*current-bindings*) term)))
+  (let ((value (substitute-bindings (current-bindings) term)))
     (if (and (symbol? value) (not (variable? value)))
-      (prove-all (*current-remaining-goals*) (*current-bindings*))
+      (prove-all (current-remaining-goals) (current-bindings))
       (make-failure))))
 
 (define-predicate (atomic term)
-  (let ((value (substitute-bindings (*current-bindings*) term)))
+  (let ((value (substitute-bindings (current-bindings) term)))
     (if (and (not (variable? value)) (not (pair? value)))
-      (prove-all (*current-remaining-goals*) (*current-bindings*))
+      (prove-all (current-remaining-goals) (current-bindings))
       (make-failure))))
 
 (define-predicate (var term)
-  (if (variable? (substitute-bindings (*current-bindings*) term))
-    (prove-all (*current-remaining-goals*) (*current-bindings*))
+  (if (variable? (substitute-bindings (current-bindings) term))
+    (prove-all (current-remaining-goals) (current-bindings))
     (make-failure)))
 
 (define-predicate (ground term)
-  (if (ground? (*current-bindings*) term)
-    (prove-all (*current-remaining-goals*) (*current-bindings*))
+  (if (ground? (current-bindings) term)
+    (prove-all (current-remaining-goals) (current-bindings))
     (make-failure)))
 
 (define-predicate (number term)
-  (let*((value (substitute-bindings (*current-bindings*) term)))
+  (let*((value (substitute-bindings (current-bindings) term)))
     (if (number? value)
-      (prove-all (*current-remaining-goals*) (*current-bindings*))
+      (prove-all (current-remaining-goals) (current-bindings))
       (make-failure))))
 
 (define-predicate (dynamic-put variable-symbol value-expression)
   (let* ((parameter (get-dynamic-parameter variable-symbol))
-         (substituted-expression (substitute-bindings (*current-bindings*) value-expression))
-         (evaluated-value (eval substituted-expression (*current-lisp-environment*))))
+         (substituted-expression (substitute-bindings (current-bindings) value-expression))
+         (evaluated-value (eval substituted-expression (current-lisp-environment))))
     (parameter evaluated-value)
-    (prove-all (*current-remaining-goals*) (*current-bindings*))))
+    (prove-all (current-remaining-goals) (current-bindings))))
 
 (define-predicate (dynamic-get variable-symbol prolog-variable)
   (let* ((parameter (get-dynamic-parameter variable-symbol))
-         (new-bindings (unify prolog-variable (parameter) (*current-bindings*))))
-    (prove-all (*current-remaining-goals*) new-bindings)))
+         (new-bindings (unify prolog-variable (parameter) (current-bindings))))
+    (prove-all (current-remaining-goals) new-bindings)))
 
 (<-- (lisp ?result ?expression) (lisp-eval-internal ?result ?expression))
 (<-- (is ?result ?expression) (lisp-eval-internal ?result ?expression))
@@ -433,18 +432,18 @@
 
 
 (define-predicate (add-solution-and-fail template)
-  (let* ((substituted-template (substitute-bindings (*current-bindings*) template))
-         (new-solutions (cons substituted-template (*solution-accumulator*))))
-    (*solution-accumulator* new-solutions))
+  (let* ((substituted-template (substitute-bindings (current-bindings) template))
+         (new-solutions (cons substituted-template (current-solution-accumulator))))
+    (current-solution-accumulator new-solutions))
   (make-failure))
 
 (define-predicate (bagof template goal result-bag)
-  (parameterize ((*solution-accumulator* '()))
+  (parameterize ((current-solution-accumulator '()))
     (let ((new-goals (list goal (list 'add-solution-and-fail template) 'fail)))
-      (prove-all new-goals (*current-bindings*)))
-    (let* ((reversed-solutions (reverse (*solution-accumulator*)))
-           (new-bindings (unify result-bag reversed-solutions (*current-bindings*)))
-           (goals (*current-remaining-goals*)))
+      (prove-all new-goals (current-bindings)))
+    (let* ((reversed-solutions (reverse (current-solution-accumulator)))
+           (new-bindings (unify result-bag reversed-solutions (current-bindings)))
+           (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
 
 (define-predicate (setof template goal result-set)
@@ -452,14 +451,14 @@
     (let ((string-a (object->string a))
           (string-b (object->string b)))
       (string<? string-a string-b)))
-  (parameterize ((*solution-accumulator* '()))
+  (parameterize ((current-solution-accumulator '()))
     (let ((new-goals (list goal (list 'add-solution-and-fail template) 'fail)))
-      (prove-all new-goals (*current-bindings*)))
-    (let* ((collected-solutions (*solution-accumulator*))
+      (prove-all new-goals (current-bindings)))
+    (let* ((collected-solutions (current-solution-accumulator))
            (unique-solutions (delete-duplicates collected-solutions equal?))
            (sorted-solutions (list-sort sort-predicate unique-solutions))
-           (new-bindings (unify result-set sorted-solutions (*current-bindings*)))
-           (goals (*current-remaining-goals*)))
+           (new-bindings (unify result-set sorted-solutions (current-bindings)))
+           (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
 
 (<-- (or ?goal-a ?goal-b) (call ?goal-a))

@@ -17,10 +17,10 @@
   (test-equal "atom? for symbol" #t (atom? 'a))
   (test-equal "atom? for number" #t (atom? 123))
 
-  (test-equal "extend-bindings on empty" '((?x . 1)) (extend-bindings '?x 1 *empty-bindings*))
+  (test-equal "extend-bindings on empty" '((?x . 1)) (extend-bindings '?x 1 '()))
   (test-equal "extend-bindings on non-empty" '((?y . 2) (?x . 1)) (extend-bindings '?y 2 '((?x . 1))))
 
-  (let* ((bindings (extend-bindings '?x 'foo (extend-bindings '?y '(bar) *empty-bindings*))))
+  (let* ((bindings (extend-bindings '?x 'foo (extend-bindings '?y '(bar) '()))))
     (test-equal "substitute-bindings simple" 'foo (substitute-bindings bindings '?x))
     (test-equal "substitute-bindings with list" '(g foo (bar)) (substitute-bindings bindings '(g ?x ?y))))
 
@@ -36,23 +36,23 @@
 ;; 2. Unification
 ;; -----------------------------------------------------------
 (test-group "unify"
-  (test-equal "unify atom-atom success" *empty-bindings* (unify 'a 'a *empty-bindings*))
-  (test-assert "unify atom-atom mismatch" (failure? (unify 'a 'b *empty-bindings*)))
-  (test-assert "unify atom-list mismatch" (failure? (unify 'a '(a) *empty-bindings*)))
+  (test-equal "unify atom-atom success" '() (unify 'a 'a '()))
+  (test-assert "unify atom-atom mismatch" (failure? (unify 'a 'b '())))
+  (test-assert "unify atom-list mismatch" (failure? (unify 'a '(a) '())))
 
-  (test-equal "unify var-atom" '((?x . a)) (unify '?x 'a *empty-bindings*))
-  (test-equal "unify var-list" '((?x . (a b))) (unify '?x '(a b) *empty-bindings*))
+  (test-equal "unify var-atom" '((?x . a)) (unify '?x 'a '()))
+  (test-equal "unify var-list" '((?x . (a b))) (unify '?x '(a b) '()))
 
-  (test-equal "unify var-var link" '((?x . ?y)) (unify '?x '?y *empty-bindings*))
-  (let ((bindings (unify '?x '?y (unify '?y 'val *empty-bindings*))))
+  (test-equal "unify var-var link" '((?x . ?y)) (unify '?x '?y '()))
+  (let ((bindings (unify '?x '?y (unify '?y 'val '()))))
     (test-equal "unify var-var with one bound" 'val (substitute-bindings bindings '?x)))
 
-  (test-equal "unify list-list success" '((?x . c)) (unify '(a b ?x) '(a b c) *empty-bindings*))
-  (test-assert "unify list-list failure (length)" (failure? (unify '(a b) '(a b c) *empty-bindings*)))
-  (test-assert "unify list-list failure (element)" (failure? (unify '(a x) '(a y) *empty-bindings*)))
+  (test-equal "unify list-list success" '((?x . c)) (unify '(a b ?x) '(a b c) '()))
+  (test-assert "unify list-list failure (length)" (failure? (unify '(a b) '(a b c) '())))
+  (test-assert "unify list-list failure (element)" (failure? (unify '(a x) '(a y) '())))
 
-  (test-assert "occurs-check simple" (failure? (unify '?x '(foo ?x) *empty-bindings*)))
-  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) *empty-bindings*)))
+  (test-assert "occurs-check simple" (failure? (unify '?x '(foo ?x) '())))
+  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) '())))
   )
 
 ;; -----------------------------------------------------------
@@ -61,7 +61,7 @@
 (let ((clause1 '((parent alice bob)))
       (clause2 '((parent alice carol))))
   (test-group "clause-db"
-    (parameterize ((clause-database '())) ; fresh DB for this group
+    (parameterize ((current-clause-database '())) ; fresh DB for this group
       (add-clause! clause1)
       (test-equal "get-clauses after one add" (list clause1) (get-clauses 'parent))
       (add-clause! clause2)
