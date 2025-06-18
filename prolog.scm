@@ -255,10 +255,10 @@
 
 (define-syntax ?-
   (syntax-rules ()
-    ((_ . goals)
-     (run-query (replace-anonymous-variables 'goals)))))
+    ((_ goal)
+     (run-query (replace-anonymous-variables 'goal)))))
 
-(define (run-query goals)
+(define (run-query goal)
   (define (display-solution variables bindings)
     (if (null? variables)
       (display "Yes.")
@@ -287,7 +287,7 @@
     (let ((result (continuation)))
       (if (failure? result)
         (begin (display "No.") (newline))
-        (let ((variables (variables-in goals))
+        (let ((variables (variables-in goal))
               (bindings (success-bindings result))
               (next-continuation (success-continuation result)))
           (display-solution variables bindings)
@@ -297,7 +297,7 @@
 
   (define (initial-continuation)
     (define (prove-with-cut cut-point)
-      (let ((new-goals (insert-cut-point goals cut-point)))
+      (let ((new-goals (insert-cut-point (list goal) cut-point)))
         (prove-all new-goals '())))
     (call/cc prove-with-cut))
 
@@ -333,11 +333,11 @@
         (current-dynamic-parameters new-dynamic-parameters)
         new-parameter))))
 
-(define (prolog goals)
+(define (prolog goal)
   (call/cc
    (lambda (cut-point)
-     (let* ((replaced-goals (replace-anonymous-variables goals))
-            (cut-goals (insert-cut-point replaced-goals cut-point)))
+     (let* ((replaced-goal (replace-anonymous-variables goal))
+            (cut-goals (insert-cut-point (list replaced-goal) cut-point)))
        (prove-all `(,@cut-goals fail) '())))))
 
 (define current-solution-accumulator (make-parameter '()))

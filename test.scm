@@ -1,21 +1,21 @@
-(define (prepare-goals-with-cut goals cut-point)
-  (let* ((renamed-goals (replace-anonymous-variables goals))
-         (cut-goals (insert-cut-point renamed-goals cut-point)))
+(define (prepare-goal-with-cut goal cut-point)
+  (let* ((renamed-goal (replace-anonymous-variables goal))
+         (cut-goals (insert-cut-point (list renamed-goal) cut-point)))
     (prove-all cut-goals '())))
 
-(define (make-initial-continuation goals)
+(define (make-initial-continuation goal)
   (lambda ()
-    (let ((cont (lambda (cut-point) (prepare-goals-with-cut goals cut-point))))
+    (let ((cont (lambda (cut-point) (prepare-goal-with-cut goal cut-point))))
       (call/cc cont))))
 
-(define (solve-first goals term)
-  (let* ((initial-cont (make-initial-continuation goals))
+(define (solve-first goal term)
+  (let* ((initial-cont (make-initial-continuation goal))
          (result (initial-cont)))
     (and (not (failure? result))
          (substitute-bindings (success-bindings result) term))))
 
-(define (solve-all goals term)
-  (let ((initial-cont (make-initial-continuation goals)))
+(define (solve-all goal term)
+  (let ((initial-cont (make-initial-continuation goal)))
     (let loop ((continuation initial-cont) (accumulator '()))
       (let ((result (continuation)))
         (if (failure? result)
@@ -114,14 +114,14 @@
     (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
 
 
-    (test-equal "direct fact" 'mary (solve-first '((parent john ?child)) '?child))
-    (test-equal "all direct facts" '(mary michael) (solve-all '((parent john ?child)) '?child))
-    (test-equal "simple rule" 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
-    (test-equal "all simple rule" '(susan david) (solve-all '((grandparent john ?grandchild)) '?grandchild))
-    (test-equal "recursion first result" 'mary (solve-first '((ancestor john ?d)) '?d))
-    (test-equal "recursion all results" '(mary michael susan david) (solve-all '((ancestor john ?d)) '?d))
-    (test-equal "recursion backward query" 'mary (solve-first '((ancestor ?a susan)) '?a))
-    (test-assert "failing goal" (null? (solve-all '((parent david ?x)) '?x)))))
+    (test-equal "direct fact" 'mary (solve-first '(parent john ?child) '?child))
+    (test-equal "all direct facts" '(mary michael) (solve-all '(parent john ?child) '?child))
+    (test-equal "simple rule" 'susan (solve-first '(grandparent john ?grandchild) '?grandchild))
+    (test-equal "all simple rule" '(susan david) (solve-all '(grandparent john ?grandchild) '?grandchild))
+    (test-equal "recursion first result" 'mary (solve-first '(ancestor john ?d) '?d))
+    (test-equal "recursion all results" '(mary michael susan david) (solve-all '(ancestor john ?d) '?d))
+    (test-equal "recursion backward query" 'mary (solve-first '(ancestor ?a susan) '?a))
+    (test-assert "failing goal" (null? (solve-all '(parent david ?x) '?x)))))
 
 ;; -----------------------------------------------------------
 ;; 5. Built‑ins
@@ -143,56 +143,56 @@
     (<- (ancestor ?x ?y) (parent ?x ?y))
     (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
 
-    (test-assert "fail predicate" (null? (solve-all '((fail)) 'dummy)))
-  (test-assert "true predicate" (not (null? (solve-all '((true)) 'dummy))))
+    (test-assert "fail predicate" (null? (solve-all '(fail) 'dummy)))
+  (test-assert "true predicate" (not (null? (solve-all '(true) 'dummy))))
 
-  (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
-  (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
+  (test-equal "= binds simple var" 'foo (solve-first '(= ?x foo) '?x))
+  (test-equal "= binds complex terms" '(b) (solve-first '(= (a ?y) (a (b))) '?y))
 
-  (test-assert "== succeeds for bound vars" (not (null? (solve-all '((= ?x foo) (== ?x foo)) 'dummy))))
-  (test-assert "== fails for different vals" (null? (solve-all '((= ?x foo) (== ?x bar)) 'dummy)))
+  (test-assert "== succeeds for bound vars" (not (null? (solve-all '(and (= ?x foo) (== ?x foo)) 'dummy))))
+  (test-assert "== fails for different vals" (null? (solve-all '(and (= ?x foo) (== ?x bar)) 'dummy)))
 
-  (test-assert "not/1 succeeds" (not (null? (solve-all '((not (parent susan ?_))) 'dummy))))
-  (test-assert "not/1 fails" (null? (solve-all '((not (parent john mary))) 'dummy)))
+  (test-assert "not/1 succeeds" (not (null? (solve-all '(not (parent susan ?_)) 'dummy))))
+  (test-assert "not/1 fails" (null? (solve-all '(not (parent john mary)) 'dummy)))
 
-  (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
-  (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
+  (test-equal "call/1 simple" 'mary (solve-first '(call (parent john ?x)) '?x))
+  (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '(call (ancestor john ?gc)) '?gc))
 
-  (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
-  (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
-  (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
-  (test-equal "if/2 else fails" #t (null? (solve-all '((if (= a b) (= ?r ok))) 'dummy)))
+  (test-equal "if/3 then" 'yes (solve-first '(if (= a a) (= ?r yes) (= ?r no)) '?r))
+  (test-equal "if/3 else" 'no (solve-first '(if (= a b) (= ?r yes) (= ?r no)) '?r))
+  (test-equal "if/2 then" 'ok (solve-first '(if (parent john mary) (= ?r ok)) '?r))
+  (test-equal "if/2 else fails" #t (null? (solve-all '(if (= a b) (= ?r ok)) 'dummy)))
 
 
-  (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
-  (test-equal "lisp/2" 10 (solve-first '((lisp ?res (* 5 2))) '?res))
+  (test-equal "is (lisp alias)" 7 (solve-first '(is ?v (+ 3 4)) '?v))
+  (test-equal "lisp/2" 10 (solve-first '(lisp ?res (* 5 2)) '?res))
 
   (<- (item a)) (<- (item b)) (<- (item a))
-  (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
-  (test-equal "setof gets unique sorted" '(david mary michael susan) (solve-first '((setof ?x (ancestor john ?x) ?o)) '?o))
-  (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '((bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
+  (test-equal "bagof gets all solutions" '(mary michael) (solve-first '(bagof ?c (parent john ?c) ?l) '?l))
+  (test-equal "setof gets unique sorted" '(david mary michael susan) (solve-first '(setof ?x (ancestor john ?x) ?o) '?o))
+  (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '(and (bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
 
-  (test-equal "cut prunes choices" '(1) (solve-all '((bar ?v)) '?v))
-  (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
+  (test-equal "cut prunes choices" '(1) (solve-all '(bar ?v) '?v))
+  (test-equal "no cut finds all" '(1 2 3) (solve-all '(and (foo ?x) (= ?x ?x)) '?x)))
   )
 
 ;; -----------------------------------------------------------
 ;; 6. Type & Dynamic predicates
 ;; -----------------------------------------------------------
 (test-group "type-and-dynamic-predicates"
-  (test-assert "atom/1 success" (not (null? (solve-all '((atom foo)) 'dummy))))
-  (test-assert "atom/1 failure on var" (null? (solve-all '((atom ?X)) 'dummy)))
-  (test-assert "atomic/1 success on number" (not (null? (solve-all '((atomic 123)) 'dummy))))
-  (test-assert "atomic/1 failure on list" (null? (solve-all '((atomic (a b))) 'dummy)))
-  (test-assert "var/1 success on unbound" (not (null? (solve-all '((var ?X)) 'dummy))))
-  (test-assert "var/1 failure on bound" (null? (solve-all '((= ?X 1) (var ?X)) 'dummy)))
-  (test-assert "ground/1 success on bound var" (not (null? (solve-all '((= ?X (a b)) (ground ?X)) 'dummy))))
-  (test-assert "ground/1 failure on partial" (null? (solve-all '((ground (a ?Y))) 'dummy)))
-  (test-assert "number/1 success" (not (null? (solve-all '((number 42)) 'dummy))))
-  (test-assert "number/1 failure on atom" (null? (solve-all '((number abc)) 'dummy)))
+  (test-assert "atom/1 success" (not (null? (solve-all '(atom foo) 'dummy))))
+  (test-assert "atom/1 failure on var" (null? (solve-all '(atom ?X) 'dummy)))
+  (test-assert "atomic/1 success on number" (not (null? (solve-all '(atomic 123) 'dummy))))
+  (test-assert "atomic/1 failure on list" (null? (solve-all '(atomic (a b)) 'dummy)))
+  (test-assert "var/1 success on unbound" (not (null? (solve-all '(var ?X) 'dummy))))
+  (test-assert "var/1 failure on bound" (null? (solve-all '(and (= ?X 1) (var ?X)) 'dummy)))
+  (test-assert "ground/1 success on bound var" (not (null? (solve-all '(and (= ?X (a b)) (ground ?X)) 'dummy))))
+  (test-assert "ground/1 failure on partial" (null? (solve-all '(ground (a ?Y)) 'dummy)))
+  (test-assert "number/1 success" (not (null? (solve-all '(number 42) 'dummy))))
+  (test-assert "number/1 failure on atom" (null? (solve-all '(number abc) 'dummy)))
   
-  (test-equal "dynamic-put/get" 42 (solve-first '((dynamic-put my-var 42) (dynamic-get my-var ?V)) '?V))
-  (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V))
+  (test-equal "dynamic-put/get" 42 (solve-first '(and (dynamic-put my-var 42) (dynamic-get my-var ?V)) '?V))
+  (test-equal "dynamic-put overwrite" "new" (solve-first '(and (dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V))
   )
 
 ;; -----------------------------------------------------------
@@ -201,35 +201,35 @@
 (test-group "library"
   (test-equal "or variadic first succeeds"
               'ok
-              (solve-first '((or (= ?r ok) (= ?r ng) (= ?r nope))) '?r))
+              (solve-first '(or (= ?r ok) (= ?r ng) (= ?r nope)) '?r))
   (test-equal "or variadic middle succeeds"
               'ok
-              (solve-first '((or (= 1 2) (= ?r ok) (= ?r ng))) '?r))
+              (solve-first '(or (= 1 2) (= ?r ok) (= ?r ng)) '?r))
   (test-equal "or variadic all solutions"
               '(ok also-ok stop)
-              (solve-all '((or (= ?r ok) (= ?r also-ok) (= ?r stop))) '?r))
+              (solve-all '(or (= ?r ok) (= ?r also-ok) (= ?r stop)) '?r))
 
   (test-equal "and variadic success"
               '(ok yes)
-              (solve-first '((and (= ?a ok) (= ?b yes))) '(?a ?b)))
+              (solve-first '(and (= ?a ok) (= ?b yes)) '(?a ?b)))
   (test-assert "and variadic failure"
-               (null? (solve-all '((and (= 1 2) (= ?x 3))) '?x)))
+               (null? (solve-all '(and (= 1 2) (= ?x 3)) '?x)))
 
-  (test-assert "member/2 success" (not (null? (solve-all '((member b (a b c))) 'dummy))))
-  (test-assert "member/2 failure" (null? (solve-all '((member x (a b c))) 'dummy)))
-  (test-equal "member/2 generate" '(a b c) (solve-all '((member ?x (a b c))) '?x))
+  (test-assert "member/2 success" (not (null? (solve-all '(member b (a b c)) 'dummy))))
+  (test-assert "member/2 failure" (null? (solve-all '(member x (a b c)) 'dummy)))
+  (test-equal "member/2 generate" '(a b c) (solve-all '(member ?x (a b c)) '?x))
 
-  (test-equal "append/3 forward" '(a b c d) (solve-first '((append (a b) (c d) ?x)) '?x))
-  (test-equal "append/3 backward" '(() (a b c)) (solve-first '((append ?x ?y (a b c))) '(?x ?y)))
-  (test-equal "append/3 all splits" 4 (length (solve-all '((append ?x ?y (a b c))) '(?x ?y))))
+  (test-equal "append/3 forward" '(a b c d) (solve-first '(append (a b) (c d) ?x) '?x))
+  (test-equal "append/3 backward" '(() (a b c)) (solve-first '(append ?x ?y (a b c)) '(?x ?y)))
+  (test-equal "append/3 all splits" 4 (length (solve-all '(append ?x ?y (a b c)) '(?x ?y))))
 
   (test-assert "repeat generates multiple solutions"
                (let loop ((n 0))
                  (if (>= n 5)
                      #t
-                     (and (solve-first '((repeat)) 'dummy)
+                     (and (solve-first '(repeat) 'dummy)
                           (loop (+ n 1))))))
-  (test-assert "true/0 always succeeds" (not (null? (solve-all '((true)) 'dummy))))
+  (test-assert "true/0 always succeeds" (not (null? (solve-all '(true) 'dummy))))
   )
 
 ;; -----------------------------------------------------------
@@ -242,8 +242,8 @@
     ;; body also calls hello without parentheses
     (<- greet hello)
     ;; calls using traditional (name) syntax
-    (test-assert "zero-arity fact" (not (null? (solve-all '((hello)) 'dummy))))
-    (test-assert "zero-arity rule" (not (null? (solve-all '((greet)) 'dummy))))
+    (test-assert "zero-arity fact" (not (null? (solve-all '(hello) 'dummy))))
+    (test-assert "zero-arity rule" (not (null? (solve-all '(greet) 'dummy))))
     ;; calls using bare predicate symbol
     (test-assert "zero-arity fact bare" (not (null? (solve-all '(hello) 'dummy))))
     (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))
@@ -268,7 +268,7 @@
 
     (test-equal "hard failure in p(x) should not block backtracking in q(y)"
                 2
-                (solve-first '((q ?y) (p ?y)) '?y))
+                (solve-first '(and (q ?y) (p ?y)) '?y))
     ))
 
 (test-end "prolog")
