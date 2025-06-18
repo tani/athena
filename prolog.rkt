@@ -4,12 +4,11 @@
   (export
     variable? named-variable? atom?
     failure? success?
-    *empty-bindings*
     extend-bindings substitute-bindings variables-in
     replace-anonymous-variables unify object->string
     remove-clauses-with-arity!
-    clause-database add-clause! get-clauses <- <-- define-predicate
-    prove-all ?- *current-lisp-environment*
+    current-clause-database add-clause! get-clauses <- <-- define-predicate
+    prove-all ?- current-lisp-environment
     success-bindings success-continuation solve-first solve-all)
 
   ;; Imports ------------------------------------------------------------------
@@ -35,7 +34,7 @@
 
     (include "prolog.scm")
 
-    (*current-lisp-environment*
+    (current-lisp-environment
       (environment '(rnrs base)))
   )
 )

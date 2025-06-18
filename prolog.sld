@@ -1,11 +1,11 @@
 ;; prolog-r7rs.scm -- R7RS wrapper for the Prolog engine
 (define-library (prolog)
   (export
-    variable? named-variable? atom? failure? success? *empty-bindings*
+    variable? named-variable? atom? failure? success?
     extend-bindings substitute-bindings variables-in replace-anonymous-variables
-    unify object->string remove-clauses-with-arity! clause-database
+    unify object->string remove-clauses-with-arity! current-clause-database
     add-clause! get-clauses <- <-- define-predicate prove-all ?-
-    *current-lisp-environment*
+    current-lisp-environment
     success-bindings success-continuation solve-first solve-all)
 
   (import (scheme base)
@@ -36,6 +36,6 @@
 
     (include "prolog.scm")
 
-    (*current-lisp-environment* (environment '(scheme base)))
+    (current-lisp-environment (environment '(scheme base)))
   )
 )
