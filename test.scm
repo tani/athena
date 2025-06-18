@@ -58,10 +58,11 @@
 ;; -----------------------------------------------------------
 ;; 3. Clause DB operations
 ;; -----------------------------------------------------------
-(let ((clause1 '((parent alice bob)))
-      (clause2 '((parent alice carol))))
-  (test-group "clause-db"
-    (parameterize ((current-clause-database '())) ; fresh DB for this group
+(test-group "clause-db"
+  (parameterize ((current-clause-database (current-clause-database)))
+    (current-clause-database '())
+    (let ((clause1 '((parent alice bob)))
+          (clause2 '((parent alice carol))))
       (add-clause! clause1)
       (test-equal "get-clauses after one add" (list clause1) (get-clauses 'parent))
       (add-clause! clause2)
@@ -75,36 +76,48 @@
 ;; -----------------------------------------------------------
 ;; 4. Engine simple recursion
 ;; -----------------------------------------------------------
-(<- (parent john mary))
-(<- (parent john michael))
-(<- (parent mary susan))
-(<- (parent michael david))
-(<- (grandparent ?x ?y) (parent ?x ?z) (parent ?z ?y))
-
-(<- (ancestor ?x ?y) (parent ?x ?y))
-(<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
-
-
 (test-group "engine"
-  (test-equal "direct fact" 'mary (solve-first '((parent john ?child)) '?child))
-  (test-equal "all direct facts" '(mary michael) (solve-all '((parent john ?child)) '?child))
-  (test-equal "simple rule" 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
-  (test-equal "all simple rule" '(susan david) (solve-all '((grandparent john ?grandchild)) '?grandchild))
-  (test-equal "recursion first result" 'mary (solve-first '((ancestor john ?d)) '?d))
-  (test-equal "recursion all results" '(mary michael susan david) (solve-all '((ancestor john ?d)) '?d))
-  (test-equal "recursion backward query" 'mary (solve-first '((ancestor ?a susan)) '?a))
-  (test-assert "failing goal" (null? (solve-all '((parent david ?x)) '?x))))
+  (parameterize ((current-clause-database (current-clause-database)))
+    (<- (parent john mary))
+    (<- (parent john michael))
+    (<- (parent mary susan))
+    (<- (parent michael david))
+    (<- (grandparent ?x ?y) (parent ?x ?z) (parent ?z ?y))
+
+    (<- (ancestor ?x ?y) (parent ?x ?y))
+    (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
+
+
+    (test-equal "direct fact" 'mary (solve-first '((parent john ?child)) '?child))
+    (test-equal "all direct facts" '(mary michael) (solve-all '((parent john ?child)) '?child))
+    (test-equal "simple rule" 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
+    (test-equal "all simple rule" '(susan david) (solve-all '((grandparent john ?grandchild)) '?grandchild))
+    (test-equal "recursion first result" 'mary (solve-first '((ancestor john ?d)) '?d))
+    (test-equal "recursion all results" '(mary michael susan david) (solve-all '((ancestor john ?d)) '?d))
+    (test-equal "recursion backward query" 'mary (solve-first '((ancestor ?a susan)) '?a))
+    (test-assert "failing goal" (null? (solve-all '((parent david ?x)) '?x)))))
 
 ;; -----------------------------------------------------------
 ;; 5. Built‑ins
 ;; -----------------------------------------------------------
-(<- (foo 1))
-(<- (foo 2))
-(<- (foo 3))
-(<- (bar ?x) (foo ?x) (cut) (= ?x 1))
-
 (test-group "built-ins"
-  (test-assert "fail predicate" (null? (solve-all '((fail)) 'dummy)))
+  (parameterize ((current-clause-database (current-clause-database)))
+    (<- (foo 1))
+    (<- (foo 2))
+    (<- (foo 3))
+    (<- (bar ?x) (foo ?x) (cut) (= ?x 1))
+
+    ;; facts for subsequent queries
+    (<- (parent john mary))
+    (<- (parent john michael))
+    (<- (parent mary susan))
+    (<- (parent michael david))
+    (<- (grandparent ?x ?y) (parent ?x ?z) (parent ?z ?y))
+
+    (<- (ancestor ?x ?y) (parent ?x ?y))
+    (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
+
+    (test-assert "fail predicate" (null? (solve-all '((fail)) 'dummy)))
   (test-assert "true predicate" (not (null? (solve-all '((true)) 'dummy))))
 
   (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
@@ -135,6 +148,7 @@
 
   (test-equal "cut prunes choices" '(1) (solve-all '((bar ?v)) '?v))
   (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
+  )
 
 ;; -----------------------------------------------------------
 ;; 6. Type & Dynamic predicates
@@ -186,19 +200,20 @@
 
 ;; -----------------------------------------------------------
 
-(test-group "advanced-cut-behavior"
 
-  ;; test predicates
-  (<- (q 1))
-  (<- (q 2))
+(test-group "advanced-cut-behavior"
+  (parameterize ((current-clause-database (current-clause-database)))
+    ;; test predicates
+    (<- (q 1))
+    (<- (q 2))
 
 
   (<-- (p ?x) (= ?x 1) (cut) (fail)) ; p(1) はハードな失敗を引き起こす
   (<- (p ?x) (= ?x 2))             ; p(2) は成功する
 
-  (test-equal "hard failure in p(x) should not block backtracking in q(y)"
-              2
-              (solve-first '((q ?y) (p ?y)) '?y))
-  )
+    (test-equal "hard failure in p(x) should not block backtracking in q(y)"
+                2
+                (solve-first '((q ?y) (p ?y)) '?y))
+    ))
 
 (test-end "prolog")
