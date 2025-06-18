@@ -17,6 +17,14 @@
         (set! counter (+ counter 1))
         (string->symbol name)))))
 
+;; Return the length of a proper list or #f for an improper one
+(define (list-length-or-false lst)
+  (let loop ((l lst) (n 0))
+    (cond
+      ((null? l) n)
+      ((pair? l) (loop (cdr l) (+ n 1)))
+      (else #f))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 4. Bindings and unification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,6 +141,8 @@
 
 (define-syntax <-
   (syntax-rules ()
+    ((_ (name arg ... . rest) . body)
+     (add-clause! (replace-anonymous-variables '((name arg ... . rest) . body))))
     ((_ (name arg ...) . body)
      (add-clause! (replace-anonymous-variables '((name arg ...) . body))))
     ((_ name . body)
@@ -140,17 +150,24 @@
 
 (define (remove-clauses-with-arity! predicate-symbol arity)
   (define (has-different-arity? clause)
-    (not (= (length (cdar clause)) arity)))
+    (let ((clause-arity (list-length-or-false (cdar clause))))
+      (not (equal? clause-arity arity))))
   (let* ((current-clauses (get-clauses predicate-symbol))
          (new-clauses (filter has-different-arity? current-clauses)))
     (set-clauses! predicate-symbol new-clauses)))
 
 (define-syntax <--
   (syntax-rules ()
+    ((_ (name arg ... . rest) . body)
+     (begin
+       (remove-clauses-with-arity! 'name #f)
+       (add-clause! (replace-anonymous-variables '((name arg ... . rest) . body))))
+    )
     ((_ (name arg ...) . body)
      (let ((arity (length '(arg ...))))
        (remove-clauses-with-arity! 'name arity)
-       (add-clause! (replace-anonymous-variables '((name arg ...) . body)))))
+       (add-clause! (replace-anonymous-variables '((name arg ...) . body))))
+    )
     ((_ name . body)
      (let ((arity 0))
        (remove-clauses-with-arity! 'name arity)
@@ -218,8 +235,12 @@
 (define (try-clauses goal bindings remaining-goals all-clauses)
   (define (main-try cut-point)
     (define (has-same-arity? clause)
-      (let ((goal-arity (if (pair? goal) (length (cdr goal)) 0)))
-        (= (length (cdar clause)) goal-arity)))
+      (let* ((goal-args (if (pair? goal) (cdr goal) '()))
+             (goal-arity (list-length-or-false goal-args))
+             (clause-arity (list-length-or-false (cdar clause))))
+        (if (and goal-arity clause-arity)
+          (= clause-arity goal-arity)
+          #t)))
 
     (define (try-one-by-one clauses-to-try)
       (if (null? clauses-to-try)
