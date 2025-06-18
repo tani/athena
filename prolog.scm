@@ -411,7 +411,7 @@
     (make-failure)))
 
 (define-predicate (number term)
-  (let*((value (substitute-bindings (current-bindings) term)))
+  (let ((value (substitute-bindings (current-bindings) term)))
     (if (number? value)
       (prove-all (current-remaining-goals) (current-bindings))
       (make-failure))))
