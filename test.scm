@@ -17,10 +17,10 @@
   (test-equal "atom? for symbol" #t (atom? 'a))
   (test-equal "atom? for number" #t (atom? 123))
 
-  (test-equal "extend-bindings on empty" '((?x . 1)) (extend-bindings '?x 1 '()))
-  (test-equal "extend-bindings on non-empty" '((?y . 2) (?x . 1)) (extend-bindings '?y 2 '((?x . 1))))
+  (test-equal "cons add binding empty" '((?x . 1)) (cons (cons '?x 1) '()))
+  (test-equal "cons add binding non-empty" '((?y . 2) (?x . 1)) (cons (cons '?y 2) '((?x . 1))))
 
-  (let* ((bindings (extend-bindings '?x 'foo (extend-bindings '?y '(bar) '()))))
+  (let* ((bindings (cons (cons '?x 'foo) (cons (cons '?y '(bar)) '()))))
     (test-equal "substitute-bindings simple" 'foo (substitute-bindings bindings '?x))
     (test-equal "substitute-bindings with list" '(g foo (bar)) (substitute-bindings bindings '(g ?x ?y))))
 

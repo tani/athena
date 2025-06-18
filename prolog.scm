@@ -41,9 +41,6 @@
 (define (lookup-variable variable bindings)
   (cdr (get-binding variable bindings)))
 
-(define (extend-bindings variable value bindings)
-  (cons (cons variable value)
-        (if (null? bindings) '() bindings)))
 
 (define (substitute-bindings bindings expression)
   (cond
@@ -102,7 +99,7 @@
          (unify variable bound-term bindings)))
       ((and (current-occurs-check) (occurs-check? variable value bindings))
        (make-failure))
-      (else (extend-bindings variable value bindings))))
+      (else (alist-cons variable value bindings))))
   (cond
     ((failure? bindings) (make-failure))
     ((equal? term1 term2) bindings)

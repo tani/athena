@@ -4,7 +4,7 @@
   (export
     variable? named-variable? atom?
     failure? success?
-    extend-bindings substitute-bindings variables-in
+    substitute-bindings variables-in
     replace-anonymous-variables unify object->string
     remove-clauses-with-arity!
     current-clause-database primitive-clause-database
