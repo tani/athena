@@ -333,32 +333,12 @@
         (current-dynamic-parameters new-dynamic-parameters)
         new-parameter))))
 
-
-(define (prepare-goals-with-cut goals cut-point)
-  (let* ((renamed-goals (replace-anonymous-variables goals))
-         (cut-goals (insert-cut-point renamed-goals cut-point)))
-    (prove-all cut-goals '())))
-
-(define (make-initial-continuation goals)
-  (lambda ()
-    (let ((cont (lambda (cut-point) (prepare-goals-with-cut goals cut-point))))
-      (call/cc cont))))
-
-(define (solve-first goals term)
-  (let* ((initial-cont (make-initial-continuation goals))
-         (result (initial-cont)))
-    (and (not (failure? result))
-         (substitute-bindings (success-bindings result) term))))
-
-(define (solve-all goals term)
-  (let ((initial-cont (make-initial-continuation goals)))
-    (let loop ((continuation initial-cont) (accumulator '()))
-      (let ((result (continuation)))
-        (if (failure? result)
-            (reverse accumulator)
-            (let* ((value (substitute-bindings (success-bindings result) term))
-                   (next (success-continuation result)))
-              (loop next (cons value accumulator))))))))
+(define (prolog goals)
+  (call/cc
+   (lambda (cut-point)
+     (let* ((replaced-goals (replace-anonymous-variables goals))
+            (cut-goals (insert-cut-point replaced-goals cut-point)))
+       (prove-all `(,@cut-goals fail) '())))))
 
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))

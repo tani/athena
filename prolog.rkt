@@ -11,14 +11,15 @@
     standard-clause-database
     add-clause! get-clauses <- <-- define-predicate
     prove-all ?- current-lisp-environment
-    success-bindings success-continuation solve-first solve-all)
+    insert-cut-point
+    success-bindings success-continuation prolog)
 
   ;; Imports ------------------------------------------------------------------
   (import (rnrs)
           (rnrs eval)
           (only (srfi :1) alist-delete alist-cons delete-duplicates)
           (only (srfi :39) parameterize make-parameter)
-          (only (racket include) include))
+          (only (racket) include))
 
   ;; Implementation -----------------------------------------------------------
   (begin
