@@ -35,18 +35,15 @@
 (define (atom? term)
   (not (pair? term)))
 
-(define (get-binding variable bindings)
-  (assoc variable bindings))
-
 (define (lookup-variable variable bindings)
-  (cdr (get-binding variable bindings)))
+  (cdr (assoc variable bindings)))
 
 
 (define (substitute-bindings bindings expression)
   (cond
     ((failure? bindings) (make-failure))
     ((null? bindings) expression)
-    ((and (variable? expression) (get-binding expression bindings))
+    ((and (variable? expression) (assoc expression bindings))
      (let ((value (lookup-variable expression bindings)))
        (substitute-bindings bindings value)))
     ((atom? expression) expression)
@@ -81,7 +78,7 @@
   (define (occurs-check? variable expression bindings)
     (cond
       ((eq? variable expression) #t)
-      ((and (variable? expression) (get-binding expression bindings))
+      ((and (variable? expression) (assoc expression bindings))
        (let ((value (lookup-variable expression bindings)))
          (occurs-check? variable value bindings)))
       ((pair? expression)
@@ -91,10 +88,10 @@
       (else #f)))
   (define (unify-var variable value bindings)
     (cond
-      ((get-binding variable bindings)
+      ((assoc variable bindings)
        (let ((bound-term (lookup-variable variable bindings)))
          (unify bound-term value bindings)))
-      ((and (variable? value) (get-binding value bindings))
+      ((and (variable? value) (assoc value bindings))
        (let ((bound-term (lookup-variable value bindings)))
          (unify variable bound-term bindings)))
       ((and (current-occurs-check) (occurs-check? variable value bindings))
