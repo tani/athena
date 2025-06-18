@@ -7,7 +7,9 @@
     extend-bindings substitute-bindings variables-in
     replace-anonymous-variables unify object->string
     remove-clauses-with-arity!
-    current-clause-database add-clause! get-clauses <- <-- define-predicate
+    current-clause-database primitive-clause-database
+    standard-clause-database
+    add-clause! get-clauses <- <-- define-predicate
     prove-all ?- current-lisp-environment
     success-bindings success-continuation solve-first solve-all)
 
