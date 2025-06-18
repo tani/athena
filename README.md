@@ -7,6 +7,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 - Unification, backtracking, occurs–check
 - Anonymous-variable renaming
 - Built-in predicates (`=`, `==`, `not`, `if`, `bagof`, `setof`, `cut`, etc.)
+- Predicates can be defined with fixed or variable numbers of arguments
 
 ## Requirements
 
