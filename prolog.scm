@@ -444,14 +444,38 @@
            (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
 
+(define-predicate (and . goals)
+  (let* ((remaining-goals (current-remaining-goals))
+         (combined-goals (append goals remaining-goals))
+         (bindings (current-bindings)))
+    (prove-all combined-goals bindings)))
+
+(define-predicate (or . goals)
+  (let loop ((gs goals))
+    (if (null? gs)
+        (make-failure)
+        (let* ((goal (car gs))
+               (rest (cdr gs))
+               (new-goals (cons goal (current-remaining-goals)))
+               (bindings (current-bindings))
+               (result (prove-all new-goals bindings)))
+          (if (failure? result)
+              (loop rest)
+              (let* ((res-bindings (success-bindings result))
+                     (cont (success-continuation result))
+                     (next (lambda () (loop rest)))
+                     (new-cont (combine cont next)))
+                (make-success res-bindings new-cont)))))))
+
+
 (primitive-clause-database (current-clause-database))
 
 (<-- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
 (<-- (lisp ?expression) (--lisp-eval-internal ? ?expression))
+
 (<-- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
 
-(<-- (or ?goal-a ?goal-b) (call ?goal-a))
-(<- (or ?goal-a ?goal-b) (call ?goal-b))
+
 
 (<-- (member ?item (?item . ?)))
 (<- (member ?item (? . ?rest)) (member ?item ?rest))
