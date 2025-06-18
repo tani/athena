@@ -195,8 +195,25 @@
   )
 
 ;; -----------------------------------------------------------
+;; 8. Zero-arity predicate definitions
+;; -----------------------------------------------------------
 
-;; 8. Advanced backtracking and cut propagation
+(test-group "zero-arity-predicates"
+  (parameterize ((current-clause-database (current-clause-database)))
+    (<- hello)
+    ;; body also calls hello without parentheses
+    (<- greet hello)
+    ;; calls using traditional (name) syntax
+    (test-assert "zero-arity fact" (not (null? (solve-all '((hello)) 'dummy))))
+    (test-assert "zero-arity rule" (not (null? (solve-all '((greet)) 'dummy))))
+    ;; calls using bare predicate symbol
+    (test-assert "zero-arity fact bare" (not (null? (solve-all '(hello) 'dummy))))
+    (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))
+    ))
+
+;; -----------------------------------------------------------
+
+;; 9. Advanced backtracking and cut propagation
 
 ;; -----------------------------------------------------------
 

@@ -139,8 +139,10 @@
 
 (define-syntax <-
   (syntax-rules ()
-    ((_ head . body)
-     (add-clause! (replace-anonymous-variables '(head . body))))))
+    ((_ (name arg ...) . body)
+     (add-clause! (replace-anonymous-variables '((name arg ...) . body))))
+    ((_ name . body)
+     (add-clause! (replace-anonymous-variables '((name) . body))))))
 
 (define (remove-clauses-with-arity! predicate-symbol arity)
   (define (has-different-arity? clause)
@@ -151,10 +153,14 @@
 
 (define-syntax <--
   (syntax-rules ()
-    ((_ head . body)
-     (let ((arity (length (cdr 'head))))
-       (remove-clauses-with-arity! (car 'head) arity)
-       (add-clause! (replace-anonymous-variables '(head . body)))))))
+    ((_ (name arg ...) . body)
+     (let ((arity (length '(arg ...))))
+       (remove-clauses-with-arity! 'name arity)
+       (add-clause! (replace-anonymous-variables '((name arg ...) . body)))))
+    ((_ name . body)
+     (let ((arity 0))
+       (remove-clauses-with-arity! 'name arity)
+       (add-clause! (replace-anonymous-variables '((name) . body)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 6. Prover engine
@@ -204,7 +210,8 @@
       (if (procedure? predicate-handler)
         (let ((args (if (pair? goal) (cdr goal) '())))
           (apply predicate-handler args))
-        (try-clauses goal bindings remaining-goals predicate-handler)))))
+        (let ((goal-for-unify (if (pair? goal) goal (list goal))))
+          (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))
 
 (define (insert-cut-point clause cut-point)
   (define (insert-cut-term term)
