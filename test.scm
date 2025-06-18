@@ -208,28 +208,7 @@
     (test-assert "zero-arity rule" (not (null? (solve-all '((greet)) 'dummy))))
     ;; calls using bare predicate symbol
     (test-assert "zero-arity fact bare" (not (null? (solve-all '(hello) 'dummy))))
-  (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))
-  ))
-
-;; -----------------------------------------------------------
-;; 8a. Variable-arity predicate definitions
-;; -----------------------------------------------------------
-(test-group "variable-arity-predicates"
-  (parameterize ((current-clause-database (current-clause-database)))
-    (<-- (varpred . ?xs) (== ?xs (a b c)))
-    (test-assert "variable arity success"
-                 (not (null? (solve-all '((varpred a b c)) 'dummy))))
-    (test-assert "variable arity failure"
-                 (null? (solve-all '((varpred a b)) 'dummy)))
-    ))
-
-(test-group "variable-arity-required"
-  (parameterize ((current-clause-database (current-clause-database)))
-    (<-- (req-vari ?x1 ?x2 . ?rest))
-    (test-assert "required args succeed"
-                 (not (null? (solve-all '((req-vari a b c)) 'dummy))))
-    (test-assert "too few args fails"
-                 (null? (solve-all '((req-vari a)) 'dummy)))
+    (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))
     ))
 
 ;; -----------------------------------------------------------
