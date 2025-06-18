@@ -119,6 +119,8 @@
 
 (define current-clause-database (make-parameter '()))
 
+(define primitive-clause-database (make-parameter '()))
+(define standard-clause-database (make-parameter '()))
 (define (get-clauses predicate-symbol)
   (let ((entry (assoc predicate-symbol (current-clause-database))))
     (if entry (cdr entry) '())))
@@ -426,10 +428,6 @@
          (new-bindings (unify prolog-variable (parameter) (current-bindings))))
     (prove-all (current-remaining-goals) new-bindings)))
 
-(<-- (lisp ?result ?expression) (lisp-eval-internal ?result ?expression))
-(<-- (is ?result ?expression) (lisp-eval-internal ?result ?expression))
-(<-- (lisp ?expression) (lisp-eval-internal ? ?expression))
-
 
 (define-predicate (add-solution-and-fail template)
   (let* ((substituted-template (substitute-bindings (current-bindings) template))
@@ -460,6 +458,10 @@
            (new-bindings (unify result-set sorted-solutions (current-bindings)))
            (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
+(primitive-clause-database (current-clause-database))
+(<-- (lisp ?result ?expression) (lisp-eval-internal ?result ?expression))
+(<-- (is ?result ?expression) (lisp-eval-internal ?result ?expression))
+(<-- (lisp ?expression) (lisp-eval-internal ? ?expression))
 
 (<-- (or ?goal-a ?goal-b) (call ?goal-a))
 (<- (or ?goal-a ?goal-b) (call ?goal-b))
@@ -483,3 +485,4 @@
 
 (<-- (not ?goal) (call ?goal) (cut) (fail))
 (<- (not ?goal))
+(standard-clause-database (current-clause-database))
