@@ -6,7 +6,7 @@
     unify object->string remove-clauses-with-arity! clause-database
     add-clause! get-clauses <- <-- define-predicate prove-all ?-
     *current-lisp-environment*
-    success-bindings success-continuation prolog)
+    success-bindings success-continuation solve-first solve-all)
 
   (import (scheme base)
           (scheme eval)

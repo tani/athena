@@ -1,23 +1,6 @@
 (test-begin "prolog")
 
 ;; -----------------------------------------------------------
-;; Helpers
-;; -----------------------------------------------------------
-(define (solve-first goals term)
-  (let ((result (prove-all goals *empty-bindings*)))
-    (and (not (failure? result))
-         (substitute-bindings (success-bindings result) term))))
-
-(define (solve-all goals term)
-  (let loop ((continuation (lambda () (prove-all goals *empty-bindings*)))
-             (accumulator '()))
-    (let ((result (continuation)))
-      (if (failure? result)
-          (reverse accumulator)
-          (loop (success-continuation result)
-                (cons (substitute-bindings (success-bindings result) term) accumulator))))))
-
-;; -----------------------------------------------------------
 ;; 1. Low‑level helpers
 ;; -----------------------------------------------------------
 (test-group "low-level helpers"

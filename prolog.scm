@@ -337,11 +337,28 @@
         (*dynamic-parameters* new-dynamic-parameters)
         new-parameter))))
 
-(define (prolog body)
-  (call/cc
-    (lambda (cut-point)
-      (let ((goals (insert-cut-point body cut-point)))
-        (prove-all goals *empty-bindings*)))))
+(define (solve-first goals term)
+  (let ((result
+          (call/cc
+            (lambda (cut-point)
+              (let ((new-goals (insert-cut-point (replace-anonymous-variables goals) cut-point)))
+                (prove-all new-goals *empty-bindings*))))))
+    (and (not (failure? result))
+         (substitute-bindings (success-bindings result) term))))
+
+(define (solve-all goals term)
+  (let loop ((continuation
+               (lambda ()
+                 (call/cc
+                   (lambda (cut-point)
+                     (let ((new-goals (insert-cut-point (replace-anonymous-variables goals) cut-point)))
+                       (prove-all new-goals *empty-bindings*))))))
+             (accumulator '()))
+    (let ((result (continuation)))
+      (if (failure? result)
+          (reverse accumulator)
+          (loop (success-continuation result)
+                (cons (substitute-bindings (success-bindings result) term) accumulator))))))
 
 (define *solution-accumulator* (make-parameter (list)))
 (define *current-lisp-environment* (make-parameter #f))
