@@ -228,8 +228,13 @@
                  (if (>= n 5)
                      #t
                      (and (solve-first '(repeat) 'dummy)
-                          (loop (+ n 1))))))
+                          (loop (+ n 1)))))
+               
   (test-assert "true/0 always succeeds" (not (null? (solve-all '(true) 'dummy))))
+  (test-assert "and/0 behaves as true"
+               (not (null? (solve-all '(and) 'dummy))))
+  (test-assert "or/0 behaves as fail"
+               (null? (solve-all '(or) 'dummy)))
   )
 
 ;; -----------------------------------------------------------
