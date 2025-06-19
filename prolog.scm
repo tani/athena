@@ -8,7 +8,6 @@
 ;; 3. Utility procedures
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The let-lambda pattern is the correct idiom for a stateful generator.
 (define gensym
   (let ((counter 0))
     (lambda (prefix)
@@ -210,7 +209,6 @@
   (define (insert-cut-term term)
     (cond
      ((and (pair? term) (eq? 'cut (car term))) (list 'cut choice-point))
-     ((and (pair? term) (eq? 'call (car term))) (list 'call (cadr term) choice-point))
      ((and (atom? term) (eq? 'cut term)) (list 'cut choice-point))
      (else term)))
   (map insert-cut-term clause))
@@ -339,9 +337,6 @@
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))
 
-(define-predicate (cut choice-point)
-  (choice-point (prove-all (current-remaining-goals) (current-bindings))))
-
 (define-predicate (= term1 term2)
   (let ((new-bindings (unify term1 term2 (current-bindings))))
     (prove-all (current-remaining-goals) new-bindings)))
@@ -354,11 +349,16 @@
         (prove-all goals (current-bindings)))
       (make-failure))))
 
-(define-predicate (call goal choice-point)
-  (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
+(define-predicate (cut choice-point)
+  (choice-point (prove-all (current-remaining-goals) (current-bindings))))
+
+(define-predicate (call goal)
+  (call/cc
+   (lambda (choice-point)
+     (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
          (cut-goals (insert-choice-point (list substituted-goal) choice-point))
          (next-goals (append cut-goals (current-remaining-goals))))
-    (prove-all next-goals (current-bindings))))
+    (prove-all next-goals (current-bindings))))))
 
 (define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((scheme-expression (substitute-bindings (current-bindings) expression))

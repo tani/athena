@@ -12,7 +12,8 @@
  prove-all ?- current-lisp-environment
  success-bindings success-continuation prolog)
 
-(require srfi/1)
+(require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
+         (only-in rnrs flush-output-port))
 
 (struct failure () #:transparent #:constructor-name make-failure)
 
@@ -22,7 +23,6 @@
   (with-output-to-string
     (lambda () (write object))))
 
-(define flush-output-port flush-output)
 (define (list-sort lis pred) (sort pred lis))
 
 (include "prolog.scm")
