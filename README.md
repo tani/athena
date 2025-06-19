@@ -1,16 +1,17 @@
 # Athena Reasoner
 
-Athena Reasoner is a lightweight Prolog-inspired logic programming engine implemented in Scheme. It supports multiple Scheme implementations and provides a consistent interface for defining predicates, running queries, and extending the clause database. The project uses Nix for development environments and GitHub Actions for continuous integration. This project draws inspiration from the PAIP Prolog implementation and, in homage to AllegroProlog, ports its convenient functions.
+Athena Reasoner is a lightweight Prolog-inspired logic programming engine implemented in Scheme. It provides a consistent interface across multiple Scheme implementations while keeping the core engine portable. The project draws inspiration from the PAIP Prolog implementation and ports several AllegroProlog conveniences. Development is managed via Nix and continuous integration is run through GitHub Actions.
 
-## Features: Prolog-style logic engine
+## Features
 
-- Unification, backtracking, occurs–check
-- Anonymous-variable renaming
-- Built-in predicates (`=`, `==`, `not`, `if`, `bagof`, `setof`, `cut`, etc.)
+- Unification with optional occurs check and backtracking
+- Anonymous variable renaming to avoid clashes
+- Built-in predicates such as `=`, `==`, `not`, `if`, `bagof`, `setof`, `cut` and more
+- Interactive query syntax with the `?-` macro
 
 ## Requirements
 
-- Nix (with flakes and nix-command enabled)
+- Nix with flakes and `nix-command` enabled
 - One or more of the supported Scheme implementations:
   - Gauche
   - Guile
@@ -24,12 +25,12 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 
 1. Clone the repository
 
-```bash
+   ```bash
    git clone https://github.com/tani/athena-reasoner.git
    cd athena-reasoner
-````
+   ```
 
-2. Enter Nix development shell
+2. Enter the development shell
 
    ```bash
    nix develop
@@ -37,13 +38,13 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 
 3. Run tests
 
-   From within the Nix shell, choose an implementation:
+   Choose an implementation:
 
    ```bash
    make IMPLS=gauche
    ```
 
-   Or run with all implementations:
+   Or run the full matrix:
 
    ```bash
    make all
@@ -51,15 +52,11 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 
 ## Usage
 
-Load the library into your Scheme session:
+Load the library and define some clauses:
 
 ```scheme
 (import (prolog))
-```
 
-Define your own clauses:
-
-```scheme
 (<- (parent alice bob))
 (<- (parent bob carol))
 (<- (ancestor ?x ?y)
@@ -67,16 +64,99 @@ Define your own clauses:
     (ancestor ?z ?y))
 ```
 
-Run a query:
+Run a query interactively:
 
 ```scheme
 (?- (ancestor alice ?descendant))
 ```
 
-Results will be displayed with variable bindings; press `;` for more solutions or `.` to stop.
+Results appear with variable bindings; press `;` for more solutions or `.` to stop.
+
+## Architecture Overview
+
+```mermaid
+flowchart TD
+  Q(Query) --> P(Prover)
+  P --> D(ClauseDB)
+  P --> U(Unifier)
+  U --> B(Bindings)
+  D -->|built-ins| BI(BuiltInPredicates)
+```
+
+The prover resolves goals using the clause database. Each goal is unified against clause heads. Successful unifications produce new goals and bindings which may lead to more solutions.
+
+## Unification Algorithm
+
+The unification procedure roughly follows:
+
+$$
+\operatorname{unify}(x, y, \theta) =\begin{cases}
+  \theta & x = y \\
+  \operatorname{unify}(\theta(x), y, \theta) & x \text{ is a variable} \\
+  \operatorname{unify}(x, \theta(y), \theta) & y \text{ is a variable} \\
+  \operatorname{unify}(\text{cdr}(x), \text{cdr}(y), \theta') & \text{both lists with }\theta' = \operatorname{unify}(\text{car}(x), \text{car}(y), \theta) \\
+  \text{failure} & \text{otherwise}
+\end{cases}
+$$
+
+where $\theta$ is the bindings environment. Occurs checking can be toggled via `current-occurs-check`.
+
+## API Reference
+
+### Variables and Bindings
+
+- `(variable? term)` – predicate for Scheme symbols beginning with `?`.
+- `(named-variable? term)` – like `variable?` but excludes the anonymous `?`.
+- `(atom? term)` – true if the term is not a pair.
+- `(substitute-bindings bindings term)` – apply bindings to a term.
+- `(variables-in term)` – list of named variables contained in `term`.
+- `(replace-anonymous-variables term)` – substitute all `?` with fresh symbols.
+- `(unify x y bindings)` – attempt to unify two terms returning updated bindings or `failure`.
+
+### Clause Database
+
+- `(current-clause-database)` – parameter holding the active clause list.
+- `(primitive-clause-database)` – snapshot of the database containing only primitives.
+- `(standard-clause-database)` – snapshot with the default standard clauses.
+- `(add-clause! clause)` – append a clause to the database.
+- `(get-clauses symbol)` – retrieve clauses for a predicate.
+- `(remove-clauses-with-arity! symbol arity)` – delete clauses with matching arity.
+- `(<- (head ...) body ...)` – macro for adding a clause.
+- `(<-- (head ...) body ...)` – macro that replaces previous clauses of the same arity.
+- `(define-predicate (name . args) body ...)` – define a pure Scheme predicate callable from Prolog.
+
+### Query Interface
+
+- `(prove-all goals bindings)` – low level engine entry point.
+- `(prolog goal ...)` – run goals and return a success/failure object.
+- `(?- goal ...)` – interactive REPL style query.
+- `(success-bindings obj)` / `(success-continuation obj)` – accessors for success values.
+
+### Built‑in Predicates
+
+The library provides a number of predicates implemented in Scheme:
+
+- `=` and `==` – unification and equality check
+- `cut` – prune choice points
+- `call` – invoke a goal dynamically
+- `not`, `and`, `or`, `if` – logical combinators
+- `lisp` / `is` – evaluate Scheme expressions
+- `repeat` – backtracking loop
+- `member`, `append` – common list utilities
+- `bagof`, `setof` – collect solutions
+- `fail` – force failure
+- `dynamic-put`, `dynamic-get` – store and retrieve dynamic variables
+
+## Developer Tips
+
+When editing Scheme code, `script/paren_count_diff.awk` can visualize unbalanced parentheses:
+
+```bash
+awk -f script/paren_count_diff.awk yourfile.scm
+```
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for full terms.
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full terms.
 
-PAIP Prolog: [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE)
+Parts derived from PAIP Prolog are under the [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE).
