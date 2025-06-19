@@ -8,7 +8,6 @@
     standard-clause-database
     add-clause! get-clauses <- <-- define-predicate prove-all ?-
     current-lisp-environment
-    insert-cut-point
     success-bindings success-continuation prolog)
 
   (import (scheme base)
