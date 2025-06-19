@@ -410,7 +410,6 @@
          (new-bindings (unify prolog-variable (parameter) (current-bindings))))
     (prove-all (current-remaining-goals) new-bindings)))
 
-
 (define-predicate (--add-solution-and-fail template)
   (let* ((substituted-template (substitute-bindings (current-bindings) template))
          (new-solutions (cons substituted-template (current-solution-accumulator))))
@@ -441,29 +440,25 @@
            (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
 
-(define-predicate (and . goals)
-  (let* ((combined-goals (append goals (current-remaining-goals))))
-    (prove-all combined-goals (current-bindings))))
-
-(define-predicate (or . goals)
-  (let loop ((gs goals))
-    (if (null? gs)
-        (make-failure)
-        (let* ((new-goals (cons (car gs) (current-remaining-goals)))
-               (result (prove-all new-goals (current-bindings))))
-          (if (failure? result)
-              (loop (cdr gs))
-              (let* ((res-bindings (success-bindings result))
-                     (cont (success-continuation result))
-                     (next (lambda () (loop (cdr gs))))
-                     (new-cont (combine cont next)))
-                (make-success res-bindings new-cont)))))))
-
+(define-predicate (fail)
+  (make-failure))
 
 (primitive-clause-database (current-clause-database))
 
-(<-- fail or)
-(<-- true and)
+(<-- true)
+
+(<- and true)
+(<- (and ?g1) (call ?g1))
+(<- (and ?g1 ?g2) (call ?g1) (call ?g2))
+(<- (and ?g1 ?g2 ?g3) (and ?g1 (and ?g2 ?g3)))
+(<- (and ?g1 ?g2 ?g3 ?g4) (and ?g1 (and ?g2 (and ?g3 ?g4))))
+
+(<- or fail)
+(<- (or ?g1) (call ?g1))
+(<- (or ?g1 ?g2) (call ?g1))
+(<- (or ?g1 ?g2) (call ?g2))
+(<- (or ?g1 ?g2 ?g3) (or ?g1 (or ?g2 ?g3)))
+(<- (or ?g1 ?g2 ?g3 ?g4) (or ?g1 (or ?g2 (or ?g3 ?g4))))
 
 (<-- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
 (<-- (lisp ?expression) (--lisp-eval-internal ? ?expression))

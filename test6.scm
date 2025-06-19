@@ -1,6 +1,6 @@
 (import (rnrs base)
         (srfi :64)
         (prolog)
-        (only (chezscheme) include))
-
+        (only (chezscheme) include interaction-environment))
+(current-lisp-environment (interaction-environment))
 (include "test.scm")

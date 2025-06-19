@@ -1,43 +1,36 @@
-#!r6rs
-(library (prolog)
-  ;; Public symbols -----------------------------------------------------------
-  (export
-    variable? named-variable? atom?
-    failure? success?
-    substitute-bindings variables-in
-    replace-anonymous-variables unify object->string
-    remove-clauses-with-arity!
-    current-clause-database primitive-clause-database
-    standard-clause-database
-    add-clause! get-clauses <- <-- define-predicate
-    prove-all ?- current-lisp-environment
-    insert-cut-point
-    success-bindings success-continuation prolog)
+#lang racket
 
-  ;; Imports ------------------------------------------------------------------
-  (import (rnrs)
-          (rnrs eval)
-          (only (srfi :1) alist-delete alist-cons delete-duplicates)
-          (only (srfi :39) parameterize make-parameter)
-          (only (racket) include))
+(provide
+ variable? named-variable? atom?
+ failure? success?
+ substitute-bindings variables-in
+ replace-anonymous-variables unify object->string
+ remove-clauses-with-arity!
+ current-clause-database primitive-clause-database
+ standard-clause-database
+ add-clause! get-clauses <- <-- define-predicate
+ prove-all ?- current-lisp-environment
+ insert-cut-point
+ success-bindings success-continuation prolog)
 
-  ;; Implementation -----------------------------------------------------------
-  (begin
-    (define-record-type (<failure> make-failure failure?)
-      (fields))
+(define (alist-cons key value alist)
+  (cons (cons key value) alist))
 
-    (define-record-type (<success> make-success success?)
-      (fields
-        (immutable bindings success-bindings)
-        (immutable continuation success-continuation)))
+(define (alist-delete key alist [equal-pred eq?])
+  (filter (lambda (pair) (not (equal-pred key (car pair)))) alist))
 
-    (define (object->string object)
-      (call-with-string-output-port
-        (lambda (p) (write object p))))
+(struct failure () #:transparent #:constructor-name make-failure)
 
-    (include "prolog.scm")
+(struct success (bindings continuation) #:transparent #:constructor-name make-success)
 
-    (current-lisp-environment
-      (environment '(rnrs base)))
-  )
-)
+(define (object->string object)
+  (with-output-to-string
+    (lambda () (write object))))
+(define delete-duplicates remove-duplicates)
+(define flush-output-port flush-output)
+(define (list-sort lis pred)
+  (sort pred lis))
+
+(include "prolog.scm")
+
+(current-lisp-environment (make-base-namespace))

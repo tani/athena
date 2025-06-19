@@ -1,7 +1,7 @@
 #lang racket/base
-(require rnrs
-         srfi/64
+(require srfi/64
          "prolog.rkt"
          racket/include)
-
+(define-namespace-anchor anchor)
+(current-lisp-environment (namespace-anchor->namespace anchor))
 (include "test.scm")
