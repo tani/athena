@@ -1,7 +1,14 @@
-BEGIN { diff=0 }
+#!/usr/bin/env awk -f
+
+BEGIN { diff = 0 }
+
 {
-  o = split($0, a, "(") - 1
-  c = split($0, b, ")") - 1
+  o = gsub(/\(/, "")
+  c = gsub(/\)/, "")
   diff += o - c
-  printf("%04d %s\n", diff, $0)
+
+  if ($0 ~ /^[[:space:]]*$/ && diff != 0) {
+    msg = (diff > 0 ? "Possible missing closing parenthesis" : "Possible extra closing parenthesis")
+    printf("Line %d: diff=%4d  %s\n", NR, diff, msg)
+  }
 }

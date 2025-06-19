@@ -263,7 +263,6 @@
             (write value)
             (newline)))
         variables)))
-
   (define (continue-prompt?)
     (display " ")
     (flush-output-port (current-output-port))
@@ -275,7 +274,6 @@
         (display " Type ; for more, or . to stop.")
         (newline)
         (continue-prompt?))))
-
   (define (query-loop continuation)
     (let ((result (continuation)))
       (if (failure? result)
@@ -287,13 +285,11 @@
           (newline)
           (when (and next-continuation (continue-prompt?))
             (query-loop next-continuation))))))
-
   (define (initial-continuation)
     (call/cc
      (lambda (choice-point)
        (let ((new-goals (insert-choice-point goals choice-point)))
            (prove-all new-goals '())))))
-
   (query-loop initial-continuation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
