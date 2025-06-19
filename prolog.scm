@@ -359,9 +359,12 @@
       (make-failure))))
 
 (define-predicate (call goal)
-  (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
-         (next-goals (cons substituted-goal (current-remaining-goals))))
-    (prove-all next-goals (current-bindings))))
+  (call/cc
+   (lambda (cut-point)
+     (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
+            (cut-goals (insert-cut-point (list substituted-goal) cut-point))
+            (next-goals (append cut-goals (current-remaining-goals))))
+       (prove-all next-goals (current-bindings))))))
 
 (define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((scheme-expression (substitute-bindings (current-bindings) expression))

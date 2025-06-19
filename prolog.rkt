@@ -13,11 +13,7 @@
  insert-cut-point
  success-bindings success-continuation prolog)
 
-(define (alist-cons key value alist)
-  (cons (cons key value) alist))
-
-(define (alist-delete key alist [equal-pred eq?])
-  (filter (lambda (pair) (not (equal-pred key (car pair)))) alist))
+(require srfi/1)
 
 (struct failure () #:transparent #:constructor-name make-failure)
 
@@ -26,10 +22,9 @@
 (define (object->string object)
   (with-output-to-string
     (lambda () (write object))))
-(define delete-duplicates remove-duplicates)
+
 (define flush-output-port flush-output)
-(define (list-sort lis pred)
-  (sort pred lis))
+(define (list-sort lis pred) (sort pred lis))
 
 (include "prolog.scm")
 
