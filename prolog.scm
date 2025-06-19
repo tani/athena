@@ -1,4 +1,4 @@
-;; prolog-core.scm — Prolog engine core implementation (highly commonized)
+;; prolog.scm — Prolog engine core implementation (highly commonized)
 ;; Copyright © 2025 Masaya Taniguchi
 ;; Released under the GNU General Public License v3.0
 ;;
@@ -20,7 +20,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 4. Bindings and unification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (define (variable? term)
   (and (symbol? term)
@@ -207,39 +206,36 @@
         (let ((goal-for-unify (if (pair? goal) goal (list goal))))
           (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))
 
-(define (insert-cut-point clause cut-point)
+(define (insert-choice-point clause choice-point)
   (define (insert-cut-term term)
     (cond
-      ((and (pair? term) (eq? 'cut (car term))) (list 'cut cut-point))
-      ((and (atom? term) (eq? 'cut term)) (list 'cut cut-point))
-      (else term)))
+     ((and (pair? term) (eq? 'cut (car term))) (list 'cut choice-point))
+     ((and (pair? term) (eq? 'call (car term))) (list 'call (cadr term) choice-point))
+     ((and (atom? term) (eq? 'cut term)) (list 'cut choice-point))
+     (else term)))
   (map insert-cut-term clause))
 
 (define (try-clauses goal bindings remaining-goals all-clauses)
-  (define (main-try cut-point)
-    (define (has-same-arity? clause)
-      (let ((goal-arity (if (pair? goal) (length (cdr goal)) 0)))
-        (= (length (cdar clause)) goal-arity)))
-
-    (define (try-one-by-one clauses-to-try)
-      (if (null? clauses-to-try)
-        (make-failure)
-        (let* ((current-clause-raw (car clauses-to-try))
-               (current-clause (insert-cut-point current-clause-raw cut-point))
-               (remaining-clauses (cdr clauses-to-try))
-               (try-next-clause (lambda () (try-one-by-one remaining-clauses))))
-          (let ((result (process-one goal current-clause bindings remaining-goals)))
-            (if (failure? result)
-              (try-next-clause)
-              (let* ((result-bindings (success-bindings result))
-                     (result-continuation (success-continuation result))
-                     (new-continuation (combine result-continuation try-next-clause)))
-                (make-success result-bindings new-continuation)))))))
-
-    (let ((clauses (filter has-same-arity? all-clauses)))
-      (try-one-by-one clauses)))
-
-  (call/cc main-try))
+  (call/cc
+   (lambda (choice-point)
+     (define (has-same-arity? clause)
+       (let ((goal-arity (if (pair? goal) (length (cdr goal)) 0)))
+         (= (length (cdar clause)) goal-arity)))
+     (define (try-one-by-one clauses-to-try)
+       (if (null? clauses-to-try)
+           (make-failure)
+           (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
+                  (remaining-clauses (cdr clauses-to-try))
+                  (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
+                  (result (process-one goal current-clause bindings remaining-goals)))
+             (if (failure? result)
+                 (try-next-clause)
+                 (let* ((result-bindings (success-bindings result))
+                        (result-continuation (success-continuation result))
+                        (new-continuation (combine result-continuation try-next-clause)))
+                   (make-success result-bindings new-continuation))))))
+     (let ((clauses (filter has-same-arity? all-clauses)))
+       (try-one-by-one clauses)))))
 
 (define (prove-all goals bindings)
   (cond
@@ -296,10 +292,10 @@
             (query-loop next-continuation))))))
 
   (define (initial-continuation)
-    (define (prove-with-cut cut-point)
-      (let ((new-goals (insert-cut-point goals cut-point)))
-        (prove-all new-goals '())))
-    (call/cc prove-with-cut))
+    (call/cc
+     (lambda (choice-point)
+       (let ((new-goals (insert-choice-point goals choice-point)))
+           (prove-all new-goals '())))))
 
   (query-loop initial-continuation))
 
@@ -335,16 +331,16 @@
 
 (define (prolog goals)
   (call/cc
-   (lambda (cut-point)
+   (lambda (choice-point)
      (let* ((replaced-goals (replace-anonymous-variables goals))
-            (cut-goals (insert-cut-point replaced-goals cut-point)))
+            (cut-goals (insert-choice-point replaced-goals choice-point)))
        (prove-all `(,@cut-goals fail) '())))))
 
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))
 
-(define-predicate (cut cut-point)
-  (cut-point (prove-all (current-remaining-goals) (current-bindings))))
+(define-predicate (cut choice-point)
+  (choice-point (prove-all (current-remaining-goals) (current-bindings))))
 
 (define-predicate (= term1 term2)
   (let ((new-bindings (unify term1 term2 (current-bindings))))
@@ -358,13 +354,11 @@
         (prove-all goals (current-bindings)))
       (make-failure))))
 
-(define-predicate (call goal)
-  (call/cc
-   (lambda (cut-point)
-     (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
-            (cut-goals (insert-cut-point (list substituted-goal) cut-point))
-            (next-goals (append cut-goals (current-remaining-goals))))
-       (prove-all next-goals (current-bindings))))))
+(define-predicate (call goal choice-point)
+  (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
+         (cut-goals (insert-choice-point (list substituted-goal) choice-point))
+         (next-goals (append cut-goals (current-remaining-goals))))
+    (prove-all next-goals (current-bindings))))
 
 (define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
