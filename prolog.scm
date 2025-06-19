@@ -36,7 +36,6 @@
 (define (lookup-variable variable bindings)
   (cdr (assoc variable bindings)))
 
-
 (define (substitute-bindings bindings expression)
   (cond
     ((failure? bindings) (make-failure))

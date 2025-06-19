@@ -21,6 +21,6 @@ This repository implements the Athena logic programming engine in Scheme.
 - Use clear commit messages describing your changes.
 - No specific formatting command is required.
 - If you run into a parentheses mismatch in Scheme/LISP code, the script
-  `script/paren_visualize.awk` can help visualize the balance. Pipe the
+  `script/paren_count_diff.awk` can help visualize the balance. Pipe the
   problematic code through it to get an indented view that highlights
   unbalanced parentheses.
