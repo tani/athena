@@ -72,35 +72,6 @@ Run a query interactively:
 
 Results appear with variable bindings; press `;` for more solutions or `.` to stop.
 
-## Architecture Overview
-
-```mermaid
-flowchart TD
-  Q(Query) --> P(Prover)
-  P --> D(ClauseDB)
-  P --> U(Unifier)
-  U --> B(Bindings)
-  D -->|built-ins| BI(BuiltInPredicates)
-```
-
-The prover resolves goals using the clause database. Each goal is unified against clause heads. Successful unifications produce new goals and bindings which may lead to more solutions.
-
-## Unification Algorithm
-
-The unification procedure roughly follows:
-
-$$
-\operatorname{unify}(x, y, \theta) =\begin{cases}
-  \theta & x = y \\
-  \operatorname{unify}(\theta(x), y, \theta) & x \text{ is a variable} \\
-  \operatorname{unify}(x, \theta(y), \theta) & y \text{ is a variable} \\
-  \operatorname{unify}(\text{cdr}(x), \text{cdr}(y), \theta') & \text{both lists with }\theta' = \operatorname{unify}(\text{car}(x), \text{car}(y), \theta) \\
-  \text{failure} & \text{otherwise}
-\end{cases}
-$$
-
-where $\theta$ is the bindings environment. Occurs checking can be toggled via `current-occurs-check`.
-
 ## API Reference
 
 ### Variables and Bindings
@@ -146,14 +117,6 @@ The library provides a number of predicates implemented in Scheme:
 - `bagof`, `setof` – collect solutions
 - `fail` – force failure
 - `dynamic-put`, `dynamic-get` – store and retrieve dynamic variables
-
-## Developer Tips
-
-When editing Scheme code, `script/paren_count_diff.awk` can visualize unbalanced parentheses:
-
-```bash
-awk -f script/paren_count_diff.awk yourfile.scm
-```
 
 ## License
 
