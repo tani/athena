@@ -21,6 +21,7 @@
             chibi = makeRlwrap "chibi-scheme" "${pkgs.chibi}/bin/chibi-scheme";
             guile = makeRlwrap "guile" "${pkgs.guile}/bin/guile";
             chez = makeRlwrap "scheme" "${pkgs.chez}/bin/scheme";
+            gambit = makeRlwrap "gsi" "${pkgs.gambit}/bin/gsi";
           };
 
           chickenEggs = pkgs.chickenPackages_5.chickenEggs;
@@ -28,13 +29,13 @@
           devShells.default = pkgs.mkShell {
             packages = with pkgs; [
               rlwrap
-              gauche chicken sagittarius-scheme chibi guile chez chez-srfi
+              gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
             ] ++ (with rlwrapPkgs; [
-              gauche chicken sagittarius-scheme chibi guile chez
+              gauche chicken sagittarius-scheme chibi guile chez gambit
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 awful r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
-              racket mitscheme
+              racket
             ]);
             CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''
