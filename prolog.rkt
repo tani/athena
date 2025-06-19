@@ -10,7 +10,7 @@
  standard-clause-database
  add-clause! get-clauses <- <-- define-predicate
  prove-all ?- current-lisp-environment
- success-bindings success-continuation prolog)
+ success-bindings success-continuation prolog %prolog)
 
 (require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
          (only-in rnrs flush-output-port))

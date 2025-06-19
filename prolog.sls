@@ -10,7 +10,7 @@
     standard-clause-database
     add-clause! get-clauses <- <-- define-predicate
     prove-all ?- current-lisp-environment
-    success-bindings success-continuation prolog)
+    success-bindings success-continuation prolog %prolog)
 
   ;; Imports ------------------------------------------------------------------
   (import (rnrs)

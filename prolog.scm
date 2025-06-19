@@ -337,12 +337,17 @@
         (current-dynamic-parameters new-dynamic-parameters)
         new-parameter))))
 
-(define (prolog goals)
+(define (%prolog goals)
   (call/cc
    (lambda (choice-point)
      (let* ((replaced-goals (replace-anonymous-variables goals))
             (cut-goals (insert-choice-point replaced-goals choice-point)))
        (prove-all `(,@cut-goals fail) '())))))
+
+(define-syntax prolog
+  (syntax-rules ()
+    ((_ . goals)
+     (%prolog 'goals))))
 
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))
@@ -461,27 +466,26 @@
 (<- (or ?g . ?gs) (call ?g))
 (<- (or ?g . ?gs) (call (or . ?gs)))
 
-(<-- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
-(<-- (lisp ?expression) (--lisp-eval-internal ? ?expression))
+(<- (not ?goal) (call ?goal) (cut) (fail))
+(<- (not ?goal))
 
-(<-- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
+(<- (if ?cond ?then ?else) (call ?cond) (cut) (call ?then))
+(<- (if ?cond ?then ?else) (call ?else))
+(<- (if ?cond ?then) (call ?cond) (call ?then))
 
-(<-- (member ?item (?item . ?)))
-(<- (member ?item (? . ?rest)) (member ?item ?rest))
+(<- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
+(<- (lisp ?expression) (--lisp-eval-internal ? ?expression))
 
-(<-- (append () ?list ?list))
-(<- (append (?head . ?tail) ?list (?head . ?result))
-    (append ?tail ?list ?result))
+(<- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
 
-(<-- (repeat))
+(<- (repeat))
 (<- (repeat) (repeat))
 
-(<-- (if ?cond ?then ?else) (call ?cond) (cut) (call ?then))
-(<- (if ?cond ?then ?else) (call ?else))
+(<- (member ?item (?item . ?)))
+(<- (member ?item (? . ?rest)) (member ?item ?rest))
 
-(<-- (if ?cond ?then) (call ?cond) (call ?then))
-
-(<-- (not ?goal) (call ?goal) (cut) (fail))
-(<- (not ?goal))
+(<- (append () ?list ?list))
+(<- (append (?head . ?tail) ?list (?head . ?result))
+    (append ?tail ?list ?result))
 
 (standard-clause-database (current-clause-database))

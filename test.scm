@@ -2,12 +2,12 @@
 
 (define (solve-first goals term)
   (parameterize ((current-result '()))
-    (prolog `(,@goals (lisp (current-result (cons ',term (current-result)))) cut))
+    (%prolog `(,@goals (lisp (current-result (cons ',term (current-result)))) cut))
     (car (current-result))))
 
 (define (solve-all goals term)
   (parameterize ((current-result '()))
-    (prolog `(,@goals (lisp (current-result (cons ',term (current-result))))))
+    (%prolog `(,@goals (lisp (current-result (cons ',term (current-result))))))
     (reverse (current-result))))
 
 (test-begin "prolog")
