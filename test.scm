@@ -240,6 +240,22 @@
     ))
 
 ;; -----------------------------------------------------------
+;; 9. Variadic predicate definitions
+;; -----------------------------------------------------------
+
+(test-group "variadic-predicates"
+  (parameterize ((current-clause-database (current-clause-database)))
+    (<- (capture-rest ?out ?first . ?rest) (= ?out ?rest))
+    (test-equal "variadic rest collects args"
+                '(b c)
+                (solve-first '((capture-rest ?r a b c)) '?r))
+    (test-equal "variadic rest empty"
+                '()
+                (solve-first '((capture-rest ?r a)) '?r))
+    (test-assert "variadic too few arguments"
+                 (null? (solve-all '((capture-rest ?r)) '?r)))))
+
+;; -----------------------------------------------------------
 ;; 9. Cut behavior in control structures
 ;; -----------------------------------------------------------
 
