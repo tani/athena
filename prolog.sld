@@ -15,7 +15,6 @@
           (scheme write)
           (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
 
-  ;; Optional SRFI‑132 list-sort for each implementation
   (cond-expand
     (chicken (import scheme (only (srfi 132) list-sort)))
     (guile (import (only (rnrs sorting) list-sort)))
@@ -38,6 +37,9 @@
 
     (include "prolog.scm")
 
-    (current-lisp-environment (environment '(scheme base)))
+    (current-lisp-environment
+      (cond-expand
+        (gambit 5)
+        (else (environment '(scheme base)))))
   )
 )
