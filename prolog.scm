@@ -437,6 +437,15 @@
            (goals (current-remaining-goals)))
       (prove-all goals new-bindings))))
 
+(define-predicate (findall template goal result-list)
+  (parameterize ((current-solution-accumulator '()))
+    (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
+      (prove-all new-goals (current-bindings)))
+    (let* ((reversed-solutions (reverse (current-solution-accumulator)))
+           (new-bindings (unify result-list reversed-solutions (current-bindings)))
+           (goals (current-remaining-goals)))
+      (prove-all goals new-bindings))))
+
 (define-predicate (setof template goal result-set)
   (define (sort-predicate a b)
     (let ((string-a (object->string a))

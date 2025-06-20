@@ -155,8 +155,10 @@
 
   (<- (item a)) (<- (item b)) (<- (item a))
   (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
+  (test-equal "findall gets all solutions" '(mary michael) (solve-first '((findall ?c (parent john ?c) ?l)) '?l))
   (test-equal "setof gets unique sorted" '(david mary michael susan) (solve-first '((setof ?x (ancestor john ?x) ?o)) '?o))
   (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '((bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
+  (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
 
   (test-equal "cut prunes choices" '(1) (solve-all '((bar ?v)) '?v))
   (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))

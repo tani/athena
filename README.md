@@ -6,7 +6,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 
 - Unification with optional occurs check and backtracking
 - Anonymous variable renaming to avoid clashes
-- Built-in predicates such as `=`, `==`, `not`, `if`, `bagof`, `setof`, `cut` and more
+- Built-in predicates such as `=`, `==`, `not`, `if`, `bagof`, `findall`, `setof`, `cut` and more
 - Interactive query syntax with the `?-` macro
 
 ## Requirements
@@ -114,7 +114,7 @@ The library provides a number of predicates implemented in Scheme:
 - `lisp` / `is` – evaluate Scheme expressions
 - `repeat` – backtracking loop
 - `member`, `append` – common list utilities
-- `bagof`, `setof` – collect solutions
+- `bagof`, `findall`, `setof` – collect solutions
 - `fail` – force failure
 - `dynamic-put`, `dynamic-get` – store and retrieve dynamic variables
 
