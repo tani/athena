@@ -8,13 +8,14 @@
     current-clause-database primitive-clause-database
     standard-clause-database
     add-clause! get-clauses <- <-- define-predicate prove-all ?-
-    current-lisp-environment
+    current-lisp-environment current-spy-predicates
     success-bindings success-continuation prolog %prolog)
 
   ;; Imports ------------------------------------------------------------------
   (import (scheme base)
           (scheme eval)
           (scheme write)
+          (scheme read)
           (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
 
   (cond-expand

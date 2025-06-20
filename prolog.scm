@@ -182,13 +182,68 @@
          (alist (map make-renaming-pair variables)))
     (sublis alist expression)))
 
+;; --------------------------------------------------------------------------
+;; Spy support
+;; --------------------------------------------------------------------------
+
+(define current-spy-mode (make-parameter 'prompt)) ; 'prompt or 'always
+
+(define (simple-repl)
+  (display "Entering break; type 'continue to resume")
+  (newline)
+  (let loop ()
+    (display "debug> ")
+    (flush-output-port (current-output-port))
+    (let ((form (read)))
+      (unless (eq? form 'continue)
+        (let ((result (eval form (current-lisp-environment))))
+          (write result)
+          (newline))
+        (loop)))))
+
+(define (spy-prompt goal bindings)
+  (let ((resolved (substitute-bindings bindings goal)))
+    (display "Spy on ")
+    (write resolved)
+    (display "? [l=leap c=creep n=nodebug b=break] ")
+    (flush-output-port (current-output-port))
+    (let ((choice (read)))
+      (cond
+        ((eq? choice 'l)
+         (current-spy-mode 'always)
+         #t)
+        ((eq? choice 'c) #t)
+        ((eq? choice 'n) #f)
+        ((eq? choice 'b)
+         (simple-repl)
+         #t)
+        (else #t)))))
+
 (define (process-one goal clause bindings remaining-goals)
-  (let* ((renamed-clause (rename-vars clause))
-         (clause-head (car renamed-clause))
-         (clause-body (cdr renamed-clause))
-         (new-bindings (unify goal clause-head bindings))
-         (new-goals (append clause-body remaining-goals)))
-    (prove-all new-goals new-bindings)))
+  (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
+         (spy? (memq predicate-symbol (current-spy-predicates)))
+         (show? (and spy?
+                    (or (eq? (current-spy-mode) 'always)
+                        (spy-prompt goal bindings)))))
+    (when show?
+      (spy-message "CALL" goal bindings))
+    (let* ((renamed-clause (rename-vars clause))
+           (clause-head (car renamed-clause))
+           (clause-body (cdr renamed-clause))
+           (new-bindings (unify goal clause-head bindings)))
+      (if (failure? new-bindings)
+          (begin
+            (when show?
+              (spy-message "FAIL" goal bindings))
+            (make-failure))
+          (let* ((new-goals (append clause-body remaining-goals))
+                 (result (prove-all new-goals new-bindings)))
+            (when show?
+              (if (failure? result)
+                  (spy-message "FAIL" goal bindings)
+                  (spy-message "EXIT" goal (success-bindings result))))
+            result)))))
+
 
 (define (combine continuation-a continuation-b)
   (lambda ()
@@ -351,6 +406,14 @@
 
 (define current-solution-accumulator (make-parameter '()))
 (define current-lisp-environment (make-parameter #f))
+(define current-spy-predicates (make-parameter '()))
+
+(define (spy-message kind goal bindings)
+  (let ((resolved (substitute-bindings bindings goal)))
+    (display kind)
+    (display ": ")
+    (write resolved)
+    (newline)))
 
 (define-predicate (= term1 term2)
   (let ((new-bindings (unify term1 term2 (current-bindings))))
@@ -421,6 +484,7 @@
   (let* ((parameter (get-dynamic-parameter variable-symbol))
          (new-bindings (unify prolog-variable (parameter) (current-bindings))))
     (prove-all (current-remaining-goals) new-bindings)))
+
 
 (define-predicate (--add-solution-and-fail template)
   (let* ((substituted-template (substitute-bindings (current-bindings) template))

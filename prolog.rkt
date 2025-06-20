@@ -11,7 +11,7 @@
  current-clause-database primitive-clause-database
  standard-clause-database
  add-clause! get-clauses <- <-- define-predicate
- prove-all ?- current-lisp-environment
+ prove-all ?- current-lisp-environment current-spy-predicates
  success-bindings success-continuation prolog %prolog)
 
 ;; Imports ------------------------------------------------------------------
