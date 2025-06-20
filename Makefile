@@ -25,5 +25,8 @@ sagittarius:
 chez:
 	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD --script test6.scm
 
+gambit:
+	# gsi -:r7rs . test7.scm
+
 clean:
 	rm -f *.log
