@@ -1,5 +1,6 @@
-;; prolog-r7rs.scm -- R7RS wrapper for the Prolog engine
+;; Scheme wrapper for the Prolog engine
 (define-library (prolog)
+  ;; Public symbols -----------------------------------------------------------
   (export
     variable? named-variable? atom? failure? success?
     substitute-bindings variables-in replace-anonymous-variables
@@ -10,6 +11,7 @@
     current-lisp-environment
     success-bindings success-continuation prolog %prolog)
 
+  ;; Imports ------------------------------------------------------------------
   (import (scheme base)
           (scheme eval)
           (scheme write)
@@ -22,7 +24,7 @@
     (chibi (import (only (scheme sort) list-sort)))
     (gambit (import (only (srfi 132) list-sort)))
     (sagittarius (import (only (scheme sort) list-sort))))
-
+  ;; Implementation -----------------------------------------------------------
   (begin
     (define-record-type <failure> (make-failure) failure?)
     (define-record-type <success>

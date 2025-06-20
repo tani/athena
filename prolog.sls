@@ -1,3 +1,4 @@
+;; Scheme wrapper for the Prolog engine
 (library (prolog)
   ;; Public symbols -----------------------------------------------------------
   (export
