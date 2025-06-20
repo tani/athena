@@ -1,29 +1,29 @@
 # Ignore input formatting entirely and visualize LISP structure by indentation only.
 
-# 1. Concatenate all input lines into variable `code` with a single space as separator.
+# Concatenate all input lines into variable `code` with a single space as separator.
 {
     code = code $0 " "
 }
 
-# 2. After reading all input lines, start formatting in the END block.
+# After reading all input lines, start formatting in the END block.
 END {
     # Variable to track indentation level
     level = 0
     # String used for one indentation level (two spaces)
     indent_unit = "  "
 
-    # 3. Insert newlines around parentheses so that they are separate tokens
+    # Insert newlines around parentheses so that they are separate tokens
     gsub(/\(/, "\n(\n", code)
     gsub(/\)/, "\n)\n", code)
 
-    # 4. Replace any sequence of whitespace with a single newline so that all tokens
-    #    are separated by newlines.
+    # Replace any sequence of whitespace with a single newline so that all tokens
+    # are separated by newlines.
     gsub(/[ \t\r\n]+/, "", code)
 
-    # 5. Split `code` into array `tokens` using newline as separator.
+    # Split `code` into array `tokens` using newline as separator.
     n = split(code, tokens, "\n")
 
-    # 6. Process each token in order.
+    # Process each token in order.
     for (i = 1; i <= n; i++) {
         token = tokens[i]
 

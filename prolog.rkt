@@ -1,5 +1,7 @@
 #lang racket
+;; Scheme wrapper for the Prolog engine
 
+;; Public symbols -----------------------------------------------------------
 (provide
  variable? named-variable? atom?
  failure? success?
@@ -12,9 +14,11 @@
  prove-all ?- current-lisp-environment
  success-bindings success-continuation prolog %prolog)
 
+;; Imports ------------------------------------------------------------------
 (require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
-         (only-in rnrs flush-output-port))
+        (only-in rnrs flush-output-port))
 
+;; Implementation -----------------------------------------------------------
 (struct failure () #:transparent #:constructor-name make-failure)
 
 (struct success (bindings continuation) #:transparent #:constructor-name make-success)

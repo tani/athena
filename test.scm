@@ -13,7 +13,7 @@
 (test-begin "prolog")
 
 ;; -----------------------------------------------------------
-;; 1. Low‑level helpers
+;; Low-level helpers
 ;; -----------------------------------------------------------
 (test-group "low-level helpers"
   (test-equal "variable? success for '?x" #t (variable? '?x))
@@ -45,7 +45,7 @@
     (test-equal "replace-anonymous-variables with no anon vars" '(a b) expr-no-anon)))
 
 ;; -----------------------------------------------------------
-;; 2. Unification
+;; Unification
 ;; -----------------------------------------------------------
 (test-group "unify"
   (test-equal "unify atom-atom success" '() (unify 'a 'a '()))
@@ -68,7 +68,7 @@
   )
 
 ;; -----------------------------------------------------------
-;; 3. Clause DB operations
+;; Clause DB operations
 ;; -----------------------------------------------------------
 (test-group "clause-db"
   (parameterize ((current-clause-database (current-clause-database)))
@@ -86,7 +86,7 @@
 
 
 ;; -----------------------------------------------------------
-;; 4. Engine simple recursion
+;; Engine simple recursion
 ;; -----------------------------------------------------------
 (test-group "engine"
   (parameterize ((current-clause-database (current-clause-database)))
@@ -110,7 +110,7 @@
     (test-assert "failing goal" (null? (solve-all '((parent david ?x)) '?x)))))
 
 ;; -----------------------------------------------------------
-;; 5. Built‑ins
+;; Built‑ins
 ;; -----------------------------------------------------------
 (test-group "built-ins"
   (parameterize ((current-clause-database (current-clause-database)))
@@ -163,7 +163,7 @@
   )
 
 ;; -----------------------------------------------------------
-;; 6. Type & Dynamic predicates
+;; Type & Dynamic predicates
 ;; -----------------------------------------------------------
 (test-group "type-and-dynamic-predicates"
   (test-assert "atom/1 success" (not (null? (solve-all '((atom foo)) 'dummy))))
@@ -182,7 +182,7 @@
   )
 
 ;; -----------------------------------------------------------
-;; 7. Library predicates (or/member/append/repeat/true)
+;; Library predicates (or/member/append/repeat/true)
 ;; -----------------------------------------------------------
 (test-group "library"
   (test-equal "or variadic first succeeds"
@@ -223,7 +223,7 @@
   )
 
 ;; -----------------------------------------------------------
-;; 8. Zero-arity predicate definitions
+;; Zero-arity predicate definitions
 ;; -----------------------------------------------------------
 
 (test-group "zero-arity-predicates"
@@ -240,7 +240,7 @@
     ))
 
 ;; -----------------------------------------------------------
-;; 9. Variadic predicate definitions
+;; Variadic predicate definitions
 ;; -----------------------------------------------------------
 
 (test-group "variadic-predicates"
@@ -256,7 +256,7 @@
                  (null? (solve-all '((capture-rest ?r)) '?r)))))
 
 ;; -----------------------------------------------------------
-;; 9. Cut behavior in control structures
+;; Cut behavior in control structures
 ;; -----------------------------------------------------------
 
 (test-group "cut-behavior"
@@ -279,8 +279,8 @@
       '((a 1) (a 2))
       (solve-all '((p ?X) (cut) (q ?Y)) '(?X ?Y)))
 
-    ;; 一見すると Prolog的に間違いのようだが、
-    ;; Prolog でも or と and 述語を定義してから実行すると同様の結果になる。
+    ;; This may appear incorrect in Prolog, but defining 'or' and 'and'
+    ;; predicates first in Prolog yields the same result.
     (test-equal "Cut inside 'or'"
       '(b a b c)
       (solve-all '((or (and (p ?X) (== ?X b) (cut)) (p ?X))) '?X))
@@ -293,15 +293,15 @@
       '(c)
       (solve-all '((and (p ?X) (call (or (and (== ?X c) (cut)) (fail))))) '?X))
 
-    ;; 一見すると Prolog的に間違いのようだが、
-    ;; Prolog でも or と and 述語を定義してから実行すると同様の結果になる。
+    ;; This may appear incorrect in Prolog, but defining 'or' and 'and'
+    ;; predicates first in Prolog yields the same result.
     (test-equal "Cut affecting parent goals (s/2)"
       '((a 1) (a 2) (b 1) (b 2) (b 1) (b 2) (c 1) (c 2))
       (solve-all '((s ?X ?Y)) '(?X ?Y)))
     ))
 
 ;; -----------------------------------------------------------
-;; 9. Advanced backtracking and cut propagation
+;; Advanced backtracking and cut propagation
 ;; -----------------------------------------------------------
 
 
@@ -311,8 +311,8 @@
     (<- (q 1))
     (<- (q 2))
     
-    (<-- (p ?x) (= ?x 1) (cut) (fail)) ; p(1) はハードな失敗を引き起こす
-    (<- (p ?x) (= ?x 2))             ; p(2) は成功する
+    (<-- (p ?x) (= ?x 1) (cut) (fail)) ; p(1) triggers a hard failure
+    (<- (p ?x) (= ?x 2))             ; p(2) succeeds
     
     (test-equal "hard failure in p(x) should not block backtracking in q(y)"
       2
