@@ -222,6 +222,15 @@
                (not (null? (solve-all '((and)) 'dummy))))
   (test-assert "or/0 behaves as fail"
                (null? (solve-all '((or)) 'dummy)))
+
+  ;; maplist
+  (test-assert "maplist atom success"
+               (not (null? (solve-all '((maplist atom (a b c))) 'dummy))))
+  (test-assert "maplist atom failure"
+               (null? (solve-all '((maplist atom (a 1 c))) 'dummy)))
+  (test-equal "maplist = unify lists"
+              '(a b c)
+              (solve-first '((maplist = (a b c) (?x ?y ?z))) '(?x ?y ?z)))
   )
 
 ;; -----------------------------------------------------------

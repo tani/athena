@@ -562,7 +562,7 @@
     (append ?tail ?list ?result))
 
 (<- (--all-null ()))
-(<- (--all-null (() . ?rest)) (all-null ?rest))
+(<- (--all-null (() . ?rest)) (--all-null ?rest))
 
 (<- (--get-heads () ()))
 (<- (--get-heads ((?h . ?t) . ?rest-lists) (?h . ?rest-heads))
