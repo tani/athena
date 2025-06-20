@@ -118,6 +118,27 @@ The library provides a number of predicates implemented in Scheme:
 - `fail` – force failure
 - `dynamic-put`, `dynamic-get` – store and retrieve dynamic variables
 
+## Debugging with Spy
+
+`current-spy-predicates` holds a list of predicate names that should be
+traced. When a spied predicate is called, Athena prompts for an action:
+
+```
+Spy on <goal>? [l=leap c=creep n=nodebug b=break]
+```
+
+* `c` – show this call and continue prompting at the next spy point.
+* `l` – leap: always show spy messages without further prompts.
+* `n` – nodebug: skip spy output for this call.
+* `b` – open a simple Scheme REPL and resume with `continue`.
+
+Example usage:
+
+```scheme
+(parameterize ((current-spy-predicates '(ancestor)))
+  (?- (ancestor alice ?x)))
+```
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full terms.
