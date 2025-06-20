@@ -561,4 +561,24 @@
 (<- (append (?head . ?tail) ?list (?head . ?result))
     (append ?tail ?list ?result))
 
+(<- (--all-null ()))
+(<- (--all-null (() . ?rest)) (all-null ?rest))
+
+(<- (--get-heads () ()))
+(<- (--get-heads ((?h . ?t) . ?rest-lists) (?h . ?rest-heads))
+    (--get-heads ?rest-lists ?rest-heads))
+
+(<- (--get-tails () ()))
+(<- (--get-tails ((?h . ?t) . ?rest-lists) (?t . ?rest-tails))
+    (--get-tails ?rest-lists ?rest-tails))
+
+(<- (maplist ?pred . ?lists)
+    (if (--all-null ?lists)
+        true
+        (and
+         (--get-heads ?lists ?heads)
+         (--get-tails ?lists ?tails)
+         (call (?pred . ?heads))
+         (call (maplist ?pred . ?tails)))))
+
 (standard-clause-database (current-clause-database))
