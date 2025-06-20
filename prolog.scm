@@ -415,6 +415,11 @@
     (write resolved)
     (newline)))
 
+(define (flatten-call-goal g)
+  (if (and (pair? g) (pair? (car g)))
+      (flatten-call-goal (cons (caar g) (append (cdar g) (cdr g))))
+      g))
+
 (define-predicate (= term1 term2)
   (let ((new-bindings (unify term1 term2 (current-bindings))))
     (prove-all (current-remaining-goals) new-bindings)))
@@ -434,9 +439,10 @@
   (call/cc
    (lambda (choice-point)
      (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
-         (cut-goals (insert-choice-point (list substituted-goal) choice-point))
-         (next-goals (append cut-goals (current-remaining-goals))))
-    (prove-all next-goals (current-bindings))))))
+            (flat-goal (flatten-call-goal substituted-goal))
+            (cut-goals (insert-choice-point (list flat-goal) choice-point))
+            (next-goals (append cut-goals (current-remaining-goals))))
+       (prove-all next-goals (current-bindings))))))
 
 (define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
