@@ -426,17 +426,17 @@
 (define-predicate (cut choice-point)
   (choice-point (prove-all (current-remaining-goals) (current-bindings))))
 
-(define-predicate (call goal)
+(define-predicate (call pred-or-goal . args)
   (call/cc
    (lambda (choice-point)
-     (define (flatten-call-goal goal)
-       (if (and (pair? goal) (pair? (car goal)))
-           (flatten-call-goal (cons (caar goal) (append (cdar goal) (cdr goal))))
-           goal))
-     (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
-            (flat-goal (flatten-call-goal substituted-goal))
-            (cut-goals (insert-choice-point (list flat-goal) choice-point))
-            (next-goals (append cut-goals (current-remaining-goals))))
+     (let* ((goal (cond
+                   ((null? args) pred-or-goal)
+                   ((symbol? pred-or-goal) (cons pred-or-goal args))
+                   ((pair? pred-or-goal) (append pred-or-goal args))
+                   (else (error "call: invalid form" (cons pred-or-goal args)))))
+           (substituted-goal (substitute-bindings (current-bindings) goal))
+           (cut-goals (insert-choice-point (list substituted-goal) choice-point))
+           (next-goals (append cut-goals (current-remaining-goals))))
        (prove-all next-goals (current-bindings))))))
 
 (define-predicate (--lisp-eval-internal result-variable expression)

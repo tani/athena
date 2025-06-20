@@ -143,7 +143,14 @@
 
   (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
   (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
-  (test-equal "call supports curry" 'mary (solve-first '((call ((parent john) ?x))) '?x))
+  ;; Variadic call form
+  (test-equal "call variadic simple" 'mary (solve-first '((call parent john ?x)) '?x))
+  (test-equal "call variadic with conjunction" '(mary michael susan david)
+              (solve-all '((call ancestor john ?gc)) '?gc))
+  ;; Compound predicate with extra arguments
+  (test-equal "call compound+args" 'mary (solve-first '((call (parent john) ?x)) '?x))
+  (test-equal "call compound+args conjunction" '(mary michael susan david)
+              (solve-all '((call (ancestor john) ?gc)) '?gc))
 
   (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
   (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
