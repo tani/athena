@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>BiwaScheme REPL</title>
+  <!-- xterm.css from esm.sh -->
+  <link rel="stylesheet" href="https://esm.sh/@xterm/xterm/css/xterm.css" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    html,
+    body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      background: #272822;
+      font-family: monospace;
+    }
+
+    #terminal {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "xterm": "https://esm.sh/@xterm/xterm@5.5.0",
+        "xterm-addon-fit": "https://esm.sh/@xterm/addon-fit@0.10.0",
+        "biwascheme": "https://esm.sh/biwascheme@0.8.0"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="terminal"></div>
+
+  <script type="module">
+    import { Terminal } from "xterm";
+    import { FitAddon } from "xterm-addon-fit";
+    import * as BiwaModule from "biwascheme";
+
+    const BiwaScheme = BiwaModule.default ?? BiwaModule;
+    if (!BiwaScheme || !BiwaScheme.Interpreter) {
+      throw new Error("Cannot locate BiwaScheme.Interpreter – the module API may have changed.");
+    }
+
+    const term = new Terminal({
+      theme: {
+        background: "#272822",
+        foreground: "#f8f8f2",
+        cursor: "#f8f8f2"
+      }
+    });
+    const fitAddon = new FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById("terminal"));
+    fitAddon.fit();
+    window.addEventListener("resize", () => fitAddon.fit());
+
+    const interp = new BiwaScheme.Interpreter((err) => {
+      term.writeln(`Error: ${err}`);
+      writePrompt();
+    });
+
+    let readActive = false;
+
+    const libFuncs = BiwaScheme.LibFuncs || {};
+    if (!("read" in libFuncs)) {
+      if (!BiwaScheme.LibFuncs) BiwaScheme.LibFuncs = libFuncs;
+
+      BiwaScheme.define_libfunc("read", 0, 0, function () {
+        return new BiwaScheme.Pause((pause) => {
+          readActive = true;
+          term.write("read> ");
+          let buf = "";
+
+          const disposer = term.onData((data) => {
+            const code = data.charCodeAt(0);
+            switch (code) {
+              case 13: // Enter
+                term.write("\r\n");
+                disposer.dispose();
+                let value;
+                try {
+                  value = BiwaScheme.Parser.parse(buf.trim())[0];
+                } catch (e) {
+                  term.writeln(`Parse error: ${e}`);
+                  value = BiwaScheme.undef;
+                }
+                readActive = false;
+                lineBuf = "";
+                pause.resume(value);
+                break;
+              case 127:
+              case 8:
+                if (buf.length) {
+                  buf = buf.slice(0, -1);
+                  term.write("\b \b");
+                }
+                break;
+              default:
+                buf += data;
+                term.write(data);
+            }
+          });
+        });
+      });
+    }
+
+    const PROMPT = "biwa> ";
+    let lineBuf = "";
+
+    function writePrompt() {
+      term.write(PROMPT);
+    }
+
+    writePrompt();
+
+    term.onData((data) => {
+      if (readActive) return;
+
+      const code = data.charCodeAt(0);
+      switch (code) {
+        case 13:
+          term.write("\r\n");
+          const command = lineBuf.trim();
+          lineBuf = "";
+          if (command) {
+            handleCommand(command);
+          } else {
+            writePrompt();
+          }
+          break;
+        case 127:
+        case 8:
+          if (lineBuf.length) {
+            lineBuf = lineBuf.slice(0, -1);
+            term.write("\b \b");
+          }
+          break;
+        default:
+          lineBuf += data;
+          term.write(data);
+      }
+    });
+
+    function handleCommand(cmd) {
+      interp.evaluate(cmd, (result) => {
+        if (result !== undefined && result !== BiwaScheme.undef) {
+          term.writeln(String(result));
+        }
+        if (!readActive) writePrompt();
+      });
+    }
+  </script>
+</body>
+</html>
