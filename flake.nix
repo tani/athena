@@ -15,7 +15,6 @@
           '';
 
           rlwrapPkgs = {
-            gauche = makeRlwrap "gosh" "${pkgs.gauche}/bin/gosh";
             chicken = makeRlwrap "csi" "${pkgs.chicken}/bin/csi";
             sagittarius-scheme = makeRlwrap "sagittarius" "${pkgs.sagittarius-scheme}/bin/sagittarius";
             chibi = makeRlwrap "chibi-scheme" "${pkgs.chibi}/bin/chibi-scheme";
@@ -31,7 +30,7 @@
               rlwrap nodejs
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
             ] ++ (with rlwrapPkgs; [
-              gauche chicken sagittarius-scheme chibi guile chez gambit
+              chicken sagittarius-scheme chibi guile chez gambit
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 awful r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
