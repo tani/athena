@@ -15,7 +15,7 @@
 
   ;; Imports ------------------------------------------------------------------
   (import (rnrs)
-          (rnrs eval) 
+          (rnrs eval)
           (only (srfi :1) alist-delete alist-cons delete-duplicates)
           (only (srfi :39) parameterize make-parameter)
           (only (chezscheme) include))

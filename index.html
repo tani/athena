@@ -1,251 +1,129 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>BiwaScheme REPL</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- xterm.css from esm.sh -->
-  <link rel="stylesheet" href="https://esm.sh/@xterm/xterm/css/xterm.css" />
-  <style>
-    :root {
-      color-scheme: dark;
-    }
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>BiwaScheme × xterm.js REPL</title>
 
-    html,
-    body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      background: #272822;
-      font-family: monospace;
-      overflow: hidden; /* Prevent scrollbars on body */
-    }
+    <link href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" rel="stylesheet">
+    <style>
+      html,body{height:100%;margin:0;background:#1e1e1e;color:#ccc;font-family:monospace}
+      #terminal{height:100%;width:100%}
+    </style>
+  </head>
+  <body>
+    <div id="terminal"></div>
 
-    #terminal {
-      height: 100%;
-      width: 100%;
-    }
-  </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "xterm": "https://esm.sh/@xterm/xterm@5.5.0",
-        "xterm-addon-fit": "https://esm.sh/@xterm/addon-fit@0.10.0",
-        "biwascheme": "https://esm.sh/biwascheme@0.8.0"
+    <script type="module">
+      //------------------------------------------------------------------
+      // 1. Dependencies (ES Modules)
+      //------------------------------------------------------------------
+      import "https://cdn.jsdelivr.net/npm/biwascheme@0.8.0/release/biwascheme.min.js";
+      import { Terminal } from 'https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/+esm'
+      import { FitAddon } from 'https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/+esm'
+
+      const { Port, Interpreter, to_write } = BiwaScheme;
+      if (!Port || !Interpreter) {
+        throw new Error("Failed to load BiwaScheme Port / Interpreter – please check the import URL or version.");
       }
-    }
-  </script>
-</head>
-<body>
-  <div id="terminal"></div>
 
-  <script type="module">
-    import { Terminal } from "xterm";
-    import { FitAddon } from "xterm-addon-fit";
-    import * as BiwaModule from "biwascheme";
+      //------------------------------------------------------------------
+      // 2. xterm.js initialisation
+      //------------------------------------------------------------------
+      const term = new Terminal({
+        cursorBlink: true,
+        theme: {
+          background: "#1e1e1e",
+          foreground: "#cccccc",
+        },
+      });
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.open(document.getElementById("terminal"));
+      fitAddon.fit();
+      window.addEventListener("resize", () => fitAddon.fit());
 
-    const BiwaScheme = BiwaModule.default ?? BiwaModule;
-    if (!BiwaScheme || !BiwaScheme.Interpreter) {
-      throw new Error("Cannot locate BiwaScheme.Interpreter – the module API may have changed.");
-    }
+      //------------------------------------------------------------------
+      // 3. BiwaScheme I/O ports wired to xterm.js
+      //------------------------------------------------------------------
+      const outPort = new Port.CustomOutput(str => term.write(str.replace(/\n/g, "\r\n")));
 
-    // --- Terminal Setup ---
-    const term = new Terminal({
-      theme: {
-        background: "#272822",
-        foreground: "#f8f8f2",
-        cursor: "#f8f8f2"
-      },
-      convertEol: true, // Use '\n' for line breaks
-    });
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.open(document.getElementById("terminal"));
-    fitAddon.fit();
-    window.addEventListener("resize", () => fitAddon.fit());
+      let waitingReader = null; // Resolver when Scheme waits in (read)/(read-line)
+      const inPort = new Port.CustomInput(resume => (waitingReader = resume));
 
-    // --- BiwaScheme Interpreter Setup ---
-    let commandBuffer = ""; // For multi-line commands
+      Port.current_input  = inPort;
+      Port.current_output = outPort;
+      Port.current_error  = outPort;
 
-    const interp = new BiwaScheme.Interpreter((err) => {
-      term.writeln(`\r\nError: ${err}`);
-      commandBuffer = ""; // Reset buffer on evaluation error
-      writePrompt();
-    });
+      //------------------------------------------------------------------
+      // 4. Interpreter + REPL helpers
+      //------------------------------------------------------------------
+      const interpreter = new Interpreter(err => {
+        term.write(`\r\nError: ${err.message}`);
+        prompt();
+      });
 
-    let readActive = false; // Flag to check if (read) is active
+      /** Write REPL prompt */
+      const prompt = () => term.write("\r\nbiwa> ");
 
-    /**
-     * Checks if a parser error indicates an incomplete expression.
-     * @param {Error} e The error object from the parser.
-     * @returns {boolean} True if the expression is incomplete, false otherwise.
-     */
-    function isUnterminatedError(e) {
-      // Use the specific error type for unterminated expressions for robust checking.
-      return e instanceof BiwaScheme.Parser.Unterminated;
-    }
+      /** Evaluate one Scheme line */
+      const evalLine = src => {
+        if (!src.trim()) return prompt();
 
-    // Define (read) function if it doesn't exist
-    const libFuncs = BiwaScheme.LibFuncs || {};
-    if (!("read" in libFuncs)) {
-      if (!BiwaScheme.LibFuncs) BiwaScheme.LibFuncs = libFuncs;
+        interpreter.evaluate(
+          src,
+          result => {
+            const out = typeof to_write === "function" ? to_write(result) : String(result);
+            if (out !== "undefined") term.write(`\r\n${out}`);
+            prompt();
+          },
+          err => {
+            term.write(`\r\nError: ${err.message}`);
+            prompt();
+          },
+        );
+      };
 
-      // This function implements the (read) procedure for Scheme.
-      BiwaScheme.define_libfunc("read", 0, 0, function () {
-        // It pauses the interpreter and waits for user input.
-        return new BiwaScheme.Pause((pause) => {
-          readActive = true;
-          let readCommandBuffer = ""; // Buffer for multi-line input in read
-          let readLineBuf = "";       // Buffer for the current line in read
-          const READ_PROMPT = "\r\nread> ";
-          const READ_CONTINUATION_PROMPT = "read| ";
+      //------------------------------------------------------------------
+      // 5. Terminal key handling
+      //------------------------------------------------------------------
+      let buffer = "";
+      term.onKey(({ key, domEvent: e }) => {
+        switch (e.key) {
+          case "Enter": {
+            term.write("\r\n");
+            const line = buffer;
+            buffer = "";
 
-          term.write(READ_PROMPT);
-
-          // Create a dedicated listener for the 'read' function
-          const disposer = term.onData((data) => {
-            const code = data.charCodeAt(0);
-            switch (code) {
-              case 13: // Enter
-                term.write("\r\n");
-                readCommandBuffer += readLineBuf;
-                readLineBuf = "";
-
-                const trimmedReadCmd = readCommandBuffer.trim();
-                if (trimmedReadCmd === "") {
-                    readCommandBuffer = "";
-                    term.write(READ_PROMPT.trimStart());
-                    break;
-                }
-
-                try {
-                  // Attempt to parse the buffer. This will throw if incomplete or malformed.
-                  const value = BiwaScheme.Parser.parse(trimmedReadCmd);
-
-                  // If parsing succeeds, the expression is complete.
-                  disposer.dispose();
-                  readActive = false;
-                  // (read) should resume with the first parsed S-expression.
-                  pause.resume(value[0]);
-
-                } catch (e) {
-                  // Check if the error indicates an incomplete expression.
-                  if (isUnterminatedError(e)) {
-                      // It's an incomplete S-expression. Wait for more input.
-                      readCommandBuffer += " "; // Add space for the next line
-                      term.write(READ_CONTINUATION_PROMPT);
-                  } else {
-                      // It's a different, unrecoverable syntax error.
-                      disposer.dispose();
-                      term.writeln(`\r\nParse error: ${e.message}`);
-                      readActive = false;
-                      // Abort the read and resume with #<undef>.
-                      pause.resume(BiwaScheme.undef);
-                  }
-                }
-                break;
-              case 127: // Backspace
-              case 8:
-                if (readLineBuf.length) {
-                  readLineBuf = readLineBuf.slice(0, -1);
-                  term.write("\b \b");
-                }
-                break;
-              default: // Any other character
-                if (code >= 32) { // Ignore non-printable characters
-                    readLineBuf += data;
-                    term.write(data);
-                }
+            if (waitingReader) {
+              waitingReader(`${line}\n`);
+              waitingReader = null;
+            } else {
+              evalLine(line);
             }
-          });
-        });
-      });
-    }
-
-    // --- REPL Logic ---
-    const PROMPT = "biwa> ";
-    const CONTINUATION_PROMPT = "biwa| ";
-    let lineBuf = "";
-
-    function writePrompt() {
-      // Choose prompt based on whether a command is being buffered
-      const prompt = commandBuffer === "" ? PROMPT : CONTINUATION_PROMPT;
-      term.write(prompt);
-    }
-
-    function handleCommand(cmd) {
-      interp.evaluate(cmd, (result) => {
-        if (result !== undefined && result !== BiwaScheme.undef) {
-          term.writeln(BiwaScheme.to_write(result));
-        }
-        // Only write a new prompt if not inside a (read) call
-        if (!readActive) {
-          writePrompt();
-        }
-      });
-    }
-
-    // Initial prompt
-    term.writeln("Welcome to BiwaScheme REPL!");
-    writePrompt();
-
-    // Main input handler
-    term.onData((data) => {
-      // If (read) is active, this handler does nothing
-      if (readActive) return;
-
-      const code = data.charCodeAt(0);
-      switch (code) {
-        case 13: // Enter
-          term.write("\r\n");
-          commandBuffer += lineBuf;
-          lineBuf = "";
-
-          const trimmedCmd = commandBuffer.trim();
-          if (trimmedCmd === "") {
-            commandBuffer = "";
-            writePrompt();
             break;
           }
 
-          try {
-            // Attempt to parse the command to check for completeness.
-            BiwaScheme.Parser.parse(trimmedCmd);
+          case "Backspace": {
+            if (buffer) {
+              term.write("\b \b");
+              buffer = buffer.slice(0, -1);
+            }
+            break;
+          }
 
-            // If parse succeeds, the expression is complete. Evaluate it.
-            commandBuffer = ""; // Reset buffer for the next command
-            handleCommand(trimmedCmd);
-
-          } catch (e) {
-            // Check if the error indicates an incomplete expression.
-            if (isUnterminatedError(e)) {
-              // It's incomplete, ask for more input.
-              commandBuffer += " "; // Add a space for the next part
-              writePrompt();
-            } else {
-              // It's a different kind of syntax error. Report it and reset.
-              term.writeln(`\r\nSyntax Error: ${e.message}`);
-              commandBuffer = ""; // Reset buffer
-              writePrompt();
+          default: {
+            if (!e.ctrlKey && !e.metaKey) {
+              term.write(key);
+              buffer += key;
             }
           }
-          break;
-        case 127: // Backspace (DEL)
-        case 8:   // Backspace
-          if (lineBuf.length > 0) {
-            lineBuf = lineBuf.slice(0, -1);
-            term.write("\b \b");
-          }
-          break;
-        default: // Any other character
-          // Ignore non-printable characters (except for basic ASCII)
-          if (code >= 32) {
-            lineBuf += data;
-            term.write(data);
-          }
-      }
-    });
-  </script>
-</body>
-</html>
+        }
+      });
 
+      //------------------------------------------------------------------
+      // 6. Kick‑off
+      //------------------------------------------------------------------
+      prompt();
+    </script>
+  </body>
+</html>

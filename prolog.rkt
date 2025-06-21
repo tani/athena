@@ -16,7 +16,7 @@
 
 ;; Imports ------------------------------------------------------------------
 (require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
-        (only-in rnrs flush-output-port))
+         (only-in rnrs flush-output-port))
 
 ;; Implementation -----------------------------------------------------------
 (struct failure () #:transparent #:constructor-name make-failure)
