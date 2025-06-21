@@ -20,14 +20,20 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
   - Sagittarius
   - ChezScheme
   - Racket
+  - BiwaScheme
+
+## Playground
+
+1. Visit [https://tani.github.io/athena](https://tani.github.io/athena)
+2. Enter `(load "prolog.biwa.scm")`
 
 ## Getting Started
 
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/tani/athena-reasoner.git
-   cd athena-reasoner
+   git clone https://github.com/tani/athena.git
+   cd athena
    ```
 
 2. Enter the development shell
@@ -41,7 +47,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
    Choose an implementation:
 
    ```bash
-   make IMPLS=gauche
+   make gauche
    ```
 
    Or run the full matrix:

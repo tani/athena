@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>BiwaScheme × xterm.js REPL</title>
+    <title>BiwaScheme</title>
 
     <link href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" rel="stylesheet">
     <style>
@@ -18,41 +18,31 @@
       // 1. Dependencies (ES Modules)
       //------------------------------------------------------------------
       import "https://cdn.jsdelivr.net/npm/biwascheme@0.8.0/release/biwascheme.min.js";
-      import { Terminal } from 'https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/+esm'
-      import { FitAddon } from 'https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/+esm'
+      import { Terminal } from 'https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/+esm';
+      import { FitAddon } from 'https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/+esm';
 
-      const { Port, Interpreter, to_write } = BiwaScheme;
-      if (!Port || !Interpreter) {
-        throw new Error("Failed to load BiwaScheme Port / Interpreter – please check the import URL or version.");
+      const { Port, Interpreter, to_write, Parser } = BiwaScheme;
+      if (!Port || !Interpreter || !Parser) {
+        throw new Error("Failed to load BiwaScheme modules – please check imports.");
       }
 
       //------------------------------------------------------------------
-      // 2. xterm.js initialisation
+      // 2. xterm.js initialization
       //------------------------------------------------------------------
-      const term = new Terminal({
-        cursorBlink: true,
-        theme: {
-          background: "#1e1e1e",
-          foreground: "#cccccc",
-        },
-      });
-      const fitAddon = new FitAddon();
-      term.loadAddon(fitAddon);
-      term.open(document.getElementById("terminal"));
-      fitAddon.fit();
-      window.addEventListener("resize", () => fitAddon.fit());
+      const term = new Terminal({ cursorBlink: true, theme: { background: '#1e1e1e', foreground: '#cccccc' } });
+      const fitAddon = new FitAddon(); term.loadAddon(fitAddon);
+      term.open(document.getElementById('terminal')); fitAddon.fit();
+      window.addEventListener('resize', () => fitAddon.fit());
 
       //------------------------------------------------------------------
-      // 3. BiwaScheme I/O ports wired to xterm.js
+      // 3. BiwaScheme I/O ports
       //------------------------------------------------------------------
-      const outPort = new Port.CustomOutput(str => term.write(str.replace(/\n/g, "\r\n")));
-
-      let waitingReader = null; // Resolver when Scheme waits in (read)/(read-line)
+      const outPort = new Port.CustomOutput(str => term.write(str.replace(/\n/g, '\r\n')));
+      let waitingReader = null;
       const inPort = new Port.CustomInput(resume => (waitingReader = resume));
-
-      Port.current_input  = inPort;
+      Port.current_input = inPort;
       Port.current_output = outPort;
-      Port.current_error  = outPort;
+      Port.current_error = outPort;
 
       //------------------------------------------------------------------
       // 4. Interpreter + REPL helpers
@@ -62,55 +52,72 @@
         prompt();
       });
 
-      /** Write REPL prompt */
-      const prompt = () => term.write("\r\nbiwa> ");
+      let multilineBuffer = '';
+      const prompt = () => term.write(multilineBuffer ? 'biwa| ' : '\r\nbiwa> ');
 
-      /** Evaluate one Scheme line */
-      const evalLine = src => {
-        if (!src.trim()) return prompt();
+      const evalBuffer = line => {
+        // ignore pure blank when no buffer
+        if (!line.trim() && !multilineBuffer) return prompt();
+        // append line
+        multilineBuffer += (multilineBuffer ? '\n' : '') + line;
 
+        // try parsing to detect incomplete input without emitting errors
+        try {
+          Parser.parse(multilineBuffer);
+        } catch (err) {
+          // Unterminated or EOS => wait for more
+          if (err instanceof Parser.Unterminated || /found EOS/.test(err.message)) {
+            return prompt();
+          }
+          // other parse errors => show and reset
+          term.write(`\r\nError: ${err.message}`);
+          multilineBuffer = '';
+          return prompt();
+        }
+
+        // fully parsed, now evaluate
         interpreter.evaluate(
-          src,
+          multilineBuffer,
           result => {
-            const out = typeof to_write === "function" ? to_write(result) : String(result);
-            if (out !== "undefined") term.write(`\r\n${out}`);
+            const out = typeof to_write === 'function' ? to_write(result) : String(result);
+            if (out !== 'undefined') term.write(`${out}`);
+            multilineBuffer = '';
             prompt();
           },
           err => {
             term.write(`\r\nError: ${err.message}`);
+            multilineBuffer = '';
             prompt();
-          },
+          }
         );
       };
 
       //------------------------------------------------------------------
       // 5. Terminal key handling
       //------------------------------------------------------------------
-      let buffer = "";
+      let buffer = '';
       term.onKey(({ key, domEvent: e }) => {
         switch (e.key) {
-          case "Enter": {
-            term.write("\r\n");
+          case 'Enter': {
+            term.write('\r\n');
             const line = buffer;
-            buffer = "";
-
+            buffer = '';
             if (waitingReader) {
               waitingReader(`${line}\n`);
               waitingReader = null;
+              prompt();
             } else {
-              evalLine(line);
+              evalBuffer(line);
             }
             break;
           }
-
-          case "Backspace": {
+          case 'Backspace': {
             if (buffer) {
-              term.write("\b \b");
+              term.write('\b \b');
               buffer = buffer.slice(0, -1);
             }
             break;
           }
-
           default: {
             if (!e.ctrlKey && !e.metaKey) {
               term.write(key);
@@ -127,3 +134,4 @@
     </script>
   </body>
 </html>
+
