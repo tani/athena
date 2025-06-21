@@ -6,6 +6,24 @@
   });
 ")
 
+(js-eval "
+  BiwaScheme.define_libfunc('read-char', 0, 1, (ar) => {
+    const port = ar[0] || BiwaScheme.Port.current_input;
+    BiwaScheme.assert_port(port);
+    return port.get_string((str) => {
+      if (!str || str.length === 0) {
+        return eof;
+      }
+      const ch = str.charAt(0);
+      if (port instanceof BiwaScheme.Port.StringInput) {
+        port.str = port.str.slice(1);
+      }
+      return Char.get(ch);
+    });
+  });
+")
+
+
 (define (flush-output-port _) (list))
 
 (define (environment _) (list))
@@ -33,8 +51,6 @@
              (loop seen (cdr rest)))
             (else
              (loop (cons (car rest) seen) (cdr rest)))))))
-
-(define read-char read)
 
 (define-macro (<- . clause)
   (let ((head (car clause))
