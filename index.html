@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>BiwaScheme REPL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- xterm.css from esm.sh -->
   <link rel="stylesheet" href="https://esm.sh/@xterm/xterm/css/xterm.css" />
   <style>
@@ -17,6 +18,7 @@
       margin: 0;
       background: #272822;
       font-family: monospace;
+      overflow: hidden; /* Prevent scrollbars on body */
     }
 
     #terminal {
@@ -47,12 +49,14 @@
       throw new Error("Cannot locate BiwaScheme.Interpreter – the module API may have changed.");
     }
 
+    // --- Terminal Setup ---
     const term = new Terminal({
       theme: {
         background: "#272822",
         foreground: "#f8f8f2",
         cursor: "#f8f8f2"
-      }
+      },
+      convertEol: true, // Use '\n' for line breaks
     });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
@@ -60,101 +64,188 @@
     fitAddon.fit();
     window.addEventListener("resize", () => fitAddon.fit());
 
+    // --- BiwaScheme Interpreter Setup ---
+    let commandBuffer = ""; // For multi-line commands
+
     const interp = new BiwaScheme.Interpreter((err) => {
-      term.writeln(`Error: ${err}`);
+      term.writeln(`\r\nError: ${err}`);
+      commandBuffer = ""; // Reset buffer on evaluation error
       writePrompt();
     });
 
-    let readActive = false;
+    let readActive = false; // Flag to check if (read) is active
 
+    /**
+     * Checks if a parser error indicates an incomplete expression.
+     * @param {Error} e The error object from the parser.
+     * @returns {boolean} True if the expression is incomplete, false otherwise.
+     */
+    function isUnterminatedError(e) {
+      // Use the specific error type for unterminated expressions for robust checking.
+      return e instanceof BiwaScheme.Parser.Unterminated;
+    }
+
+    // Define (read) function if it doesn't exist
     const libFuncs = BiwaScheme.LibFuncs || {};
     if (!("read" in libFuncs)) {
       if (!BiwaScheme.LibFuncs) BiwaScheme.LibFuncs = libFuncs;
 
+      // This function implements the (read) procedure for Scheme.
       BiwaScheme.define_libfunc("read", 0, 0, function () {
+        // It pauses the interpreter and waits for user input.
         return new BiwaScheme.Pause((pause) => {
           readActive = true;
-          term.write("read> ");
-          let buf = "";
+          let readCommandBuffer = ""; // Buffer for multi-line input in read
+          let readLineBuf = "";       // Buffer for the current line in read
+          const READ_PROMPT = "\r\nread> ";
+          const READ_CONTINUATION_PROMPT = "read| ";
 
+          term.write(READ_PROMPT);
+
+          // Create a dedicated listener for the 'read' function
           const disposer = term.onData((data) => {
             const code = data.charCodeAt(0);
             switch (code) {
               case 13: // Enter
                 term.write("\r\n");
-                disposer.dispose();
-                let value;
-                try {
-                  value = BiwaScheme.Parser.parse(buf.trim())[0];
-                } catch (e) {
-                  term.writeln(`Parse error: ${e}`);
-                  value = BiwaScheme.undef;
+                readCommandBuffer += readLineBuf;
+                readLineBuf = "";
+
+                const trimmedReadCmd = readCommandBuffer.trim();
+                if (trimmedReadCmd === "") {
+                    readCommandBuffer = "";
+                    term.write(READ_PROMPT.trimStart());
+                    break;
                 }
-                readActive = false;
-                lineBuf = "";
-                pause.resume(value);
+
+                try {
+                  // Attempt to parse the buffer. This will throw if incomplete or malformed.
+                  const value = BiwaScheme.Parser.parse(trimmedReadCmd);
+
+                  // If parsing succeeds, the expression is complete.
+                  disposer.dispose();
+                  readActive = false;
+                  // (read) should resume with the first parsed S-expression.
+                  pause.resume(value[0]);
+
+                } catch (e) {
+                  // Check if the error indicates an incomplete expression.
+                  if (isUnterminatedError(e)) {
+                      // It's an incomplete S-expression. Wait for more input.
+                      readCommandBuffer += " "; // Add space for the next line
+                      term.write(READ_CONTINUATION_PROMPT);
+                  } else {
+                      // It's a different, unrecoverable syntax error.
+                      disposer.dispose();
+                      term.writeln(`\r\nParse error: ${e.message}`);
+                      readActive = false;
+                      // Abort the read and resume with #<undef>.
+                      pause.resume(BiwaScheme.undef);
+                  }
+                }
                 break;
-              case 127:
+              case 127: // Backspace
               case 8:
-                if (buf.length) {
-                  buf = buf.slice(0, -1);
+                if (readLineBuf.length) {
+                  readLineBuf = readLineBuf.slice(0, -1);
                   term.write("\b \b");
                 }
                 break;
-              default:
-                buf += data;
-                term.write(data);
+              default: // Any other character
+                if (code >= 32) { // Ignore non-printable characters
+                    readLineBuf += data;
+                    term.write(data);
+                }
             }
           });
         });
       });
     }
 
+    // --- REPL Logic ---
     const PROMPT = "biwa> ";
+    const CONTINUATION_PROMPT = "biwa| ";
     let lineBuf = "";
 
     function writePrompt() {
-      term.write(PROMPT);
+      // Choose prompt based on whether a command is being buffered
+      const prompt = commandBuffer === "" ? PROMPT : CONTINUATION_PROMPT;
+      term.write(prompt);
     }
-
-    writePrompt();
-
-    term.onData((data) => {
-      if (readActive) return;
-
-      const code = data.charCodeAt(0);
-      switch (code) {
-        case 13:
-          term.write("\r\n");
-          const command = lineBuf.trim();
-          lineBuf = "";
-          if (command) {
-            handleCommand(command);
-          } else {
-            writePrompt();
-          }
-          break;
-        case 127:
-        case 8:
-          if (lineBuf.length) {
-            lineBuf = lineBuf.slice(0, -1);
-            term.write("\b \b");
-          }
-          break;
-        default:
-          lineBuf += data;
-          term.write(data);
-      }
-    });
 
     function handleCommand(cmd) {
       interp.evaluate(cmd, (result) => {
         if (result !== undefined && result !== BiwaScheme.undef) {
-          term.writeln(String(result));
+          term.writeln(BiwaScheme.to_write(result));
         }
-        if (!readActive) writePrompt();
+        // Only write a new prompt if not inside a (read) call
+        if (!readActive) {
+          writePrompt();
+        }
       });
     }
+
+    // Initial prompt
+    term.writeln("Welcome to BiwaScheme REPL!");
+    writePrompt();
+
+    // Main input handler
+    term.onData((data) => {
+      // If (read) is active, this handler does nothing
+      if (readActive) return;
+
+      const code = data.charCodeAt(0);
+      switch (code) {
+        case 13: // Enter
+          term.write("\r\n");
+          commandBuffer += lineBuf;
+          lineBuf = "";
+
+          const trimmedCmd = commandBuffer.trim();
+          if (trimmedCmd === "") {
+            commandBuffer = "";
+            writePrompt();
+            break;
+          }
+
+          try {
+            // Attempt to parse the command to check for completeness.
+            BiwaScheme.Parser.parse(trimmedCmd);
+
+            // If parse succeeds, the expression is complete. Evaluate it.
+            commandBuffer = ""; // Reset buffer for the next command
+            handleCommand(trimmedCmd);
+
+          } catch (e) {
+            // Check if the error indicates an incomplete expression.
+            if (isUnterminatedError(e)) {
+              // It's incomplete, ask for more input.
+              commandBuffer += " "; // Add a space for the next part
+              writePrompt();
+            } else {
+              // It's a different kind of syntax error. Report it and reset.
+              term.writeln(`\r\nSyntax Error: ${e.message}`);
+              commandBuffer = ""; // Reset buffer
+              writePrompt();
+            }
+          }
+          break;
+        case 127: // Backspace (DEL)
+        case 8:   // Backspace
+          if (lineBuf.length > 0) {
+            lineBuf = lineBuf.slice(0, -1);
+            term.write("\b \b");
+          }
+          break;
+        default: // Any other character
+          // Ignore non-printable characters (except for basic ASCII)
+          if (code >= 32) {
+            lineBuf += data;
+            term.write(data);
+          }
+      }
+    });
   </script>
 </body>
 </html>
+
