@@ -10,31 +10,22 @@
 
       perSystem = { pkgs, system, ... }:
         let
-          makeRlwrap = name: target: pkgs.writeShellScriptBin name ''
-            exec ${pkgs.rlwrap}/bin/rlwrap -c ${target} "$@"
-          '';
-
-          rlwrapPkgs = {
-            chicken = makeRlwrap "csi" "${pkgs.chicken}/bin/csi";
-            sagittarius-scheme = makeRlwrap "sagittarius" "${pkgs.sagittarius-scheme}/bin/sagittarius";
-            chibi = makeRlwrap "chibi-scheme" "${pkgs.chibi}/bin/chibi-scheme";
-            guile = makeRlwrap "guile" "${pkgs.guile}/bin/guile";
-            chez = makeRlwrap "scheme" "${pkgs.chez}/bin/scheme";
-            gambit = makeRlwrap "gsi" "${pkgs.gambit}/bin/gsi";
-          };
-
           chickenEggs = pkgs.chickenPackages_5.chickenEggs;
+          nodePackages = import ./node {
+            inherit pkgs;
+            nodejs = pkgs.nodejs; # nodejsのバージョンを明示的に指定
+          };
         in {
           devShells.default = pkgs.mkShell {
-            packages = with pkgs; [
-              rlwrap nodejs
+            packages = (with pkgs; [
+              rlwrap nodejs node2nix
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
-            ] ++ (with rlwrapPkgs; [
-              chicken sagittarius-scheme chibi guile chez gambit
+            ]) ++ (with nodePackages; [
+              biwascheme # lips
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 awful r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
-              racket
+              racket s7
             ]);
             CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''

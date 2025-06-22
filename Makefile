@@ -1,32 +1,35 @@
-IMPLS=racket gauche guile chicken chibi sagittarius gambit chez
+IMPLS=racket gauche guile chicken chibi sagittarius gambit chez biwa
 
 all: $(IMPLS)
 
 .PHONY: $(IMPLS) clean
 
 gauche:
-	gosh -r 7 -I . test7.scm
+	gosh -r 7 -I . test.seven.scm
 
 chicken:
-	csi -R r7rs -e '(include "prolog.sld")' -s test7.scm
+	csi -R r7rs -e '(include "prolog.sld")' -s test.seven.scm
 
 racket:
 	racket test.rkt
 
 guile:
-	guile -x .sld -L . test7.scm
+	guile -x .sld -L . test.seven.scm
 
 chibi:
-	chibi-scheme -I . test7.scm
+	chibi-scheme -I . test.seven.scm
 
 sagittarius:
-	sagittarius -S .sld -r 7 -L . test7.scm
+	sagittarius -S .sld -r 7 -L . test.seven.scm
 
 chez:
-	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD --script test6.scm
+	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD --script test.chez.scm
 
 gambit:
-	# gsi -:r7rs . test7.scm
+	# gsi -:r7rs . test.seven.scm
+
+biwa:
+	biwas test.biwa.scm
 
 clean:
 	rm -f *.log

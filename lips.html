@@ -47,7 +47,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       terminal(window, jQuery);
 
-      jQuery('.term').terminal(async (command, term) => {
+      jQuery('#term').terminal(async (command, term) => {
         if (!term._interpreter) {
           term._interpreter = new Interpreter('LIPS REPL', {
             stdin: new InputPort(cb => term.read('', cb)),
