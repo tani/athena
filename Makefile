@@ -26,7 +26,7 @@ chez:
 	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD --script test.chez.scm
 
 gambit:
-	# gsi -:r7rs . test.seven.scm
+	gsi -:r7rs test.gambit.scm
 
 biwa:
 	biwas test.biwa.scm
