@@ -21,11 +21,11 @@
               rlwrap nodejs node2nix
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
             ]) ++ (with nodePackages; [
-              biwascheme # lips
+              biwascheme lips
             ]) ++ (with chickenEggs; [
-              srfi-1 srfi-132 srfi-64 awful r7rs
+              srfi-1 srfi-132 srfi-64 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
-              racket s7
+              racket
             ]);
             CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''
