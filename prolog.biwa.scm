@@ -98,3 +98,5 @@
     (lambda (p) (write object p))))
 
 (load "prolog.scm")
+
+(define (flush-input-port _) (list))
