@@ -23,8 +23,7 @@
   });
 ")
 
-
-(define (flush-output-port _) (list))
+(define (flush-output-port _) (newline))
 
 (define (environment _) (list))
 
