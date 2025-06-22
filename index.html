@@ -95,7 +95,7 @@
             buffer = "";
 
             if (waitingReader) {
-              waitingReader(line);
+              waitingReader(`${line}\n`);
               waitingReader = null;
             } else {
               evalLine(line);
