@@ -8,7 +8,7 @@
 ;; Utility procedures
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gensym
+(define %gensym
   (let ((counter 0))
     (lambda (prefix)
       (let* ((counter-string (number->string counter))
@@ -62,7 +62,7 @@
 
 (define (replace-anonymous-variables expression)
   (cond
-    ((eq? expression '?) (gensym "?"))
+    ((eq? expression '?) (%gensym "?"))
     ((atom? expression) expression)
     (else
      (let* ((car-replaced (replace-anonymous-variables (car expression)))
@@ -177,7 +177,7 @@
       (cons car-sublis cdr-sublis))))
   (define (make-renaming-pair variable)
     (let ((var-string (symbol->string variable)))
-      (cons variable (gensym var-string))))
+      (cons variable (%gensym var-string))))
   (let* ((variables (variables-in expression))
          (alist (map make-renaming-pair variables)))
     (sublis alist expression)))
@@ -327,7 +327,7 @@
 
 (define (flush-input-port port)
   (let loop ()
-    (let ((c (read-char port #f)))
+    (let ((c (read-char port)))
       (unless (or (eof-object? c) (char=? c #\newline))
         (loop)))))
 
