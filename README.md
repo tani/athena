@@ -15,6 +15,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 - One or more of the supported Scheme implementations:
   - Gauche
   - Guile
+  - Gambit
   - Chicken
   - Chibi
   - Sagittarius
