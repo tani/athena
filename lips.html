@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIPS REPL</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal@2.44.1/css/jquery.terminal.min.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #2d2d2d;
+      color: #ccc;
+      font-family: 'Menlo', monospace;
+      height: 100vh;
+    }
+    main {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .term {
+      width: 900px;
+      height: 90vh;
+      border-radius: 8px;
+      --background: #222426;
+      --foreground: #e6e6e6;
+      --cursor-color: #e6e6e6;
+      --size: 1.1;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LIPS REPL</h1>
+    <p>Enter Scheme expressions below:</p>
+  </main>
+  <div class="term"></div>
+
+  <script type="module">
+    import jQuery from 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/+esm'
+    import terminal from 'https://cdn.jsdelivr.net/npm/jquery.terminal@2.44.1/+esm';
+    import { Interpreter, InputPort, OutputPort } from 'https://cdn.jsdelivr.net/npm/lips@beta/+esm';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      terminal(window, jQuery);
+
+      jQuery('.term').terminal(async (command, term) => {
+        if (!term._interpreter) {
+          term._interpreter = new Interpreter('LIPS REPL', {
+            stdin: new InputPort(cb => term.read('', cb)),
+            stdout: new OutputPort(obj => term.echo(String(obj), { newline: false })),
+          });
+          await term._interpreter.exec(`
+          (let-env lips.env.__parent__ (load "https://cdn.jsdelivr.net/npm/lips@beta/dist/std.xcb"))
+          (load "https://cdn.jsdelivr.net/npm/lips@beta/lib/srfi/1.scm")
+          (define (:optional maybe default)
+            (if (null? maybe)
+                default
+                (car maybe)))
+          (define (list-sort x y) (sort y x))
+          (define-record-type <failure> (make-failure) failure?)
+          (define-record-type <success>
+            (make-success bindings continuation) success?
+            (bindings success-bindings)
+            (continuation success-continuation))
+          (define (object->string object)
+            (parameterize ((current-output-port (open-output-string)))
+              (write object)
+              (get-output-string (current-output-port))))
+          (load "prolog.scm")
+          (define (flush-input-port _) (list))
+          (define (flush-output-port _) (newline))
+          (current-lisp-environment (interaction-environment))
+          `);
+
+        }
+        const interpreter = term._interpreter;
+        await interpreter.exec(command)
+          .then(results => results.forEach(res => term.echo('=> ' + String(res))))
+          .catch(err => term.error(err.message));
+      }, {
+        greetings: 'LIPS REPL',
+        prompt: 'lips> ',
+        checkArity: false
+      });
+    });
+  </script>
+</body>
+</html>
+
