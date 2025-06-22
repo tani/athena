@@ -21,6 +21,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
   - ChezScheme
   - Racket
   - BiwaScheme
+  - LIPS
 
 ## Playground
 
