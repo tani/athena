@@ -23,8 +23,8 @@
     (guile (import (only (rnrs sorting) list-sort)))
     (gauche (import (only (scheme sort) list-sort)))
     (chibi (import (only (scheme sort) list-sort)))
-    (gambit (import (only (srfi 132) list-sort)))
     (sagittarius (import (only (scheme sort) list-sort))))
+
   ;; Implementation -----------------------------------------------------------
   (begin
     (define-record-type <failure> (make-failure) failure?)
@@ -40,9 +40,6 @@
 
     (include "prolog.scm")
 
-    (current-lisp-environment
-      (cond-expand
-        (gambit 5)
-        (else (environment '(scheme base)))))
+    (current-lisp-environment (environment '(scheme base)))
   )
 )
