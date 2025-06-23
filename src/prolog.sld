@@ -7,24 +7,30 @@
     unify object->string remove-clauses-with-arity!
     current-clause-database primitive-clause-database
     standard-clause-database
-    add-clause! get-clauses <- <-- define-predicate prove-all ?-
+    add-clause! get-clauses <- <-- define-predicate prove-all ?- min-arity
     current-lisp-environment current-spy-predicates
     success-bindings success-continuation prolog %prolog)
 
   ;; Imports ------------------------------------------------------------------
-  (import (scheme base)
-          (scheme eval)
-          (scheme write)
-          (scheme read)
-          (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
-
+  (import
+    (scheme base)
+    (scheme r5rs)
+    (scheme eval)
+    (scheme write)
+    (scheme read)
+    (scheme eval)
+    (only (srfi 1) alist-delete filter delete-duplicates alist-cons)
+  )
   (cond-expand
-    (chicken (import scheme (only (srfi 132) list-sort)))
-    (guile (import (only (rnrs sorting) list-sort)))
-    (gauche (import (only (scheme sort) list-sort)))
-    (chibi (import (only (scheme sort) list-sort)))
-    (sagittarius (import (only (scheme sort) list-sort))))
-
+    (gambit
+      (import (only (srfi 132) list-sort)))
+    (chicken
+      (import scheme (only (srfi 132) list-sort)))
+    (guile
+      (import (only (rnrs sorting) list-sort)))
+    ((or gauche chibi sagittarius)
+     (import(only (scheme sort) list-sort)))
+  )
   ;; Implementation -----------------------------------------------------------
   (begin
     (define-record-type <failure> (make-failure) failure?)
@@ -37,11 +43,17 @@
       (parameterize ((current-output-port (open-output-string)))
         (write object)
         (get-output-string (current-output-port))))
-
-    (cond-expand
-      ((or guile chicken chibi sagittarius) (include "src/prolog.scm"))
-      (else (include "prolog.scm")))
-
-    (current-lisp-environment (environment '(scheme base)))
+  )
+  (cond-expand
+    (chicken
+      (include "prolog.scm"))
+    (guile
+      (import (only (guile) include-from-path))
+      (begin (include-from-path "prolog.scm")))
+    ((or gauche chibi sagittarius gambit)
+     (include-library-declarations "prolog.scm"))
+  )
+  (begin
+    (current-lisp-environment (interaction-environment))
   )
 )

@@ -31,4 +31,4 @@
 
 (include "prolog.scm")
 
-(current-lisp-environment (make-base-namespace))
+(current-lisp-environment (current-namespace))

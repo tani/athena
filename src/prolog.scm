@@ -1,3 +1,4 @@
+(begin
 ;; prolog.scm — Prolog engine core implementation (highly commonized)
 ;; Copyright © 2025 Masaya Taniguchi
 ;; Released under the GNU General Public License v3.0
@@ -589,3 +590,4 @@
          (call (maplist ?pred . ?tails)))))
 
 (standard-clause-database (current-clause-database))
+)

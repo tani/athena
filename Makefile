@@ -8,7 +8,7 @@ gauche:
 	gosh -r 7 -I src test/test.seven.scm
 
 chicken:
-	csi -R r7rs -e '(include "src/prolog.sld")' -s test/test.seven.scm
+	csi -R r7rs -I src -e '(include "src/prolog.sld")' -s test/test.seven.scm
 
 racket:
 	racket test/test.rkt
@@ -26,7 +26,7 @@ chez:
 	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD/src --script test/test.chez.scm
 
 gambit:
-	gsi -:r7rs test/test.gambit.scm
+	gsi -:r7rs src/ test/test.seven.scm
 
 biwa:
 	biwas test/test.biwa.scm

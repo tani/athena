@@ -18,7 +18,7 @@
           (rnrs eval)
           (only (srfi :1) alist-delete alist-cons delete-duplicates)
           (only (srfi :39) parameterize make-parameter)
-          (only (chezscheme) include))
+          (only (chezscheme) include interaction-environment))
 
   ;; Implementation -----------------------------------------------------------
   (begin
@@ -36,7 +36,6 @@
 
     (include "prolog.scm")
 
-    (current-lisp-environment
-      (environment '(rnrs base)))
+    (current-lisp-environment (interaction-environment))
   )
 )
