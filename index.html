@@ -62,7 +62,14 @@
         term.error(e.message);
       }
     }, {
-      greetings: 'BiwaScheme REPL',
+      greetings: [
+        'BiwaScheme REPL',
+        'Usage:',
+        '(load "src/prolog.biwa.scm") ; load prolog',
+        '(<-- (like alice bob))       ; definition',
+        '(?- (like ?who bob))         ; query',
+        '--------------------------------'
+      ].join('\n'),
       prompt: 'scheme> ',
     });
   </script>
