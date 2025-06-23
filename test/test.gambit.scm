@@ -1,6 +1,6 @@
 (import (scheme base)
         (scheme r5rs)
         (srfi 64))
-(include "prolog.gambit.scm")
+(include "../src/prolog.gambit.scm")
 (current-lisp-environment (interaction-environment))
 (include "test.scm")

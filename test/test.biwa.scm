@@ -45,5 +45,5 @@
          (test-report-success ,assertion-name)
          (test-report-failure ,assertion-name expected actual))))
 
-(load "prolog.biwa.scm")
-(load "test.scm")
+(load "src/prolog.biwa.scm")
+(load "test/test.scm")

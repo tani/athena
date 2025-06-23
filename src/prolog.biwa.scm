@@ -96,6 +96,6 @@
   (call-with-string-output-port
     (lambda (p) (write object p))))
 
-(load "prolog.scm")
+(load "src/prolog.scm")
 
 (define (flush-input-port _) (list))

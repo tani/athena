@@ -27,7 +27,7 @@ Athena Reasoner is a lightweight Prolog-inspired logic programming engine implem
 ## Playground
 
 1. Visit [https://tani.github.io/athena](https://tani.github.io/athena)
-2. Enter `(load "prolog.biwa.scm")`
+2. Enter `(load "src/prolog.biwa.scm")`
 
 ## Getting Started
 
