@@ -38,7 +38,9 @@
         (write object)
         (get-output-string (current-output-port))))
 
-    (include "prolog.scm")
+    (cond-expand
+      ((or guile chicken chibi sagittarius) (include "src/prolog.scm"))
+      (else (include "prolog.scm")))
 
     (current-lisp-environment (environment '(scheme base)))
   )

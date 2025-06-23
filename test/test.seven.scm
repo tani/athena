@@ -9,4 +9,6 @@
   (else
    (current-lisp-environment (interaction-environment))))
 
-(include "test.scm")
+(cond-expand
+  (chibi (include "test/test.scm"))
+  (else  (include "test.scm")))

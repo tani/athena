@@ -3,4 +3,4 @@
         (prolog)
         (only (chezscheme) include interaction-environment))
 (current-lisp-environment (interaction-environment))
-(include "test.scm")
+(include "test/test.scm")

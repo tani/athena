@@ -1,6 +1,6 @@
 #lang racket/base
 (require srfi/64
-         "prolog.rkt"
+         "../src/prolog.rkt"
          racket/include)
 (define-namespace-anchor anchor)
 (current-lisp-environment (namespace-anchor->namespace anchor))
