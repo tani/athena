@@ -348,12 +348,6 @@
     ((_ . goals)
      (run-query (replace-anonymous-variables 'goals)))))
 
-(define (flush-input-port port)
-  (let loop ()
-    (let ((c (read-char port)))
-      (unless (or (eof-object? c) (char=? c #\newline))
-        (loop)))))
-
 (define (run-query goals)
   (define (display-solution variables bindings)
     (if (null? variables)
@@ -370,9 +364,9 @@
         variables)))
   (define (continue-prompt?)
     (flush-output-port (current-output-port))
-    (case (read-char (current-input-port))
-      ((#\;) (flush-input-port (current-input-port)) #t)
-      ((#\.) (flush-input-port (current-input-port)) #f)
+    (case (string-ref (read-line) 0)
+      ((#\;) #t)
+      ((#\.) #f)
       ((#\newline) (continue-prompt?))
       (else
         (display " Type ; for more, or . to stop.")

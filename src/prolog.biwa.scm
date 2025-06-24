@@ -7,18 +7,14 @@
 ")
 
 (js-eval "
-  BiwaScheme.define_libfunc('read-char', 0, 1, (ar) => {
+  BiwaScheme.define_libfunc('read-line', 0, 1, (ar) => {
     const port = ar[0] || BiwaScheme.Port.current_input;
     BiwaScheme.assert_port(port);
     return port.get_string((str) => {
       if (!str || str.length === 0) {
-        return eof;
+        return BiwaScheme.eof;
       }
-      const ch = str.charAt(0);
-      if (port instanceof BiwaScheme.Port.StringInput) {
-        port.str = port.str.slice(1);
-      }
-      return Char.get(ch);
+      return str;
     });
   });
 ")
@@ -97,5 +93,3 @@
     (lambda (p) (write object p))))
 
 (load "src/prolog.scm")
-
-(define (flush-input-port _) (list))
