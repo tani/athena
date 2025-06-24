@@ -45,5 +45,25 @@
          (test-report-success ,assertion-name)
          (test-report-failure ,assertion-name expected actual))))
 
+(define output-port (current-output-port))
+(define current-output-port (make-parameter output-port))
+(define input-port (current-output-port))
+(define current-input-port (make-parameter input-port))
+
+(define %display display)
+(define (display obj . args)
+  (if (null? args)
+    (%display obj (current-output-port))
+    (apply %display obj args)))
+
+(define %write write)
+(define (write obj . args)
+  (if (null? args)
+    (%write obj (current-output-port))
+    (apply %write obj args)))
+
+(define (newline)
+  (display "\n" (current-output-port)))
+
 (load "src/prolog.biwa.scm")
 (load "test/test.scm")

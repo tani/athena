@@ -338,6 +338,22 @@
       (solve-first '((q ?y) (p ?y)) '?y))
     ))
 
-
-
+(unless (string=? (object->string (current-input-port)) "#<Port>") ;; if scheme is BiwaScheme, then skip
+  (test-group "spy-behavior"
+    (parameterize ((current-clause-database (current-clause-database)))
+      (current-clause-database '())
+      (<- (watched))
+      (let ((out (open-output-string))
+            (in (open-input-string "l"))
+            (result ""))
+        (parameterize ((current-spy-predicates '(watched))
+                       (current-input-port in)
+                       (current-output-port out))
+          (solve-all '((watched)) 'dummy)
+          (set! result (get-output-string out)))
+        (test-equal "spy output"
+                    "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nFAIL: (watched)\n"
+                    result)))
+  )
+)
 (test-end "prolog")
