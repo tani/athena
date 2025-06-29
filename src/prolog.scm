@@ -413,14 +413,14 @@
         (current-dynamic-parameters new-dynamic-parameters)
         new-parameter))))
 
-(define (%prolog goals)
+(define (prolog goals)
   (call/cc
    (lambda (choice-point)
      (let* ((replaced-goals (replace-anonymous-variables goals))
             (cut-goals (insert-choice-point replaced-goals choice-point)))
        (prove-all `(,@cut-goals fail) '())))))
 
-(define-syntax prolog
+(define-syntax prolog*
   (syntax-rules ()
     ((_ . goals)
      (%prolog 'goals))))

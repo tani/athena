@@ -12,7 +12,7 @@
  standard-clause-database run-query
  add-clause! get-clauses <- <-- define-predicate
  prove-all ?- current-lisp-environment current-spy-predicates
- success-bindings success-continuation prolog %prolog)
+ success-bindings success-continuation prolog prolog*)
 
 ;; Imports ------------------------------------------------------------------
 (require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
