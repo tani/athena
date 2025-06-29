@@ -25,7 +25,7 @@
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
-              racket mitscheme
+              racket
             ]);
             CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''
