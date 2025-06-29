@@ -34,11 +34,6 @@
       (call-with-string-output-port
         (lambda (p) (write object p))))
 
-    (define (read-line . args)
-      (if (null? args)
-          (get-line (current-input-port))
-          (apply get-line args)))
-
     (include "prolog.scm")
 
     (current-lisp-environment (interaction-environment))

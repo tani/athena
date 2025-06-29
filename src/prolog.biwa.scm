@@ -6,19 +6,6 @@
   });
 ")
 
-(js-eval "
-  BiwaScheme.define_libfunc('read-line', 0, 1, (ar) => {
-    const port = ar[0] || BiwaScheme.Port.current_input;
-    BiwaScheme.assert_port(port);
-    return port.get_string((str) => {
-      if (!str || str.length === 0) {
-        return BiwaScheme.eof;
-      }
-      return str;
-    });
-  });
-")
-
 (define (flush-output-port _) (newline))
 
 (define (environment _) (list))
