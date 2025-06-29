@@ -1,154 +1,205 @@
 # Athena Reasoner
 
-Athena Reasoner is a lightweight Prolog-inspired logic programming engine implemented in Scheme. It provides a consistent interface across multiple Scheme implementations while keeping the core engine portable. The project draws inspiration from the PAIP Prolog implementation and ports several AllegroProlog conveniences. Development is managed via Nix and continuous integration is run through GitHub Actions.
+[![CI](https://github.com/tani/athena/actions/workflows/ci.yml/badge.svg)](https://github.com/tani/athena/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/norvig/paip-lisp/blob/main/LICENSE)
 
-## Features
+**A lightweight Prolog-inspired logic programming engine for multiple Scheme implementations.**
 
-- Unification with optional occurs check and backtracking
-- Anonymous variable renaming to avoid clashes
-- Built-in predicates such as `=`, `==`, `not`, `if`, `bagof`, `findall`, `setof`, `cut` and more
-- Interactive query syntax with the `?-` macro
+> Athena is a portable and extensible logic programming engine inspired by Prolog. It is designed to run on a wide range of Scheme systems, providing a consistent and powerful reasoning toolkit for your Scheme projects. The design is heavily influenced by the Prolog implementation in Peter Norvig's "Paradigms of Artificial Intelligence Programming" (PAIP) and incorporates conveniences from AllegroProlog.
 
-## Requirements
+## 🚀 Live Playground
 
-- Nix with flakes and `nix-command` enabled
-- One or more of the supported Scheme implementations:
-  - Gauche
-  - Guile
-  - Gambit
-  - Chicken
-  - Chibi
-  - Sagittarius
-  - ChezScheme
-  - Racket
-  - BiwaScheme
-  - LIPS
+Experience Athena directly in your browser! No installation required.
 
-## Playground
+1.  **Visit the [Athena Playground](https://tani.github.io/athena/)**
+2.  Load the engine: `(load "src/prolog.biwa.scm")`
+3.  Start querying! `(?- (member ?x '(a b c)))`
 
-1. Visit [https://tani.github.io/athena](https://tani.github.io/athena)
-2. Enter `(load "src/prolog.biwa.scm")`
+## ✨ Features
 
-## Getting Started
+*   **Portable:** Runs on 10 different Scheme implementations.
+*   **Unification:** Powerful pattern matching with occurs check.
+*   **Backtracking:** Automatic search for multiple solutions.
+*   **Rich Built-in Library:** Includes `cut`, `bagof`, `findall`, `setof`, `if`, `not`, and more.
+*   **Interactive REPL:** A `?-` macro for interactive queries.
+*   **Scheme Integration:** Call Scheme code from Prolog and vice-versa.
+*   **Debugging:** Built-in spy and trace capabilities.
+*   **Extensible:** Easily define your own predicates in Scheme.
 
-1. Clone the repository
+## ⚙️ Getting Started
 
-   ```bash
-   git clone https://github.com/tani/athena.git
-   cd athena
-   ```
+### Requirements
 
-2. Enter the development shell
+*   [Nix](https://nixos.org/) with flakes and `nix-command` enabled.
 
-   ```bash
-   nix develop
-   ```
+### Installation
 
-3. Run tests
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/tani/athena.git
+    cd athena
+    ```
 
-   Choose an implementation:
+2.  **Enter the development shell:**
+    This command sets up a complete development environment with all supported Scheme implementations.
+    ```bash
+    nix develop
+    ```
 
-   ```bash
-   make gauche
-   ```
+### Running Tests
 
-   Or run the full matrix:
+You can run tests for a specific Scheme implementation or for all of them.
 
-   ```bash
-   make all
-   ```
+*   **Run all tests:**
+    ```bash
+    make all
+    ```
+*   **Run tests for a specific implementation (e.g., Gauche):**
+    ```bash
+    make gauche
+    ```
+    (See the `Makefile` for all available targets: `chicken`, `racket`, `guile`, etc.)
 
-## Usage
+## 💡 Usage
 
-Load the library and define some clauses:
+Here's a quick example of how to use Athena.
+
+**1. Load the library and define rules:**
 
 ```scheme
 (import (prolog))
 
+;; Define facts
 (<- (parent alice bob))
 (<- (parent bob carol))
+
+;; Define a rule
+(<- (ancestor ?x ?y)
+    (parent ?x ?y))
+
 (<- (ancestor ?x ?y)
     (parent ?x ?z)
     (ancestor ?z ?y))
 ```
 
-Run a query interactively:
+**2. Run a query:**
+
+Use the `?-` macro to find out who Alice is an ancestor of.
 
 ```scheme
 (?- (ancestor alice ?descendant))
 ```
 
-Results appear with variable bindings; press `;` for more solutions or `.` to stop.
+Athena will respond with the first solution:
 
-## API Reference
+```
+(ancestor alice bob)
+?descendant = bob
+More? (;)
+```
+
+Press `;` to see more solutions, or `.` to stop.
+
+```
+(ancestor alice carol)
+?descendant = carol
+More? (;)
+.
+```
+
+## 📜 API Reference
+
+<details>
+<summary>Click to expand API Reference</summary>
 
 ### Variables and Bindings
 
-- `(variable? term)` – predicate for Scheme symbols beginning with `?`.
-- `(named-variable? term)` – like `variable?` but excludes the anonymous `?`.
-- `(atom? term)` – true if the term is not a pair.
-- `(substitute-bindings bindings term)` – apply bindings to a term.
-- `(variables-in term)` – list of named variables contained in `term`.
-- `(replace-anonymous-variables term)` – substitute all `?` with fresh symbols.
-- `(unify x y bindings)` – attempt to unify two terms returning updated bindings or `failure`.
+- `(variable? term)`: Checks if a term is a variable (e.g., `?x`).
+- `(named-variable? term)`: Like `variable?`, but excludes the anonymous `?`.
+- `(atom? term)`: True if the term is not a pair.
+- `(substitute-bindings bindings term)`: Applies bindings to a term.
+- `(variables-in term)`: Lists all named variables in a term.
+- `(replace-anonymous-variables term)`: Replaces `?` with fresh variables.
+- `(unify x y bindings)`: Unifies two terms.
 
 ### Clause Database
 
-- `(current-clause-database)` – parameter holding the active clause list.
-- `(primitive-clause-database)` – snapshot of the database containing only primitives.
-- `(standard-clause-database)` – snapshot with the default standard clauses.
-- `(add-clause! clause)` – append a clause to the database.
-- `(get-clauses symbol)` – retrieve clauses for a predicate.
-- `(remove-clauses-with-arity! symbol arity)` – delete clauses with matching arity.
-- `(<- (head ...) body ...)` – macro for adding a clause.
-- `(<-- (head ...) body ...)` – macro that replaces previous clauses of the same arity.
-- `(define-predicate (name . args) body ...)` – define a pure Scheme predicate callable from Prolog.
+- `(current-clause-database)`: A parameter holding the active clauses.
+- `(add-clause! clause)`: Adds a clause to the database.
+- `(get-clauses symbol)`: Retrieves clauses for a predicate.
+- `(<- (head ...) body ...)`: Macro to define a clause.
+- `(<-- (head ...) body ...)`: Macro that replaces existing clauses for the same predicate.
+- `(define-predicate (name . args) body ...)`: Defines a Scheme predicate callable from Prolog.
 
 ### Query Interface
 
-- `(prove-all goals bindings)` – low level engine entry point.
-- `(prolog goal ...)` – run goals and return a success/failure object.
-- `(?- goal ...)` – interactive REPL style query.
-- `(success-bindings obj)` / `(success-continuation obj)` – accessors for success values.
+- `(prove-all goals bindings)`: The low-level entry point for the engine.
+- `(prolog goal ...)`: Runs goals and returns a success/failure object.
+- `(?- goal ...)`: Starts an interactive query.
 
 ### Built‑in Predicates
 
-The library provides a number of predicates implemented in Scheme:
+A rich set of built-in predicates is provided:
 
-- `=` and `==` – unification and equality check
-- `cut` – prune choice points
-- `call` – invoke a goal dynamically
-- `not`, `and`, `or`, `if` – logical combinators
-- `lisp` / `is` – evaluate Scheme expressions
-- `repeat` – backtracking loop
-- `member`, `append` – common list utilities
-- `bagof`, `findall`, `setof` – collect solutions
-- `fail` – force failure
-- `dynamic-put`, `dynamic-get` – store and retrieve dynamic variables
+- **Control:** `cut`, `call`, `not`, `and`, `or`, `if`, `repeat`, `fail`
+- **Evaluation:** `lisp`, `is`
+- **List operations:** `member`, `append`
+- **Solution gathering:** `bagof`, `findall`, `setof`
+- **Term manipulation:** `=`, `==`
+- **State management:** `dynamic-put`, `dynamic-get`
 
-## Debugging with Spy
+</details>
 
-`current-spy-predicates` holds a list of predicate names that should be
-traced. When a spied predicate is called, Athena prompts for an action:
+## 🐞 Debugging
 
-```
-Spy on <goal>? [l=leap c=creep n=nodebug b=break]
-```
+Athena includes a simple `spy` mechanism for tracing predicate calls.
 
-* `c` – show this call and continue prompting at the next spy point.
-* `l` – leap: always show spy messages without further prompts.
-* `n` – nodebug: skip spy output for this call.
-* `b` – open a simple Scheme REPL and resume with `continue`.
+1.  **Set the spy points:**
+    `current-spy-predicates` holds a list of predicate names to trace.
 
-Example usage:
+2.  **Run your query:**
+    When a spied predicate is called, Athena will prompt you for an action.
+
+**Example:**
 
 ```scheme
 (parameterize ((current-spy-predicates '(ancestor)))
   (?- (ancestor alice ?x)))
 ```
 
-## License
+This will result in:
 
-This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full terms.
+```
+Spy on (ancestor alice ?x)? [l=leap c=creep n=nodebug b=break]
+```
 
-Parts derived from PAIP Prolog are under the [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE).
+*   `c` (creep): Show this call and continue prompting.
+*   `l` (leap): Show all spy messages without prompting.
+*   `n` (nodebug): Skip spying for this call.
+*   `b` (break): Open a Scheme REPL.
+
+## 📦 Supported Scheme Implementations
+
+Athena is tested against a wide array of Scheme implementations:
+
+*   Gauche
+*   Guile
+*   Gambit
+*   Chicken
+*   Chibi
+*   Sagittarius
+*   ChezScheme
+*   Racket
+*   BiwaScheme
+*   LIPS
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to open an issue or submit a pull request.
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for details.
+
+Note: Parts derived from PAIP Prolog are licensed under the [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE).
