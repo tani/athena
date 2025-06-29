@@ -8,7 +8,7 @@
     replace-anonymous-variables unify object->string
     remove-clauses-with-arity!
     current-clause-database primitive-clause-database
-    standard-clause-database
+    standard-clause-database run-query
     add-clause! get-clauses <- <-- define-predicate
     prove-all ?- current-lisp-environment current-spy-predicates
     success-bindings success-continuation prolog %prolog)
