@@ -1,4 +1,4 @@
-IMPLS=racket gauche guile chicken chibi sagittarius gambit chez biwa
+IMPLS=racket gauche guile chicken chibi sagittarius gambit chez biwa mit-scheme
 
 all: $(IMPLS)
 
@@ -30,6 +30,9 @@ gambit:
 
 biwa:
 	biwas test/test.biwa.scm
+
+mit-scheme:
+	mit-scheme --load src/prolog.sld --load test/test.scm --eval '(exit)'
 
 clean:
 	rm -f *.log test/*.log
