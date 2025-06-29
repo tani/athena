@@ -14,7 +14,7 @@
   ;; Imports ------------------------------------------------------------------
   (import
     (scheme base)
-    (scheme r5rs)
+    (only (scheme r5rs) interaction-environment)
     (scheme eval)
     (scheme write)
     (scheme read)
@@ -24,6 +24,7 @@
   (cond-expand
     (gambit
       (import (only (srfi 132) list-sort)))
+
     (chicken
       (import scheme (only (srfi 132) list-sort)))
     (guile
