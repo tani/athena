@@ -18,7 +18,7 @@
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
-              rlwrap nodejs node2nix
+              rlwrap nodejs node2nix wget unzip texi2html
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
             ]) ++ (with nodePackages; [
               biwascheme lips
