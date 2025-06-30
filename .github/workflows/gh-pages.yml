@@ -28,7 +28,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./gambit/contrib/try
+          path: ./gambit/contrib/try/try
 
   deploy:
     needs: build
