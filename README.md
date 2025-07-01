@@ -191,8 +191,6 @@ Athena is tested against a wide array of Scheme implementations:
 *   Sagittarius
 *   ChezScheme
 *   Racket
-*   BiwaScheme
-*   LIPS
 
 ## 🤝 Contributing
 

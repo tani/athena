@@ -18,10 +18,8 @@
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
-              rlwrap nodejs node2nix wget unzip texi2html
+              rlwrap nodejs
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
-            ]) ++ (with nodePackages; [
-              biwascheme lips
             ]) ++ (with chickenEggs; [
               srfi-1 srfi-132 srfi-64 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
