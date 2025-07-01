@@ -9,7 +9,7 @@
    standard-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate prove-all ?- min-arity with-choice-point
    current-lisp-environment current-spy-predicates
-   success-bindings success-continuation prolog prolog*)
+   success-bindings success-continuation prolog prolog*  make-solver solver-next!)
 
   ;; Imports
   (import
