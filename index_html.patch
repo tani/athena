@@ -1,5 +1,5 @@
 diff --git a/contrib/try/index.html b/contrib/try/index.html
-index 928585fb..9c3a70b8 100644
+index 928585fb..baa04db3 100644
 --- a/contrib/try/index.html
 +++ b/contrib/try/index.html
 @@ -14,6 +14,15 @@
@@ -7,13 +7,13 @@ index 928585fb..9c3a70b8 100644
      <script src="jquery.min.js"></script>
      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 +    <script type="module">
-+      async function remote_file(filepath) {
-+        const response = await fetch(filepath);
-+        const text = await response.text();
-+        return text;
++      await new Promise(resolve => setTimeout(resolve, 1000));
++      const paths = ['prolog.sld', 'prolog.scm'];
++      for (const path of paths) {
++        fetch(path).then(res => res.text()).then(txt => {
++          main_vm.ui.write_file(path, txt)
++        })
 +      }
-+      main_vm.ui.write_file("prolog.sld", await remote_file("prolog.sld"))
-+      main_vm.ui.write_file("prolog.scm", await remote_file("prolog.scm"))
 +    </script>
    </head>
  
