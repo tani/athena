@@ -13,7 +13,7 @@
 Experience Athena directly in your browser! No installation required.
 
 1.  **Visit the [Athena Playground](https://tani.github.io/athena/)**
-2.  Load the engine: `(load "src/prolog.biwa.scm")`
+2.  Load the engine: `(load "src/prolog.scm")`
 3.  Start querying! `(?- (member ?x '(a b c)))`
 
 ## ✨ Features
