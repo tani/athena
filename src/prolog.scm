@@ -7,7 +7,7 @@
 (begin
 
   ;; Utility procedures
-  
+
   (define %gensym
     (let ((counter 0))
       (lambda (prefix)
@@ -18,10 +18,16 @@
 
   (define-syntax with-choice-point
     (syntax-rules ()
-      ((_ (choice-point-variable) . body)
-       (call/cc
-        (lambda (choice-point-variable) . body)))))
-  
+      ((_ (tag) body ...)
+       (let ((tag (%gensym "choice-point-")))
+         (guard (exception
+                 ((and (cut-exception? exception)
+                       (eq? tag (cut-exception-tag exception)))
+                  (cut-exception-value exception))
+                 (else
+                  (raise exception)))
+           body ...)))))
+
   ;; Bindings and unification
 
   (define (variable? term)
@@ -109,7 +115,7 @@
      (else (make-failure))))
 
   ;; Clause database
-  
+
   (define current-clause-database (make-parameter '()))
 
   (define primitive-clause-database (make-parameter '()))
@@ -161,9 +167,9 @@
        (let ((arity 0))
          (remove-clauses-with-arity! 'name arity)
          (add-clause! (replace-anonymous-variables '((name) . body)))))))
-  
+
   ;; Prover engine
-  
+
   (define current-bindings (make-parameter '()))
   (define current-remaining-goals (make-parameter '()))
 
@@ -183,7 +189,7 @@
       (sublis alist expression)))
 
   ;; Spy support
-  
+
   (define current-spy-mode
     ;; Possible values: 'prompt, 'always, or 'disabled
     (make-parameter 'prompt))
@@ -376,7 +382,7 @@
     (query-loop initial-continuation))
 
   ;; Macro for defining pure Scheme predicates
-  
+
   (define-syntax define-predicate
     (syntax-rules ()
       ((_ (name . arguments) . body)
@@ -430,7 +436,10 @@
           (make-failure))))
 
   (define-predicate (cut choice-point)
-    (choice-point (prove-all (current-remaining-goals) (current-bindings))))
+    (raise
+     (make-cut-exception
+      choice-point
+      (prove-all (current-remaining-goals) (current-bindings)))))
 
   (define-predicate (call pred-or-goal . args)
     (with-choice-point (choice-point)
