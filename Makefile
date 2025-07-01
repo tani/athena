@@ -1,4 +1,4 @@
-IMPLS=racket gauche guile chicken chibi sagittarius gambit chez biwa mit-scheme
+IMPLS=racket gauche guile chicken chibi sagittarius gambit chez
 
 all: $(IMPLS)
 
@@ -27,9 +27,6 @@ chez:
 
 gambit:
 	gsi -:r7rs src/ test/test.seven.scm
-
-biwa:
-	biwas test/test.biwa.scm
 
 clean:
 	rm -f *.log test/*.log
