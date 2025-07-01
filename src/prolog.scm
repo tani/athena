@@ -81,29 +81,31 @@
 
   (define current-occurs-check (make-parameter #t))
 
+  (define (occurs-check? variable expression bindings)
+    (cond
+     ((eq? variable expression) #t)
+     ((and (variable? expression) (assoc expression bindings))
+      (let ((value (lookup-variable expression bindings)))
+        (occurs-check? variable value bindings)))
+     ((pair? expression)
+      (let ((car-occurs-check? (occurs-check? variable (car expression) bindings))
+            (cdr-occurs-check? (occurs-check? variable (cdr expression) bindings)))
+        (or car-occurs-check? cdr-occurs-check?)))
+     (else #f)))
+
+  (define (unify-var variable value bindings)
+    (cond
+     ((assoc variable bindings)
+      (let ((bound-term (lookup-variable variable bindings)))
+        (unify bound-term value bindings)))
+     ((and (variable? value) (assoc value bindings))
+      (let ((bound-term (lookup-variable value bindings)))
+        (unify variable bound-term bindings)))
+     ((and (current-occurs-check) (occurs-check? variable value bindings))
+      (make-failure))
+     (else (alist-cons variable value bindings))))
+
   (define (unify term1 term2 bindings)
-    (define (occurs-check? variable expression bindings)
-      (cond
-       ((eq? variable expression) #t)
-       ((and (variable? expression) (assoc expression bindings))
-        (let ((value (lookup-variable expression bindings)))
-          (occurs-check? variable value bindings)))
-       ((pair? expression)
-        (let ((car-occurs-check? (occurs-check? variable (car expression) bindings))
-              (cdr-occurs-check? (occurs-check? variable (cdr expression) bindings)))
-          (or car-occurs-check? cdr-occurs-check?)))
-       (else #f)))
-    (define (unify-var variable value bindings)
-      (cond
-       ((assoc variable bindings)
-        (let ((bound-term (lookup-variable variable bindings)))
-          (unify bound-term value bindings)))
-       ((and (variable? value) (assoc value bindings))
-        (let ((bound-term (lookup-variable value bindings)))
-          (unify variable bound-term bindings)))
-       ((and (current-occurs-check) (occurs-check? variable value bindings))
-        (make-failure))
-       (else (alist-cons variable value bindings))))
     (cond
      ((failure? bindings) (make-failure))
      ((equal? term1 term2) bindings)
@@ -119,7 +121,9 @@
   (define current-clause-database (make-parameter '()))
 
   (define primitive-clause-database (make-parameter '()))
+
   (define standard-clause-database (make-parameter '()))
+
   (define (get-clauses predicate-symbol)
     (let ((entry (assoc predicate-symbol (current-clause-database))))
       (if entry (cdr entry) '())))
@@ -171,19 +175,22 @@
   ;; Prover engine
 
   (define current-bindings (make-parameter '()))
+
   (define current-remaining-goals (make-parameter '()))
 
+  (define (sublis alist tree)
+    (if (atom? tree)
+        (let ((binding (assoc tree alist)))
+          (if binding (cdr binding) tree))
+        (let ((car-sublis (sublis alist (car tree)))
+              (cdr-sublis (sublis alist (cdr tree))))
+          (cons car-sublis cdr-sublis))))
+
+  (define (make-renaming-pair variable)
+    (let ((var-string (symbol->string variable)))
+      (cons variable (%gensym var-string))))
+
   (define (rename-vars expression)
-    (define (sublis alist tree)
-      (if (atom? tree)
-          (let ((binding (assoc tree alist)))
-            (if binding (cdr binding) tree))
-          (let ((car-sublis (sublis alist (car tree)))
-                (cdr-sublis (sublis alist (cdr tree))))
-            (cons car-sublis cdr-sublis))))
-    (define (make-renaming-pair variable)
-      (let ((var-string (symbol->string variable)))
-        (cons variable (%gensym var-string))))
     (let* ((variables (variables-in expression))
            (alist (map make-renaming-pair variables)))
       (sublis alist expression)))
@@ -193,6 +200,7 @@
   (define current-spy-mode
     ;; Possible values: 'prompt, 'always, or 'disabled
     (make-parameter 'prompt))
+
   (define current-spy-predicates (make-parameter '()))
 
   (define (simple-repl)
@@ -340,31 +348,33 @@
       ((_ . goals)
        (run-query (replace-anonymous-variables 'goals)))))
 
+  (define (display-solution variables bindings)
+    (if (null? variables)
+        (begin
+          (newline)
+          (display "Yes"))
+        (for-each
+         (lambda (variable)
+           (let ((value (substitute-bindings bindings variable)))
+             (newline)
+             (display variable)
+             (display " = ")
+             (write value)))
+         variables)))
+
+  (define (continue-prompt?)
+    (newline)
+    (display "Continue ? (y/n) ")
+    (flush-output-port (current-output-port))
+    (case (read)
+      ((y) #t)
+      ((n) #f)
+      (else
+       (display " Type y for more, or n to stop.")
+       (newline)
+       (continue-prompt?))))
+
   (define (run-query goals)
-    (define (display-solution variables bindings)
-      (if (null? variables)
-          (begin
-            (newline)
-            (display "Yes"))
-          (for-each
-           (lambda (variable)
-             (let ((value (substitute-bindings bindings variable)))
-               (newline)
-               (display variable)
-               (display " = ")
-               (write value)))
-           variables)))
-    (define (continue-prompt?)
-      (newline)
-      (display "Continue ? (y/n) ")
-      (flush-output-port (current-output-port))
-      (case (read)
-        ((y) #t)
-        ((n) #f)
-        (else
-         (display " Type y for more, or n to stop.")
-         (newline)
-         (continue-prompt?))))
     (define (query-loop continuation)
       (let ((result (continuation)))
         (if (failure? result)
@@ -418,9 +428,10 @@
   (define-syntax prolog*
     (syntax-rules ()
       ((_ . goals)
-       (%prolog 'goals))))
+       (prolog 'goals))))
 
   (define current-solution-accumulator (make-parameter '()))
+
   (define current-lisp-environment (make-parameter #f))
 
   (define-predicate (= term1 term2)
