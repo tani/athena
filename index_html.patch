@@ -1,0 +1,20 @@
+diff --git a/contrib/try/index.html b/contrib/try/index.html
+index 928585fb..9c3a70b8 100644
+--- a/contrib/try/index.html
++++ b/contrib/try/index.html
+@@ -14,6 +14,15 @@
+     <script src="VM.min.js"></script>
+     <script src="jquery.min.js"></script>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
++    <script type="module">
++      async function remote_file(filepath) {
++        const response = await fetch(filepath);
++        const text = await response.text();
++        return text;
++      }
++      main_vm.ui.write_file("prolog.sld", await remote_file("prolog.sld"))
++      main_vm.ui.write_file("prolog.scm", await remote_file("prolog.scm"))
++    </script>
+   </head>
+ 
+   <body>
