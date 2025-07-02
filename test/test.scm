@@ -1,19 +1,15 @@
-(define (prolog goals)
-  (let loop ((ss (make-solution-stream goals)))
-    (unless (stream-null? ss)
-      (loop (stream-cdr ss)))))
-
-(define current-result (make-parameter '()))
-
 (define (solve-first goals term)
-  (parameterize ((current-result '()))
-    (prolog `(,@goals (lisp (current-result (cons ',term (current-result)))) !))
-    (car (current-result))))
+  (let ((ss (make-solution-stream goals)))
+    (if (stream-null? ss)
+      '()
+      (substitute-bindings (stream-car ss) term))))
 
 (define (solve-all goals term)
-  (parameterize ((current-result '()))
-    (prolog `(,@goals (lisp (current-result (cons ',term (current-result))))))
-    (reverse (current-result))))
+  (let loop ((ss (make-solution-stream goals)))
+    (if (stream-null? ss)
+      '()
+      (cons (substitute-bindings (stream-car ss) term)
+            (loop (stream-cdr ss))))))
 
 (test-begin "prolog")
 
@@ -357,7 +353,7 @@
           (solve-all '((watched)) 'dummy)
           (set! result (get-output-string out)))
         (test-equal "spy output"
-                    "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nFAIL: (watched)\n"
+                    "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
                     result)))
   )
 )
