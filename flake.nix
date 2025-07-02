@@ -21,7 +21,7 @@
               rlwrap nodejs
               gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
             ]) ++ (with chickenEggs; [
-              srfi-1 srfi-132 srfi-64 r7rs
+              srfi-1 srfi-132 srfi-64 srfi-41 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
               racket
             ]);

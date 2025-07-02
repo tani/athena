@@ -12,10 +12,11 @@
  standard-clause-database run-query
  add-clause! get-clauses <- <-- define-predicate with-choice-point
  prove-all ?- current-lisp-environment current-spy-predicates
- success-bindings success-continuation prolog prolog* make-solver solver-next!)
+ success-bindings success-continuation prolog prolog* solution-stream)
 
 ;; Imports
-(require (only-in srfi/1 alist-delete alist-cons delete-duplicates)
+(require srfi/41
+         (only-in srfi/1 alist-delete alist-cons delete-duplicates)
          (only-in rnrs flush-output-port guard raise))
 
 ;; Implementation
@@ -31,6 +32,5 @@
 
 (define (list-sort lis pred) (sort pred lis))
 
+(define (interaction-environment) (current-namespace))
 (include "prolog.scm")
-
-(current-lisp-environment (current-namespace))

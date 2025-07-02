@@ -348,19 +348,20 @@
       ((_ . goals)
        (run-query (replace-anonymous-variables 'goals)))))
 
-  (define (display-solution variables bindings)
-    (if (null? variables)
+  (define (display-solution bindings)
+    (if (null? bindings)
         (begin
           (newline)
           (display "Yes"))
         (for-each
-         (lambda (variable)
-           (let ((value (substitute-bindings bindings variable)))
+         (lambda (var-val)
+           (let ((var (car var-val))
+                 (val (cdr var-val)))
              (newline)
-             (display variable)
+             (display var)
              (display " = ")
-             (write value)))
-         variables)))
+             (display val)))
+         bindings)))
 
   (define (continue-prompt?)
     (newline)
@@ -375,21 +376,13 @@
        (continue-prompt?))))
 
   (define (run-query goals)
-    (define (query-loop continuation)
-      (let ((result (continuation)))
-        (if (failure? result)
-            (begin (display "No.") (newline))
-            (let ((variables (variables-in goals))
-                  (bindings (success-bindings result))
-                  (next-continuation (success-continuation result)))
-              (display-solution variables bindings)
-              (when (and next-continuation (continue-prompt?))
-                (query-loop next-continuation))))))
-    (define (initial-continuation)
-      (with-choice-point (choice-point)
-        (let ((new-goals (insert-choice-point goals choice-point)))
-          (prove-all new-goals '()))))
-    (query-loop initial-continuation))
+    (let loop ((ss (solution-stream goals)))
+      (if (stream-null? ss)
+          (begin (display "No.") (newline))
+          (begin
+            (display-solution (stream-car ss))
+            (when (continue-prompt?)
+              (loop (stream-cdr ss)))))))
 
   ;; Macro for defining pure Scheme predicates
 
@@ -420,46 +413,36 @@
             new-parameter))))
 
   (define (prolog goals)
-    (with-choice-point (choice-point)
-      (let* ((replaced-goals (replace-anonymous-variables goals))
-             (cut-goals (insert-choice-point replaced-goals choice-point)))
-        (prove-all `(,@cut-goals fail) '()))))
+    (let loop ((ss (solution-stream goals)))
+      (unless (stream-null? ss)
+        (loop (stream-cdr ss)))))
 
   (define-syntax prolog*
     (syntax-rules ()
       ((_ . goals)
        (prolog 'goals))))
 
-  (define (make-solver goals)
-    (define (continuation)
+  (define-stream (solution-stream goals)
+    (define-stream (generate-stream continuation)
+      (let ((result (continuation)))
+        (if (failure? result)
+            stream-null
+            (stream-cons
+             (let* ((bindings (success-bindings result))
+                    (query-variables (variables-in goals))
+                    (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
+               (map make-pair query-variables))
+             (generate-stream (success-continuation result))))))
+    (define (initial-continuation)
       (with-choice-point (choice-point)
         (let* ((prepared-goals (replace-anonymous-variables goals))
                (cut-goals (insert-choice-point prepared-goals choice-point)))
           (prove-all cut-goals '()))))
-    (lambda ()
-      (if (not continuation)
-          (values (make-failure) '())
-          (let ((result (continuation)))
-            (if (failure? result)
-                (begin
-                  (set! continuation #f)
-                  (values (make-failure) '()))
-                (let ((query-variables (variables-in goals)))
-                  (set! continuation (success-continuation result))
-                  (values result query-variables)))))))
-
-  (define (solver-next! solver)
-    (call-with-values (lambda () (solver))
-      (lambda (result query-variables)
-        (if (failure? result)
-            #f
-            (let* ((bindings (success-bindings result))
-                   (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
-              (map make-pair query-variables))))))
+    (generate-stream initial-continuation))
 
   (define current-solution-accumulator (make-parameter '()))
 
-  (define current-lisp-environment (make-parameter #f))
+  (define current-lisp-environment (make-parameter (interaction-environment)))
 
   (define-predicate (= term1 term2)
     (let ((new-bindings (unify term1 term2 (current-bindings))))

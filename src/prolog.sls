@@ -11,13 +11,14 @@
    standard-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate with-choice-point
    prove-all ?- current-lisp-environment current-spy-predicates
-   success-bindings success-continuation prolog prolog*  make-solver solver-next!)
+   success-bindings success-continuation prolog prolog* solution-stream)
 
   ;; Imports
   (import (rnrs)
           (rnrs eval)
+          (srfi :39)
+          (srfi :41)
           (only (srfi :1) alist-delete alist-cons delete-duplicates)
-          (only (srfi :39) parameterize make-parameter)
           (only (chezscheme) include interaction-environment))
 
   ;; Implementation
@@ -39,8 +40,4 @@
       (call-with-string-output-port
        (lambda (p) (write object p))))
 
-    (include "prolog.scm")
-
-    (current-lisp-environment (interaction-environment))
-    )
-  )
+    (include "prolog.scm")))
