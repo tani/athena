@@ -234,15 +234,6 @@
       (write resolved)
       (newline)))
 
-  (define (execute-clause goal clause bindings remaining-goals)
-    (let* ((renamed-clause (rename-vars clause))
-           (clause-head (car renamed-clause))
-           (clause-body (cdr renamed-clause))
-           (new-bindings (unify goal clause-head bindings)))
-      (if (failure? new-bindings)
-          (make-failure)
-          (prove-all (append clause-body remaining-goals) new-bindings))) )
-
   (define (with-spy goal bindings thunk)
     (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
            (spy? (memq predicate-symbol (current-spy-predicates)))
@@ -269,9 +260,17 @@
       result))
 
   (define (process-one goal clause bindings remaining-goals)
-    (with-spy goal bindings
-              (lambda ()
-                (execute-clause goal clause bindings remaining-goals))))
+    (with-spy
+      goal
+      bindings
+      (lambda ()
+        (let* ((renamed-clause (rename-vars clause))
+               (clause-head (car renamed-clause))
+               (clause-body (cdr renamed-clause))
+               (new-bindings (unify goal clause-head bindings)))
+          (if (failure? new-bindings)
+              (make-failure)
+              (prove-all (append clause-body remaining-goals) new-bindings))))))
 
   (define (combine continuation-a continuation-b)
     (lambda ()
