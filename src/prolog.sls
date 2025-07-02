@@ -9,7 +9,7 @@
    remove-clauses-with-arity!
    current-clause-database primitive-clause-database
    standard-clause-database run-query
-   add-clause! get-clauses <- <-- define-predicate with-choice-point
+   add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
    prove-all ?- current-lisp-environment current-spy-predicates
    success-bindings success-continuation prolog prolog* solution-stream)
 
