@@ -2,7 +2,7 @@
 
 (define (solve-first goals term)
   (parameterize ((current-result '()))
-    (prolog `(,@goals (lisp (current-result (cons ',term (current-result)))) cut))
+    (prolog `(,@goals (lisp (current-result (cons ',term (current-result)))) !))
     (car (current-result))))
 
 (define (solve-all goals term)
@@ -117,7 +117,7 @@
     (<- (foo 1))
     (<- (foo 2))
     (<- (foo 3))
-    (<- (bar ?x) (foo ?x) (cut) (= ?x 1))
+    (<- (bar ?x) (foo ?x) ! (= ?x 1))
 
     ;; facts for subsequent queries
     (<- (parent john mary))
@@ -168,8 +168,8 @@
   (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '((bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
   (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
 
-  (test-equal "cut prunes choices" '(1) (solve-all '((bar ?v)) '?v))
-  (test-equal "no cut finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
+  (test-equal "! prunes choices" '(1) (solve-all '((bar ?v)) '?v))
+  (test-equal "no ! finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
   )
 
 ;; -----------------------------------------------------------
@@ -287,30 +287,30 @@
     (<- (q 2))
     (<- (s ?x ?y)
         (p ?x)
-        (or (and (q ?y) (== ?x b) (cut))
+        (or (and (q ?y) (== ?x b) !)
             (q ?y)))
-    
+
     (test-equal "No Cut (Baseline)"
       '((a 1) (a 2) (b 1) (b 2) (c 1) (c 2))
       (solve-all '((p ?X) (q ?Y)) '(?X ?Y)))
-    
+
     (test-equal "Simple Cut in 'and'"
       '((a 1) (a 2))
-      (solve-all '((p ?X) (cut) (q ?Y)) '(?X ?Y)))
+      (solve-all '((p ?X) ! (q ?Y)) '(?X ?Y)))
 
     ;; This may appear incorrect in Prolog, but defining 'or' and 'and'
     ;; predicates first in Prolog yields the same result.
     (test-equal "Cut inside 'or'"
       '(b a b c)
-      (solve-all '((or (and (p ?X) (== ?X b) (cut)) (p ?X))) '?X))
+      (solve-all '((or (and (p ?X) (== ?X b) !) (p ?X))) '?X))
     
-    (test-equal "'and' with 'or' containing 'cut'"
+    (test-equal "'and' with 'or' containing '!'"
       '(c)
-      (solve-all '((and (p ?X) (or (and (== ?X c) (cut)) (fail)))) '?X))
+      (solve-all '((and (p ?X) (or (and (== ?X c) !) (fail)))) '?X))
 
-    (test-equal "'call' with 'or' containing 'cut'"
+    (test-equal "'call' with 'or' containing '!'"
       '(c)
-      (solve-all '((and (p ?X) (call (or (and (== ?X c) (cut)) (fail))))) '?X))
+      (solve-all '((and (p ?X) (call (or (and (== ?X c) !) (fail))))) '?X))
 
     ;; This may appear incorrect in Prolog, but defining 'or' and 'and'
     ;; predicates first in Prolog yields the same result.
@@ -320,7 +320,7 @@
     ))
 
 ;; -----------------------------------------------------------
-;; Advanced backtracking and cut propagation
+;; Advanced backtracking and ! propagation
 ;; -----------------------------------------------------------
 
 
@@ -330,7 +330,7 @@
     (<- (q 1))
     (<- (q 2))
     
-    (<-- (p ?x) (= ?x 1) (cut) (fail)) ; p(1) triggers a hard failure
+    (<-- (p ?x) (= ?x 1) ! (fail)) ; p(1) triggers a hard failure
     (<- (p ?x) (= ?x 2))             ; p(2) succeeds
     
     (test-equal "hard failure in p(x) should not block backtracking in q(y)"

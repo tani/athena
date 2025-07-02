@@ -301,8 +301,8 @@
   (define (insert-choice-point clause choice-point)
     (define (insert-cut-term term)
       (cond
-       ((and (pair? term) (eq? 'cut (car term))) (list 'cut choice-point))
-       ((and (atom? term) (eq? 'cut term)) (list 'cut choice-point))
+       ((and (pair? term) (eq? '! (car term))) (list '! choice-point))
+       ((and (atom? term) (eq? '! term)) (list '! choice-point))
        (else term)))
     (map insert-cut-term clause))
 
@@ -432,12 +432,12 @@
              (query-variables (variables-in goals))
              (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
         (map make-pair query-variables)))
-    (define (execute-success-continuation result)
+    (define (exe!e-success-continuation result)
       ((success-continuation result)))
     (stream-unfold
       retrieve-success-bindings
       success?
-      execute-success-continuation
+      exe!e-success-continuation
       (initial-continuation)))
 
   (define current-solution-accumulator (make-parameter '()))
@@ -456,7 +456,7 @@
             (prove-all goals (current-bindings)))
           (make-failure))))
 
-  (define-predicate (cut choice-point)
+  (define-predicate (! choice-point)
     (raise
      (make-cut-exception
       choice-point
@@ -575,10 +575,10 @@
   (<- (or ?g . ?gs) (call ?g))
   (<- (or ?g . ?gs) (call (or . ?gs)))
 
-  (<- (not ?goal) (call ?goal) (cut) (fail))
+  (<- (not ?goal) (call ?goal) ! (fail))
   (<- (not ?goal))
 
-  (<- (if ?cond ?then ?else) (call ?cond) (cut) (call ?then))
+  (<- (if ?cond ?then ?else) (call ?cond) ! (call ?then))
   (<- (if ?cond ?then ?else) (call ?else))
   (<- (if ?cond ?then) (call ?cond) (call ?then))
 
