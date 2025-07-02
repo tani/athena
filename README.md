@@ -1,203 +1,106 @@
-# Athena Reasoner
+# Athena Prolog
 
-[![CI](https://github.com/tani/athena/actions/workflows/ci.yml/badge.svg)](https://github.com/tani/athena/actions/workflows/ci.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/norvig/paip-lisp/blob/main/LICENSE)
+This project provides a comprehensive Prolog engine implemented in Scheme, offering a robust wrapper for embedding logic programming capabilities directly within Racket and various Scheme environments. It is designed for seamless integration, allowing developers to leverage Prolog's powerful pattern-matching and backtracking features alongside the flexibility of a functional programming language.
 
-**A lightweight Prolog-inspired logic programming engine for multiple Scheme implementations.**
+## Features
 
-> Athena is a portable and extensible logic programming engine inspired by Prolog. It is designed to run on a wide range of Scheme systems, providing a consistent and powerful reasoning toolkit for your Scheme projects. The design is heavily influenced by the Prolog implementation in Peter Norvig's "Paradigms of Artificial Intelligence Programming" (PAIP) and incorporates conveniences from AllegroProlog.
+  - **Full Prolog Engine**: Implements a core Prolog engine with support for rules, facts, and queries.
+  - **Seamless Scheme Integration**: Define Prolog predicates using Scheme procedures and evaluate Scheme code from within Prolog.
+  - **Interactive Querying**: Use the `?-` macro for running interactive Prolog queries directly in your REPL.
+  - **Debugging Tools**: Includes a spy and break functionality for tracing and debugging predicate execution.
+  - **Cross-Implementation Support**: Compatible with multiple Scheme standards (R6RS/R7RS) and implementations, including Racket, Chicken, Guile, and Chez Scheme.
 
-## 🚀 Live Playground
-
-Experience Athena directly in your browser! No installation required.
-
-1.  **Visit the [Athena Playground](https://tani.github.io/athena/)**
-2.  Load the engine: `(load "src/prolog.scm")`
-3.  Start querying! `(?- (member ?x '(a b c)))`
-
-## ✨ Features
-
-*   **Portable:** Runs on 10 different Scheme implementations.
-*   **Unification:** Powerful pattern matching with occurs check.
-*   **Backtracking:** Automatic search for multiple solutions.
-*   **Rich Built-in Library:** Includes `cut`, `bagof`, `findall`, `setof`, `if`, `not`, and more.
-*   **Interactive REPL:** A `?-` macro for interactive queries.
-*   **Scheme Integration:** Call Scheme code from Prolog and vice-versa.
-*   **Debugging:** Built-in spy and trace capabilities.
-*   **Extensible:** Easily define your own predicates in Scheme.
-
-## ⚙️ Getting Started
-
-### Requirements
-
-*   [Nix](https://nixos.org/) with flakes and `nix-command` enabled.
+## Getting Started
 
 ### Installation
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/tani/athena.git
-    cd athena
-    ```
+To use this library, include the `prolog.scm` file along with the appropriate wrapper for your Scheme implementation in your project. See `src/` directory.
+Try athena at [https://tani.github.io/athena](https://tani.github.io/athena).
 
-2.  **Enter the development shell:**
-    This command sets up a complete development environment with all supported Scheme implementations.
-    ```bash
-    nix develop
-    ```
+### Running Queries
 
-### Running Tests
-
-You can run tests for a specific Scheme implementation or for all of them.
-
-*   **Run all tests:**
-    ```bash
-    make all
-    ```
-*   **Run tests for a specific implementation (e.g., Gauche):**
-    ```bash
-    make gauche
-    ```
-    (See the `Makefile` for all available targets: `chicken`, `racket`, `guile`, etc.)
-
-## 💡 Usage
-
-Here's a quick example of how to use Athena.
-
-**1. Load the library and define rules:**
+To start running queries, you can use the interactive `?-` macro. Here’s how you can define a simple knowledge base and query it:
 
 ```scheme
 (import (prolog))
 
 ;; Define facts
-(<- (parent alice bob))
-(<- (parent bob carol))
+(<-- (parent john mary))
+(<- (parent susan mary))
 
-;; Define a rule
-(<- (ancestor ?x ?y)
-    (parent ?x ?y))
-
-(<- (ancestor ?x ?y)
-    (parent ?x ?z)
-    (ancestor ?z ?y))
+;; Run a query to find the children of mary
+(?- (parent ?x mary))
 ```
 
-**2. Run a query:**
-
-Use the `?-` macro to find out who Alice is an ancestor of.
-
-```scheme
-(?- (ancestor alice ?descendant))
-```
-
-Athena will respond with the first solution:
+This will output:
 
 ```
-(ancestor alice bob)
-?descendant = bob
-More? (;)
+?x = john
+Continue ? (y/n) y
+?x = susan
+Continue ? (y/n) n
 ```
 
-Press `;` to see more solutions, or `.` to stop.
+## API Reference
 
-```
-(ancestor alice carol)
-?descendant = carol
-More? (;)
-.
-```
+### Defining Clauses
 
-## 📜 API Reference
+  - `<-`: Defines a new Prolog clause.
+  - `<--`: Defines a clause, removing any existing clauses for the same predicate with the same arity.
+  - `define-predicate`: Defines a new predicate using a Scheme procedure.
 
-<details>
-<summary>Click to expand API Reference</summary>
+### Running Queries
 
-### Variables and Bindings
+  - `?-`: Executes an interactive query and displays solutions.
+  - `run-query`: A programmatic way to run queries.
+  - `make-solution-stream`: Returns a stream of all possible solutions for a given goal.
 
-- `(variable? term)`: Checks if a term is a variable (e.g., `?x`).
-- `(named-variable? term)`: Like `variable?`, but excludes the anonymous `?`.
-- `(atom? term)`: True if the term is not a pair.
-- `(substitute-bindings bindings term)`: Applies bindings to a term.
-- `(variables-in term)`: Lists all named variables in a term.
-- `(replace-anonymous-variables term)`: Replaces `?` with fresh variables.
-- `(unify x y bindings)`: Unifies two terms.
+## Built-in Predicates
 
-### Clause Database
+The engine provides a rich set of standard built-in predicates for control flow, arithmetic, list manipulation, and term testing.
 
-- `(current-clause-database)`: A parameter holding the active clauses.
-- `(add-clause! clause)`: Adds a clause to the database.
-- `(get-clauses symbol)`: Retrieves clauses for a predicate.
-- `(<- (head ...) body ...)`: Macro to define a clause.
-- `(<-- (head ...) body ...)`: Macro that replaces existing clauses for the same predicate.
-- `(define-predicate (name . args) body ...)`: Defines a Scheme predicate callable from Prolog.
+| Predicate | Description |
+| --- | --- |
+| `(true)` / `true` | Always succeeds. |
+| `(fail)` / `fail` | Always fails. |
+| `(!)` / `!` | The "cut" operator. Commits to all choices made so far and prunes other alternatives. |
+| `(if ?test ?then ?else)` | If `?test` succeeds, executes `?then`; otherwise, executes `?else`. |
+| `(if ?test ?then)` | If `?test` succeeds, executes `?then`. |
+| `(not ?goal)` | Negates a goal. Succeeds if `?goal` fails, and fails if `?goal` succeeds. |
+| `(and ?goal1 ...)` | Succeeds if all sub-goals succeed. |
+| `(or ?goal1 ...)` | Succeeds if any sub-goal succeeds. |
+| `(repeat)` / `repeat` | Creates a choice point that will always succeed on backtracking. |
+| `(= ?x ?y)` | Unifies term `?x` with term `?y`. |
+| `(== ?x ?y)` | Succeeds if terms `?x` and `?y` are structurally identical, without performing unification. |
+| `(is ?result ?expr)` | Evaluates a Scheme expression `?expr` and unifies the result with `?result`. |
+| `(lisp ?result ?expr)` | Evaluates a Scheme expression `?expr` and unifies the result with `?result`. |
+| `(lisp ?expr)` | Evaluates a Scheme expression `?expr` without unifying the result. |
+| `(atom ?x)` | Checks if term `?x` is a Prolog atom (a non-variable symbol). |
+| `(atomic ?x)` | Checks if term `?x` is an atomic value (i.e., not a variable or a pair). |
+| `(var ?x)` | Checks if term `?x` is an unbound variable. |
+| `(ground ?x)` | Checks if term `?x` is fully instantiated with no unbound variables. |
+| `(number ?x)` | Checks if term `?x` is a number. |
+| `(member ?elem ?list)` | Succeeds if `?elem` is a member of `?list`. |
+| `(append ?list1 ?list2 ?list3)` | Succeeds if `?list3` is the result of appending `?list1` and `?list2`. |
+| `(maplist ?pred ?list1 ...)` | Applies `?pred` to corresponding elements of one or more lists. |
+| `(findall ?template ?goal ?results)` | Collects all solutions for `?goal` that match `?template` into the list `?results`. |
+| `(bagof ?template ?goal ?results)` | Collects all solutions for `?goal` that match `?template` into the list `?results`. |
+| `(setof ?template ?goal ?results)` | Collects all unique, sorted solutions for `?goal` matching `?template` into the list `?results`. |
+| `(dynamic-get ?name ?var)` | Retrieves the value associated with the dynamic variable `?name` and unifies it with `?var`. |
+| `(dynamic-put ?name ?value)` | Sets the value of the dynamic variable `?name` to `?value`. |
 
-### Query Interface
+## Debugging
 
-- `(prove-all goals bindings)`: The low-level entry point for the engine.
-- `(prolog goal ...)`: Runs goals and returns a success/failure object.
-- `(?- goal ...)`: Starts an interactive query.
+The Prolog engine includes a simple spy and break functionality for debugging.
 
-### Built‑in Predicates
+  - `current-spy-predicates`: A parameter that holds a list of predicates to spy on.
+  - **Spy Commands**:
+      - `l` (leap): Continue execution without spying.
+      - `c` (creep): Step through the current goal.
+      - `n` (nodebug): Disable spying.
+      - `b` (break): Enter a Scheme REPL for debugging.
 
-A rich set of built-in predicates is provided:
+## License
 
-- **Control:** `cut`, `call`, `not`, `and`, `or`, `if`, `repeat`, `fail`
-- **Evaluation:** `lisp`, `is`
-- **List operations:** `member`, `append`
-- **Solution gathering:** `bagof`, `findall`, `setof`
-- **Term manipulation:** `=`, `==`
-- **State management:** `dynamic-put`, `dynamic-get`
+This project is released under the **GNU General Public License v3.0**.
 
-</details>
-
-## 🐞 Debugging
-
-Athena includes a simple `spy` mechanism for tracing predicate calls.
-
-1.  **Set the spy points:**
-    `current-spy-predicates` holds a list of predicate names to trace.
-
-2.  **Run your query:**
-    When a spied predicate is called, Athena will prompt you for an action.
-
-**Example:**
-
-```scheme
-(parameterize ((current-spy-predicates '(ancestor)))
-  (?- (ancestor alice ?x)))
-```
-
-This will result in:
-
-```
-Spy on (ancestor alice ?x)? [l=leap c=creep n=nodebug b=break]
-```
-
-*   `c` (creep): Show this call and continue prompting.
-*   `l` (leap): Show all spy messages without prompting.
-*   `n` (nodebug): Skip spying for this call.
-*   `b` (break): Open a Scheme REPL.
-
-## 📦 Supported Scheme Implementations
-
-Athena is tested against a wide array of Scheme implementations:
-
-*   Gauche
-*   Guile
-*   Gambit
-*   Chicken
-*   Chibi
-*   Sagittarius
-*   ChezScheme
-*   Racket
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
-
-## 📄 License
-
-This project is licensed under the GNU General Public License v3.0. See [LICENSE](LICENSE) for details.
-
-Note: Parts derived from PAIP Prolog are licensed under the [MIT License](https://github.com/norvig/paip-lisp/blob/main/LICENSE).
