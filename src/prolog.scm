@@ -421,23 +421,24 @@
        (prolog 'goals))))
 
   (define-stream (solution-stream goals)
-    (define-stream (generate-stream continuation)
-      (let ((result (continuation)))
-        (if (failure? result)
-            stream-null
-            (stream-cons
-             (let* ((bindings (success-bindings result))
-                    (query-variables (variables-in goals))
-                    (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
-               (map make-pair query-variables))
-             (generate-stream (success-continuation result))))))
     (define (initial-continuation)
       (call-with-current-choice-point
         (lambda (choice-point)
           (let* ((prepared-goals (replace-anonymous-variables goals))
                  (cut-goals (insert-choice-point prepared-goals choice-point)))
             (prove-all cut-goals '())))))
-    (generate-stream initial-continuation))
+    (define (retrieve-success-bindings result)
+      (let* ((bindings (success-bindings result))
+             (query-variables (variables-in goals))
+             (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
+        (map make-pair query-variables)))
+    (define (execute-success-continuation result)
+      ((success-continuation result)))
+    (stream-unfold
+      retrieve-success-bindings
+      success?
+      execute-success-continuation
+      (initial-continuation)))
 
   (define current-solution-accumulator (make-parameter '()))
 
