@@ -8,7 +8,15 @@ This project provides a comprehensive Prolog engine implemented in Scheme, offer
   - **Seamless Scheme Integration**: Define Prolog predicates using Scheme procedures and evaluate Scheme code from within Prolog.
   - **Interactive Querying**: Use the `?-` macro for running interactive Prolog queries directly in your REPL.
   - **Debugging Tools**: Includes a spy and break functionality for tracing and debugging predicate execution.
-  - **Cross-Implementation Support**: Compatible with multiple Scheme standards (R6RS/R7RS) and implementations, including Racket, Chicken, Guile, and Chez Scheme.
+  - **Cross-Implementation Support**: Compatible with multiple Scheme standards (R6RS/R7RS) and implementations:
+    - Racket
+    - Gambit
+    - Chez Scheme
+    - Gauche
+    - Sagittarius
+    - Chibi Scheme
+    - Guile
+    - Chicken Scheme
 
 ## Getting Started
 
