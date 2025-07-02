@@ -9,7 +9,7 @@
    standard-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate prove-all ?- min-arity call-with-current-choice-point
    current-lisp-environment current-spy-predicates
-   success-bindings success-continuation prolog prolog* solution-stream)
+   success-bindings success-continuation prolog prolog* make-solution-stream)
   ;; Imports
   (import
    (scheme base)

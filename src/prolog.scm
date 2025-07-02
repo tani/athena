@@ -374,7 +374,7 @@
        (continue-prompt?))))
 
   (define (run-query goals)
-    (let loop ((ss (solution-stream goals)))
+    (let loop ((ss (make-solution-stream goals)))
       (if (stream-null? ss)
           (begin (display "No.") (newline))
           (begin
@@ -411,7 +411,7 @@
             new-parameter))))
 
   (define (prolog goals)
-    (let loop ((ss (solution-stream goals)))
+    (let loop ((ss (make-solution-stream goals)))
       (unless (stream-null? ss)
         (loop (stream-cdr ss)))))
 
@@ -420,7 +420,7 @@
       ((_ . goals)
        (prolog 'goals))))
 
-  (define-stream (solution-stream goals)
+  (define-stream (make-solution-stream goals)
     (define (initial-continuation)
       (call-with-current-choice-point
         (lambda (choice-point)
