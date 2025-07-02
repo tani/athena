@@ -24,7 +24,7 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - name: Build static files
-        run: nix develop -c sh ./build.sh
+        run: nix develop -c sh ./script/build.sh
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
