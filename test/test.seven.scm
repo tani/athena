@@ -1,5 +1,6 @@
 (import (scheme base)
         (srfi 64)
+        (srfi 41)
         (scheme r5rs)
         (prolog))
 

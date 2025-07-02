@@ -1,3 +1,8 @@
+(define (prolog goals)
+  (let loop ((ss (make-solution-stream goals)))
+    (unless (stream-null? ss)
+      (loop (stream-cdr ss)))))
+
 (define current-result (make-parameter '()))
 
 (define (solve-first goals term)

@@ -12,7 +12,7 @@
  standard-clause-database run-query
  add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
  prove-all ?- current-lisp-environment current-spy-predicates
- success-bindings success-continuation prolog prolog* make-solution-stream)
+ success-bindings success-continuation make-solution-stream)
 
 ;; Imports
 (require srfi/41

@@ -410,16 +410,6 @@
             (current-dynamic-parameters new-dynamic-parameters)
             new-parameter))))
 
-  (define (prolog goals)
-    (let loop ((ss (make-solution-stream goals)))
-      (unless (stream-null? ss)
-        (loop (stream-cdr ss)))))
-
-  (define-syntax prolog*
-    (syntax-rules ()
-      ((_ . goals)
-       (prolog 'goals))))
-
   (define-stream (make-solution-stream goals)
     (define (initial-continuation)
       (call-with-current-choice-point
