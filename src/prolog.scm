@@ -16,17 +16,15 @@
           (set! counter (+ counter 1))
           (string->symbol name)))))
 
-  (define-syntax with-choice-point
-    (syntax-rules ()
-      ((_ (tag) body ...)
-       (let ((tag (%gensym "choice-point-")))
-         (guard (exception
-                 ((and (cut-exception? exception)
-                       (eq? tag (cut-exception-tag exception)))
-                  (cut-exception-value exception))
-                 (else
-                  (raise exception)))
-           body ...)))))
+  (define (with-choice-point proc)
+    (let ((tag (%gensym "choice-point-")))
+      (guard (exception
+              ((and (cut-exception? exception)
+                    (eq? tag (cut-exception-tag exception)))
+               (cut-exception-value exception))
+              (else
+               (raise exception)))
+        (proc tag))))
 
   ;; Bindings and unification
 
@@ -310,28 +308,30 @@
     (map insert-cut-term clause))
 
   (define (try-clauses goal bindings remaining-goals all-clauses)
-    (with-choice-point (choice-point)
-      (define goal-arity (if (pair? goal) (length (cdr goal)) 0))
-      (define (clause-match? clause)
-        (let* ((required (min-arity (cdar clause)))
-               (variadic? (not (list? (cdar clause)))))
+    (with-choice-point
+      (lambda (choice-point)
+        (define goal-arity (if (pair? goal) (length (cdr goal)) 0))
+        (define (clause-match? clause)
+          (let* ((required (min-arity (cdar clause)))
+                 (variadic? (not (list? (cdar clause)))))
           (and (>= goal-arity required)
                (or variadic? (= goal-arity required)))))
-      (define (try-one-by-one clauses-to-try)
-        (if (null? clauses-to-try)
-            (make-failure)
-            (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
-                   (remaining-clauses (cdr clauses-to-try))
-                   (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                   (result (process-one goal current-clause bindings remaining-goals)))
-              (if (failure? result)
-                  (try-next-clause)
-                  (let* ((result-bindings (success-bindings result))
-                         (result-continuation (success-continuation result))
-                         (new-continuation (combine result-continuation try-next-clause)))
-                    (make-success result-bindings new-continuation))))))
+        (define (try-one-by-one clauses-to-try)
+          (if (null? clauses-to-try)
+              (make-failure)
+              (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
+                     (remaining-clauses (cdr clauses-to-try))
+                     (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
+                     (result (process-one goal current-clause bindings remaining-goals)))
+                (if (failure? result)
+                    (try-next-clause)
+                    (let* ((result-bindings (success-bindings result))
+                           (result-continuation (success-continuation result))
+                           (new-continuation (combine result-continuation try-next-clause)))
+                      (make-success result-bindings new-continuation))))))
       (let ((clauses (filter clause-match? all-clauses)))
         (try-one-by-one clauses))))
+)
 
   (define (prove-all goals bindings)
     (cond
@@ -434,10 +434,11 @@
                (map make-pair query-variables))
              (generate-stream (success-continuation result))))))
     (define (initial-continuation)
-      (with-choice-point (choice-point)
-        (let* ((prepared-goals (replace-anonymous-variables goals))
-               (cut-goals (insert-choice-point prepared-goals choice-point)))
-          (prove-all cut-goals '()))))
+      (with-choice-point
+        (lambda (choice-point)
+          (let* ((prepared-goals (replace-anonymous-variables goals))
+                 (cut-goals (insert-choice-point prepared-goals choice-point)))
+            (prove-all cut-goals '())))))
     (generate-stream initial-continuation))
 
   (define current-solution-accumulator (make-parameter '()))
@@ -463,7 +464,8 @@
       (prove-all (current-remaining-goals) (current-bindings)))))
 
   (define-predicate (call pred-or-goal . args)
-    (with-choice-point (choice-point)
+    (with-choice-point
+      (lambda (choice-point)
       (let* ((goal (cond
                     ((null? args) pred-or-goal)
                     ((symbol? pred-or-goal) (cons pred-or-goal args))
@@ -473,6 +475,7 @@
              (cut-goals (insert-choice-point (list substituted-goal) choice-point))
              (next-goals (append cut-goals (current-remaining-goals))))
         (prove-all next-goals (current-bindings)))))
+  )
 
   (define-predicate (--lisp-eval-internal result-variable expression)
     (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
@@ -619,6 +622,3 @@
   (standard-clause-database (current-clause-database))
   )
 
-;;; Local Variables:
-;;; eval: (put 'with-choice-point 'scheme-indent-function 1)
-;;; End:
