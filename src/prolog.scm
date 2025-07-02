@@ -16,7 +16,7 @@
           (set! counter (+ counter 1))
           (string->symbol name)))))
 
-  (define (with-choice-point proc)
+  (define (call-with-current-choice-point proc)
     (let ((tag (%gensym "choice-point-")))
       (guard (exception
               ((and (cut-exception? exception)
@@ -308,7 +308,7 @@
     (map insert-cut-term clause))
 
   (define (try-clauses goal bindings remaining-goals all-clauses)
-    (with-choice-point
+    (call-with-current-choice-point
       (lambda (choice-point)
         (define goal-arity (if (pair? goal) (length (cdr goal)) 0))
         (define (clause-match? clause)
@@ -330,8 +330,7 @@
                            (new-continuation (combine result-continuation try-next-clause)))
                       (make-success result-bindings new-continuation))))))
       (let ((clauses (filter clause-match? all-clauses)))
-        (try-one-by-one clauses))))
-)
+        (try-one-by-one clauses)))))
 
   (define (prove-all goals bindings)
     (cond
@@ -434,7 +433,7 @@
                (map make-pair query-variables))
              (generate-stream (success-continuation result))))))
     (define (initial-continuation)
-      (with-choice-point
+      (call-with-current-choice-point
         (lambda (choice-point)
           (let* ((prepared-goals (replace-anonymous-variables goals))
                  (cut-goals (insert-choice-point prepared-goals choice-point)))
@@ -464,18 +463,17 @@
       (prove-all (current-remaining-goals) (current-bindings)))))
 
   (define-predicate (call pred-or-goal . args)
-    (with-choice-point
+    (call-with-current-choice-point
       (lambda (choice-point)
-      (let* ((goal (cond
-                    ((null? args) pred-or-goal)
-                    ((symbol? pred-or-goal) (cons pred-or-goal args))
-                    ((pair? pred-or-goal) (append pred-or-goal args))
-                    (else (error "call: invalid form" (cons pred-or-goal args)))))
-             (substituted-goal (substitute-bindings (current-bindings) goal))
-             (cut-goals (insert-choice-point (list substituted-goal) choice-point))
-             (next-goals (append cut-goals (current-remaining-goals))))
-        (prove-all next-goals (current-bindings)))))
-  )
+        (let* ((goal (cond
+                      ((null? args) pred-or-goal)
+                      ((symbol? pred-or-goal) (cons pred-or-goal args))
+                      ((pair? pred-or-goal) (append pred-or-goal args))
+                      (else (error "call: invalid form" (cons pred-or-goal args)))))
+               (substituted-goal (substitute-bindings (current-bindings) goal))
+               (cut-goals (insert-choice-point (list substituted-goal) choice-point))
+               (next-goals (append cut-goals (current-remaining-goals))))
+          (prove-all next-goals (current-bindings))))))
 
   (define-predicate (--lisp-eval-internal result-variable expression)
     (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
