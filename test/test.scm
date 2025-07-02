@@ -168,6 +168,12 @@
   (test-equal "setof gets unique sorted" '(david mary michael susan) (solve-first '((setof ?x (ancestor john ?x) ?o)) '?o))
   (test-equal "bagof vs setof" '((a b a) (a b)) (solve-first '((bagof ?x (item ?x) ?bag) (setof ?x (item ?x) ?set)) '(?bag ?set)))
   (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
+  (test-equal "bagof groups by free vars"
+              '((john (mary michael)) (mary (susan)) (michael (david)))
+              (solve-all '((bagof ?C (parent ?P ?C) ?L)) '(?P ?L)))
+  (test-equal "setof groups by free vars"
+              '((john (mary michael)) (mary (susan)) (michael (david)))
+              (solve-all '((setof ?C (parent ?P ?C) ?L)) '(?P ?L)))
 
   (test-equal "! prunes choices" '(1) (solve-all '((bar ?v)) '?v))
   (test-equal "no ! finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
