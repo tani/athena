@@ -7,7 +7,7 @@
 (begin
 
   ;; Utility procedures
-
+  
   (define %gensym
     (let ((counter 0))
       (lambda (prefix)
@@ -143,7 +143,7 @@
       (cond
        ((pair? lst) (loop (cdr lst) (+ count 1)))
        ((null? lst) count)
-       (else count))) )
+       (else count))))
 
   (define-syntax <-
     (syntax-rules ()
@@ -164,7 +164,7 @@
       ((_ (name . args) . body)
        (let ((arity (min-arity 'args)))
          (remove-clauses-with-arity! 'name arity)
-         (add-clause! (replace-anonymous-variables '((name . args) . body)))) )
+         (add-clause! (replace-anonymous-variables '((name . args) . body)))))
       ((_ name . body)
        (let ((arity 0))
          (remove-clauses-with-arity! 'name arity)
@@ -313,8 +313,8 @@
         (define (clause-match? clause)
           (let* ((required (min-arity (cdar clause)))
                  (variadic? (not (list? (cdar clause)))))
-          (and (>= goal-arity required)
-               (or variadic? (= goal-arity required)))))
+           (and (>= goal-arity required)
+                (or variadic? (= goal-arity required)))))
         (define (try-one-by-one clauses-to-try)
           (if (null? clauses-to-try)
               (make-failure)
@@ -328,8 +328,8 @@
                            (result-continuation (success-continuation result))
                            (new-continuation (combine result-continuation try-next-clause)))
                       (make-success result-bindings new-continuation))))))
-      (let ((clauses (filter clause-match? all-clauses)))
-        (try-one-by-one clauses)))))
+       (let ((clauses (filter clause-match? all-clauses)))
+         (try-one-by-one clauses)))))
 
   (define (prove-all goals bindings)
     (cond
@@ -635,6 +635,5 @@
            (call (?pred . ?heads))
            (call (maplist ?pred . ?tails)))))
 
-  (standard-clause-database (current-clause-database))
-  )
+  (standard-clause-database (current-clause-database)))
 
