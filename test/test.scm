@@ -69,6 +69,71 @@
   
 
 ;; -----------------------------------------------------------
+;; API function coverage
+;; -----------------------------------------------------------
+(test-group "exports"
+  ;; object->string
+  (test-equal "object->string pair" "(1 2)" (object->string '(1 2)))
+
+  ;; remove-clauses-with-arity!
+  (parameterize ((current-clause-database (current-clause-database)))
+    (current-clause-database '())
+    (<- (r 1))
+    (<- (r 1 2))
+    (remove-clauses-with-arity! 'r 1)
+    (test-equal "arity removal" 1 (length (get-clauses 'r))))
+
+  ;; primitive vs standard databases
+  (test-assert "standard has maplist" (assoc 'maplist (standard-clause-database)))
+  (test-assert "primitive lacks maplist" (not (assoc 'maplist (primitive-clause-database))))
+
+  ;; prove-all and success structures
+  (let ((res (prove-all '((= ?x 1) (member ?y (1 2))) '())))
+    (test-assert "prove-all success" (success? res))
+    (test-equal "success ?x" 1 (substitute-bindings (success-bindings res) '?x))
+    (test-equal "success ?y" 1 (substitute-bindings (success-bindings res) '?y))
+    (let ((next ((success-continuation res))))
+      (test-assert "success-continuation" (success? next))
+      (test-equal "next ?y" 2 (substitute-bindings (success-bindings next) '?y))))
+
+  ;; call-with-current-choice-point
+  (test-equal "call-with-current-choice-point" 'ok
+              (call-with-current-choice-point (lambda (tag) 'ok)))
+
+  ;; current-lisp-environment via eval
+  (test-equal "eval env" 42 (eval '42 (current-lisp-environment)))
+
+  ;; make-solution-stream
+  (let* ((ss (make-solution-stream '((= ?z 5))))
+         (first (stream-car ss)))
+    (test-equal "make-solution-stream" '((?z . 5)) first))
+
+  ;; run-query success
+  (let ((out (open-output-string))
+        (in (open-input-string "n\n")))
+    (parameterize ((current-input-port in)
+                   (current-output-port out))
+      (run-query '((= ?a 1))))
+    (let ((txt (get-output-string out)))
+      (test-assert "run-query success" (not (string=? txt "No.\n")))))
+
+  ;; run-query failure
+  (let ((out (open-output-string))
+        (in (open-input-string "")))
+    (parameterize ((current-input-port in)
+                   (current-output-port out))
+      (run-query '((fail))))
+    (test-equal "run-query failure" "No.\n" (get-output-string out)))
+
+  ;; ?- macro
+  (let ((out (open-output-string))
+        (in (open-input-string "n\n")))
+    (parameterize ((current-input-port in)
+                   (current-output-port out))
+      (?- (= ?v ok)))
+    (test-assert "?- macro" (not (string=? (get-output-string out) "No.\n")))))
+
+;; -----------------------------------------------------------
 ;; Clause DB operations
 ;; -----------------------------------------------------------
 (test-group "clause-db"
@@ -344,22 +409,23 @@
       (solve-first '((q ?y) (p ?y)) '?y))))
     
 
-(unless (string=? (object->string (current-input-port)) "#<Port>") ;; if scheme is BiwaScheme, then skip
-  (test-group "spy-behavior"
-    (parameterize ((current-clause-database (current-clause-database)))
-      (current-clause-database '())
-      (<- (watched))
-      (let ((out (open-output-string))
-            (in (open-input-string "l"))
-            (result ""))
-        (parameterize ((current-spy-predicates '(watched))
-                       (current-input-port in)
-                       (current-output-port out))
-          (solve-all '((watched)) 'dummy)
-          (set! result (get-output-string out)))
-        (test-equal "spy output"
-                    "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
-                    result)))))
+
+(test-group "spy-behavior"
+  (parameterize ((current-clause-database (current-clause-database)))
+    (current-clause-database '())
+    (<- (watched))
+    (let ((out (open-output-string))
+          (in (open-input-string "l"))
+          (result ""))
+      (parameterize ((current-spy-predicates '(watched))
+                     (current-input-port in)
+                     (current-output-port out))
+        (solve-all '((watched)) 'dummy)
+        (set! result (get-output-string out)))
+      (test-equal "spy output"
+                  "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
+                  result)))
+)
   
 
 (test-end "prolog")
