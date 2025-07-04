@@ -56,8 +56,8 @@
               (substitute-bindings bindings value (cons expression visited)))))
        ((atom? expression) expression)
        (else
-        (let* ((substituted-car (substitute-bindings bindings (car expression)))
-               (substituted-cdr (substitute-bindings bindings (cdr expression))))
+        (let* ((substituted-car (substitute-bindings bindings (car expression) visited))
+               (substituted-cdr (substitute-bindings bindings (cdr expression) visited)))
           (cons substituted-car substituted-cdr))))))
 
   (define (variables-in expression)
