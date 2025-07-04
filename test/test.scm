@@ -424,8 +424,8 @@
         (set! result (get-output-string out)))
       (test-equal "spy output"
                   "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
-                  result)))
-)
+                  result))))
+
   
 
 (test-end "prolog")
