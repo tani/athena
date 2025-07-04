@@ -25,7 +25,6 @@
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
-              rlwrap nodejs
               gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi
             ]) ++ (with rlwraps; [
               gauche chicken sagittarius-scheme chibi guile gambit chez
