@@ -32,5 +32,9 @@
 
 (define (list-sort lis pred) (sort pred lis))
 
-(define (interaction-environment) (current-namespace))
+(define-namespace-anchor anchor)
+
+(define (interaction-environment)
+  (namespace-anchor->namespace anchor))
+
 (include "prolog.scm")

@@ -65,8 +65,8 @@
   (test-assert "unify list-list failure (element)" (failure? (unify '(a x) '(a y) '())))
 
   (test-assert "occurs-check simple" (failure? (unify '?x '(foo ?x) '())))
-  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) '())))
-  )
+  (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) '()))))
+  
 
 ;; -----------------------------------------------------------
 ;; Clause DB operations
@@ -131,48 +131,52 @@
     (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
 
     (test-assert "fail predicate" (null? (solve-all '((fail)) 'dummy)))
-  (test-assert "true predicate" (not (null? (solve-all '((true)) 'dummy))))
+   (test-assert "true predicate" (not (null? (solve-all '((true)) 'dummy))))
 
-  (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
-  (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
+   (test-equal "= binds simple var" 'foo (solve-first '((= ?x foo)) '?x))
+   (test-equal "= binds complex terms" '(b) (solve-first '((= (a ?y) (a (b)))) '?y))
 
-  (test-assert "== succeeds for bound vars" (not (null? (solve-all '((= ?x foo) (== ?x foo)) 'dummy))))
-  (test-assert "== fails for different vals" (null? (solve-all '((= ?x foo) (== ?x bar)) 'dummy)))
+   (test-assert "== succeeds for bound vars" (not (null? (solve-all '((= ?x foo) (== ?x foo)) 'dummy))))
+   (test-assert "== fails for different vals" (null? (solve-all '((= ?x foo) (== ?x bar)) 'dummy)))
 
-  (test-assert "not/1 succeeds" (not (null? (solve-all '((not (parent susan ?_))) 'dummy))))
-  (test-assert "not/1 fails" (null? (solve-all '((not (parent john mary))) 'dummy)))
+   (test-assert "not/1 succeeds" (not (null? (solve-all '((not (parent susan ?_))) 'dummy))))
+   (test-assert "not/1 fails" (null? (solve-all '((not (parent john mary))) 'dummy)))
 
-  (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
-  (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
+   (test-equal "call/1 simple" 'mary (solve-first '((call (parent john ?x))) '?x))
+   (test-equal "call/1 with conjunction" '(mary michael susan david) (solve-all '((call (ancestor john ?gc))) '?gc))
   ;; Variadic call form
-  (test-equal "call variadic simple" 'mary (solve-first '((call parent john ?x)) '?x))
-  (test-equal "call variadic with conjunction" '(mary michael susan david)
-              (solve-all '((call ancestor john ?gc)) '?gc))
+   (test-equal "call variadic simple" 'mary (solve-first '((call parent john ?x)) '?x))
+   (test-equal "call variadic with conjunction" '(mary michael susan david)
+               (solve-all '((call ancestor john ?gc)) '?gc))
   ;; Compound predicate with extra arguments
-  (test-equal "call compound+args" 'mary (solve-first '((call (parent john) ?x)) '?x))
-  (test-equal "call compound+args conjunction" '(mary michael susan david)
-              (solve-all '((call (ancestor john) ?gc)) '?gc))
+   (test-equal "call compound+args" 'mary (solve-first '((call (parent john) ?x)) '?x))
+   (test-equal "call compound+args conjunction" '(mary michael susan david)
+               (solve-all '((call (ancestor john) ?gc)) '?gc))
 
-  (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
-  (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
-  (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
-  (test-equal "if/2 else fails" #t (null? (solve-all '((if (= a b) (= ?r ok))) 'dummy)))
+   (test-equal "if/3 then" 'yes (solve-first '((if (= a a) (= ?r yes) (= ?r no))) '?r))
+   (test-equal "if/3 else" 'no (solve-first '((if (= a b) (= ?r yes) (= ?r no))) '?r))
+   (test-equal "if/2 then" 'ok (solve-first '((if (parent john mary) (= ?r ok))) '?r))
+   (test-equal "if/2 else fails" #t (null? (solve-all '((if (= a b) (= ?r ok))) 'dummy)))
 
 
-  (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
-  (test-equal "lisp/2" 10 (solve-first '((lisp ?res (* 5 2))) '?res))
+   (test-equal "is (lisp alias)" 7 (solve-first '((is ?v (+ 3 4))) '?v))
+   (test-equal "lisp/2" 10 (solve-first '((lisp ?res (* 5 2))) '?res))
 
-  (<- (item a)) (<- (item b)) (<- (item a))
-  (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
-  (test-equal "findall gets all solutions" '(mary michael) (solve-first '((findall ?c (parent john ?c) ?l)) '?l))
-  (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
-  (test-equal "bagof groups by free vars"
-              '((john (mary michael)) (mary (susan)) (michael (david)))
-              (solve-all '((bagof ?C (parent ?P ?C) ?L)) '(?P ?L)))
+   (<- (item a)) (<- (item b)) (<- (item a))
+   (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
+   (test-equal "findall gets all solutions" '(mary michael) (solve-first '((findall ?c (parent john ?c) ?l)) '?l))
+   (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
+   (test-equal "bagof groups by free vars"
+               '((john (mary michael)) (mary (susan)) (michael (david)))
+               (solve-all '((bagof ?C (parent ?P ?C) ?L)) '(?P ?L)))
 
-  (test-equal "! prunes choices" '(1) (solve-all '((bar ?v)) '?v))
-  (test-equal "no ! finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x)))
-  )
+   (test-equal "sort numbers" '(1 2 3) (solve-first '((sort (3 1 2) ?s)) '?s))
+   (test-equal "sort removes duplicates" '(1 2 3) (solve-first '((sort (3 1 2 3 1) ?s)) '?s))
+   (test-equal "sort removes duplicates" '(1 2 3 ?z) (solve-first '((sort (3 ?z 2 3 1) ?s)) '?s))
+   
+   (test-equal "! prunes choices" '(1) (solve-all '((bar ?v)) '?v))
+   (test-equal "no ! finds all" '(1 2 3) (solve-all '((foo ?x) (= ?x ?x)) '?x))))
+  
 
 ;; -----------------------------------------------------------
 ;; Type & Dynamic predicates
@@ -190,8 +194,8 @@
   (test-assert "number/1 failure on atom" (null? (solve-all '((number abc)) 'dummy)))
   
   (test-equal "dynamic-put/get" 42 (solve-first '((dynamic-put my-var 42) (dynamic-get my-var ?V)) '?V))
-  (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V))
-  )
+  (test-equal "dynamic-put overwrite" "new" (solve-first '((dynamic-put my-var "old") (dynamic-put my-var "new") (dynamic-get my-var ?V)) '?V)))
+  
 
 ;; -----------------------------------------------------------
 ;; Library predicates (or/member/append/repeat/true)
@@ -240,8 +244,8 @@
                (null? (solve-all '((maplist atom (a 1 c))) 'dummy)))
   (test-equal "maplist = unify lists"
               '(a b c)
-              (solve-first '((maplist = (a b c) (?x ?y ?z))) '(?x ?y ?z)))
-  )
+              (solve-first '((maplist = (a b c) (?x ?y ?z))) '(?x ?y ?z))))
+  
 
 ;; -----------------------------------------------------------
 ;; Zero-arity predicate definitions
@@ -257,8 +261,8 @@
     (test-assert "zero-arity rule" (not (null? (solve-all '((greet)) 'dummy))))
     ;; calls using bare predicate symbol
     (test-assert "zero-arity fact bare" (not (null? (solve-all '(hello) 'dummy))))
-    (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))
-    ))
+    (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))))
+    
 
 ;; -----------------------------------------------------------
 ;; Variadic predicate definitions
@@ -318,8 +322,8 @@
     ;; predicates first in Prolog yields the same result.
     (test-equal "Cut affecting parent goals (s/2)"
       '((a 1) (a 2) (b 1) (b 2) (b 1) (b 2) (c 1) (c 2))
-      (solve-all '((s ?X ?Y)) '(?X ?Y)))
-    ))
+      (solve-all '((s ?X ?Y)) '(?X ?Y)))))
+    
 
 ;; -----------------------------------------------------------
 ;; Advanced backtracking and ! propagation
@@ -337,8 +341,8 @@
     
     (test-equal "hard failure in p(x) should not block backtracking in q(y)"
       2
-      (solve-first '((q ?y) (p ?y)) '?y))
-    ))
+      (solve-first '((q ?y) (p ?y)) '?y))))
+    
 
 (unless (string=? (object->string (current-input-port)) "#<Port>") ;; if scheme is BiwaScheme, then skip
   (test-group "spy-behavior"
@@ -355,7 +359,7 @@
           (set! result (get-output-string out)))
         (test-equal "spy output"
                     "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
-                    result)))
-  )
-)
+                    result)))))
+  
+
 (test-end "prolog")

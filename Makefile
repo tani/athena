@@ -8,19 +8,19 @@ gauche:
 	gosh -r 7 -I src test/test.seven.scm
 
 chicken:
-	csi -R r7rs -I src -e '(include "src/prolog.sld")' -s test/test.seven.scm
+	csi -require-extension r7rs -include-path src -eval '(include "src/prolog.sld")' -script test/test.seven.scm
 
 racket:
 	racket test/test.rkt
 
 guile:
-	guile -x .sld -L src test/test.seven.scm
+	guile --fresh-auto-compile -x .sld -L src test/test.seven.scm
 
 chibi:
 	chibi-scheme -I src -I test test/test.seven.scm
 
 sagittarius:
-	sagittarius -S .sld -r 7 -L src test/test.seven.scm
+	sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=src test/test.seven.scm
 
 chez:
 	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD/src --script test/test.chez.scm
