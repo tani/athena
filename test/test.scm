@@ -37,6 +37,18 @@
     (test-equal "substitute-bindings simple" 'foo (substitute-bindings bindings '?x))
     (test-equal "substitute-bindings with list" '(g foo (bar)) (substitute-bindings bindings '(g ?x ?y))))
 
+  (let* ((cycle-bindings (cons (cons '?x '?y)
+                               (cons (cons '?y '?x) '()))))
+    (test-equal "substitute-bindings simple cycle"
+                '?x
+                (substitute-bindings cycle-bindings '?x)))
+
+  (let* ((nested-bindings (cons (cons '?x '(a ?y))
+                                (cons (cons '?y '(b ?x)) '()))))
+    (test-equal "substitute-bindings nested cycle"
+                '(a (b ?x))
+                (substitute-bindings nested-bindings '?x)))
+
   (test-equal "variables-in simple" '(?x ?y) (variables-in '(f ?x (g ?y ?x))))
   (test-equal "variables-in with no vars" '() (variables-in '(a b (c))))
 
