@@ -10,17 +10,26 @@
 
       perSystem = { pkgs, system, ... }:
         let
-          chickenEggs = pkgs.chickenPackages_5.chickenEggs;
-          nodePackages = import ./node {
-            inherit pkgs;
-            nodejs = pkgs.nodejs; # nodejsのバージョンを明示的に指定
+          rlwrapCmd = { cmd, pkg }: pkgs.writeShellScriptBin "${cmd}x" ''
+            ${pkgs.rlwrap}/bin/rlwrap -n ${pkg}/bin/${cmd} "$@"
+          '';
+          rlwraps = {
+            gauche = rlwrapCmd { pkg = pkgs.gauche; cmd = "gosh"; };
+            chicken = rlwrapCmd { pkg = pkgs.chicken; cmd = "csi"; };
+            sagittarius-scheme = rlwrapCmd { pkg = pkgs.sagittarius-scheme; cmd = "sash"; };
+            chibi = rlwrapCmd { pkg = pkgs.chibi; cmd = "chibi-scheme"; };
+            guile = rlwrapCmd { pkg = pkgs.guile; cmd = "guile"; };
+            chez = rlwrapCmd { pkg = pkgs.chez; cmd = "scheme"; };
+            gambit = rlwrapCmd { pkg = pkgs.gambit; cmd = "gsi"; };
           };
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
               rlwrap nodejs
-              gauche chicken sagittarius-scheme chibi guile chez chez-srfi gambit
-            ]) ++ (with chickenEggs; [
+              gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi
+            ]) ++ (with rlwraps; [
+              gauche chicken sagittarius-scheme chibi guile gambit chez
+            ]) ++ (with pkgs.chickenPackages_5.chickenEggs; [
               srfi-1 srfi-132 srfi-64 srfi-41 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
               racket
