@@ -7,7 +7,21 @@
 (begin
 
   ;; Utility procedures
-  
+  (define-syntax define*
+    (syntax-rules ()
+      ((define* (name . args) body ...)
+       (define (name . args)
+         (display (quote name))
+         (display " <= ")
+         (write (list . args))
+         (newline)
+         (let ((result (begin body ...)))
+           (display (quote name))
+           (display " => ")
+           (write result)
+           (newline)
+           result)))))
+
   (define %gensym
     (let ((counter 0))
       (lambda (prefix)
@@ -561,13 +575,14 @@
                         (continuation (success-continuation proof-stream))
                         (new-continuation (combine continuation next-group-thunk)))
                    (make-success (success-bindings proof-stream) new-continuation))))))
-    (let* ((goal-vars (variables-in (substitute-bindings (current-bindings) goal)))
+    (let* ((substituted-goal (substitute-bindings (current-bindings) goal))
+           (goal-vars (variables-in substituted-goal))
            (template-vars (variables-in (substitute-bindings (current-bindings) template)))
            (free-vars (filter (lambda (v) (not (memq v template-vars))) goal-vars))
            (collector-goal `(--add-solution-with-vars-and-fail ,template ,@free-vars))
            (all-solutions
              (parameterize ((current-solution-accumulator '()))
-               (prove-all `(,goal ,collector-goal fail) (current-bindings))
+               (prove-all `(,substituted-goal ,collector-goal fail) (current-bindings))
                (reverse (current-solution-accumulator))))
            (grouped-solutions (group-solutions all-solutions)))
       (enumerate-groups grouped-solutions free-vars result-bag)))
@@ -654,6 +669,10 @@
            (--get-tails ?lists ?tails)
            (call (?pred . ?heads))
            (call (maplist ?pred . ?tails)))))
+
+  (<-- (setof ?template ?goal ?result-set)
+       (bagof ?template ?goal ?result-bag)
+       (sort ?result-bag ?result-set))
 
   (standard-clause-database (current-clause-database)))
 
