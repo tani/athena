@@ -425,12 +425,12 @@
              (query-variables (variables-in goals))
              (make-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
         (map make-pair query-variables)))
-    (define (exe!e-success-continuation result)
+    (define (execute-success-continuation result)
       ((success-continuation result)))
     (stream-unfold
       retrieve-success-bindings
       success?
-      exe!e-success-continuation
+      execute-success-continuation
       (initial-continuation)))
 
   (define current-solution-accumulator (make-parameter '()))
