@@ -438,6 +438,37 @@
                   "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
                   result))))
 
+(test-group "spy-indent-toggle"
+  (parameterize ((current-clause-database (current-clause-database)))
+    (current-clause-database '())
+    (<- child)
+    (<- (parent) (child))
+    ;; indentation enabled
+    (let ((out1 (open-output-string))
+          (in1 (open-input-string "l"))
+          (result1 ""))
+      (parameterize ((current-spy-predicates '(parent child))
+                     (current-input-port in1)
+                     (current-output-port out1))
+        (solve-all '((parent)) 'dummy)
+        (set! result1 (get-output-string out1)))
+      (test-equal "indent on"
+                  "CALL: (parent)\n CALL: (child)\n EXIT: (child)\nEXIT: (parent)\n"
+                  result1))
+    ;; indentation disabled
+    (let ((out2 (open-output-string))
+          (in2 (open-input-string "l"))
+          (result2 ""))
+      (parameterize ((current-spy-predicates '(parent child))
+                     (current-input-port in2)
+                     (current-spy-indent? #f)
+                     (current-output-port out2))
+        (solve-all '((parent)) 'dummy)
+        (set! result2 (get-output-string out2)))
+      (test-equal "indent off"
+                  "CALL: (parent)\nCALL: (child)\nEXIT: (child)\nEXIT: (parent)\n"
+                  result2))))
+
   
 
 (test-end "prolog")

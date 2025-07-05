@@ -10,7 +10,7 @@
    current-clause-database primitive-clause-database
    standard-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
-   prove-all ?- current-lisp-environment current-spy-predicates
+   prove-all ?- current-lisp-environment current-spy-predicates current-spy-indent?
    success-bindings success-continuation make-solution-stream)
 
   ;; Imports
