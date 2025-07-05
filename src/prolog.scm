@@ -263,17 +263,13 @@
       result))
 
   (define (process-one goal clause bindings remaining-goals)
-    (with-spy
-      goal
-      bindings
-      (lambda ()
-        (let* ((renamed-clause (rename-vars clause))
-               (clause-head (car renamed-clause))
-               (clause-body (cdr renamed-clause))
-               (new-bindings (unify goal clause-head bindings)))
-          (if (failure? new-bindings)
-              (make-failure)
-              (prove-all (append clause-body remaining-goals) new-bindings))))))
+    (let* ((renamed-clause (rename-vars clause))
+           (clause-head (car renamed-clause))
+           (clause-body (cdr renamed-clause))
+           (new-bindings (unify goal clause-head bindings)))
+      (if (failure? new-bindings)
+          (make-failure)
+          (prove-all (append clause-body remaining-goals) new-bindings))))
 
   (define (combine continuation-a continuation-b)
     (lambda ()
@@ -285,22 +281,26 @@
                    (new-continuation (combine result-continuation continuation-b)))
               (make-success bindings new-continuation))))))
 
-  (define (prove goal bindings remaining-goals)
-    (parameterize ((current-remaining-goals remaining-goals)
-                   (current-bindings bindings))
-      (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-             (predicate-handler (get-clauses predicate-symbol))
-             (args (if (pair? goal) (cdr goal) '()))
-             (goal-arity (length args))
-             (get-min-arity (lambda (c) (min-arity (cdar c)))))
-        (if (procedure? predicate-handler)
-            (apply predicate-handler args)
-            (let ((goal-for-unify (if (pair? goal) goal (list goal))))
-              (if (and (not (null? predicate-handler))
-                       (< goal-arity (apply min (map get-min-arity predicate-handler))))
-                  (make-failure)
-                  (try-clauses goal-for-unify bindings remaining-goals predicate-handler)))))))
 
+  (define (prove goal bindings remaining-goals)
+    (with-spy
+      goal
+      bindings
+      (lambda ()
+        (parameterize ((current-remaining-goals remaining-goals)
+                       (current-bindings bindings))
+          (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
+                 (predicate-handler (get-clauses predicate-symbol))
+                 (args (if (pair? goal) (cdr goal) '()))
+                 (goal-arity (length args))
+                 (get-min-arity (lambda (c) (min-arity (cdar c)))))
+            (if (procedure? predicate-handler)
+                (apply predicate-handler args)
+                (let ((goal-for-unify (if (pair? goal) goal (list goal))))
+                  (if (and (not (null? predicate-handler))
+                           (< goal-arity (apply min (map get-min-arity predicate-handler))))
+                      (make-failure)
+                      (try-clauses goal-for-unify bindings remaining-goals predicate-handler)))))))))
   (define (insert-choice-point clause choice-point)
     (define (insert-cut-term term)
       (cond
