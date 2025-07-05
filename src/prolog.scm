@@ -203,6 +203,8 @@
     (make-parameter 'prompt))
 
   (define current-spy-predicates (make-parameter '()))
+  (define current-spy-depth (make-parameter 0))
+  (define current-spy-indent? (make-parameter #t))
 
   (define (simple-repl)
     (display "Entering break; type 'continue to resume")
@@ -232,6 +234,10 @@
 
   (define (spy-message kind goal bindings)
     (let ((resolved (substitute-bindings bindings goal)))
+      (when (current-spy-indent?)
+        (do ((i 0 (+ i 1)))
+            ((= i (current-spy-depth)))
+          (display " ")))
       (display kind)
       (display ": ")
       (write resolved)
@@ -253,8 +259,9 @@
             (when show?
               (spy-message "CALL" goal bindings)))
           (lambda ()
-            (set! result (thunk))
-            result)
+            (parameterize ((current-spy-depth (+ (current-spy-depth) 1)))
+              (set! result (thunk))
+              result))
           (lambda ()
             (when show?
               (if (or (not result) (failure? result))

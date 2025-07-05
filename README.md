@@ -101,6 +101,7 @@ The engine provides a rich set of standard built-in predicates for control flow,
 The Prolog engine includes a simple spy and break functionality for debugging.
 
   - `current-spy-predicates`: A parameter that holds a list of predicates to spy on.
+  - `current-spy-indent?`: When true, indent spy messages according to predicate depth.
   - **Spy Commands**:
       - `l` (leap): Continue execution without spying.
       - `c` (creep): Step through the current goal.
