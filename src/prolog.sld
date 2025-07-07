@@ -16,17 +16,27 @@
    (scheme write)
    (scheme read)
    (scheme eval)
-   (srfi 41)
    (only (scheme r5rs) interaction-environment)
    (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
   (cond-expand
-   (chicken (import (scheme)))
-   (else))
-  (cond-expand
-   ((or gambit chicken gauche chibi sagittarius)
-    (import (only (srfi 132) list-sort)))
+   ((or gambit gauche chibi sagittarius)
+    (import (srfi 41) (only (srfi 132) list-sort)))
+   (chicken
+    (import (scheme) (srfi 41) (only (srfi 132) list-sort)))
    (guile
-    (import (only (rnrs sorting) list-sort))))
+    (import (srfi 41) (only (rnrs sorting) list-sort)))
+   (mit
+    (begin
+      (define (list-sort x y) (sort y x))
+      (define-syntax define-stream
+        (syntax-rules ()
+          ((_ (name . formals) body ...)
+           (define (name . formals)
+             body ...))))
+      (define (stream-unfold f p g seed)
+        (if (p seed)
+            '()
+            (cons-stream (f seed) (stream-unfold f p g (g seed))))))))
   ;; Implementation
   (begin
     (define-record-type <failure> (make-failure) failure?)
@@ -46,7 +56,7 @@
         (write object)
         (get-output-string (current-output-port)))))
   (cond-expand
-   (chicken
+   ((or chicken mit)
     (include "prolog.scm"))
    (guile
     (import (only (guile) include-from-path))

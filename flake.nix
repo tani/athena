@@ -21,6 +21,8 @@
             guile = rlwrapCmd { pkg = pkgs.guile; cmd = "guile"; };
             chez = rlwrapCmd { pkg = pkgs.chez; cmd = "scheme"; };
             gambit = rlwrapCmd { pkg = pkgs.gambit; cmd = "gsi"; };
+            mitscheme = rlwrapCmd { pkg = pkgs.mitscheme; cmd = "mit-scheme"; };
+            racket = rlwrapCmd { pkg = pkgs.racket; cmd = "racket"; };
           };
         in {
           devShells.default = pkgs.mkShell {
@@ -31,7 +33,8 @@
             ]) ++ (with pkgs.chickenPackages_5.chickenEggs; [
               srfi-1 srfi-132 srfi-64 srfi-41 r7rs
             ]) ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
-              racket
+              racket rlwraps.racket
+              mitscheme rlwraps.mitscheme
             ]);
             CHEZSCHEMELIBDIRS="${pkgs.chez-srfi}/lib/csv10.2-site/";
             shellHook = ''
