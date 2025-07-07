@@ -19,12 +19,14 @@
    (only (scheme r5rs) interaction-environment)
    (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
   (cond-expand
-   ((or gambit gauche chibi sagittarius)
-    (import (srfi 41) (only (srfi 132) list-sort)))
+   ((or gauche chibi sagittarius)
+    (import (scheme sort) (scheme stream)))
+   (gambit
+    (import (srfi 41) (srfi 132)))
    (chicken
-    (import (scheme) (srfi 41) (only (srfi 132) list-sort)))
+    (import (scheme) (srfi 41) (srfi 132)))
    (guile
-    (import (srfi 41) (only (rnrs sorting) list-sort)))
+    (import (srfi 41) (rnrs sorting)))
    (mit
     (begin
       (define (list-sort x y) (sort y x))
