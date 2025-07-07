@@ -20,7 +20,7 @@
    (only (scheme r5rs) interaction-environment)
    (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
   (cond-expand
-   (chicken (import scheme))
+   (chicken (import (scheme)))
    (else))
   (cond-expand
    ((or gambit chicken gauche chibi sagittarius)
