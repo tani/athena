@@ -5,23 +5,6 @@
 ;; This file is intended to be included by a version-specific (R6RS/R7RS) wrapper.
 
 (begin
-
-  ;; Utility procedures
-  (define-syntax define*
-    (syntax-rules ()
-      ((define* (name . args) body ...)
-       (define (name . args)
-         (display (quote name))
-         (display " <= ")
-         (write (list . args))
-         (newline)
-         (let ((result (begin body ...)))
-           (display (quote name))
-           (display " => ")
-           (write result)
-           (newline)
-           result)))))
-
   (define %gensym
     (let ((counter 0))
       (lambda (prefix)

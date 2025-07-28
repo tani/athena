@@ -21,10 +21,8 @@
   (cond-expand
    ((or gauche chibi sagittarius)
     (import (scheme sort) (scheme stream)))
-   (gambit
+   ((or gambit chicken)
     (import (srfi 41) (srfi 132)))
-   (chicken
-    (import (scheme) (srfi 41) (srfi 132)))
    (guile
     (import (srfi 41) (rnrs sorting)))
    (mit
