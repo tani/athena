@@ -236,12 +236,62 @@
    (test-equal "lisp/2" 10 (solve-first '((lisp ?res (* 5 2))) '?res))
 
    (<- (item a)) (<- (item b)) (<- (item a))
+   (<- (likes mary food)) (<- (likes mary wine)) (<- (likes mary music))
+   (<- (likes john food)) (<- (likes john music))
+   (<- (likes bob food))
+   (<- (age mary 25)) (<- (age john 30)) (<- (age bob 35))
+   (<- (owns mary car)) (<- (owns mary book)) (<- (owns mary car))
+   (<- (color red)) (<- (color blue)) (<- (color red)) (<- (color green))
+
+   ;; Basic bagof tests
    (test-equal "bagof gets all solutions" '(mary michael) (solve-first '((bagof ?c (parent john ?c) ?l)) '?l))
-   (test-equal "findall gets all solutions" '(mary michael) (solve-first '((findall ?c (parent john ?c) ?l)) '?l))
-   (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
    (test-equal "bagof groups by free vars"
                '((john (mary michael)) (mary (susan)) (michael (david)))
                (solve-all '((bagof ?C (parent ?P ?C) ?L)) '(?P ?L)))
+   (test-equal "bagof with compound template" 
+               '((likes mary food) (likes mary wine) (likes mary music))
+               (solve-first '((bagof (likes mary ?x) (likes mary ?x) ?l)) '?l))
+   (test-equal "bagof preserves duplicates" '(a b a) 
+               (solve-first '((bagof ?x (item ?x) ?l)) '?l))
+   (test-equal "bagof with conjunction goal"
+               '((likes mary food) (likes mary wine) (likes mary music))
+               (solve-first '((bagof (likes mary ?thing) (likes mary ?thing) ?l)) '?l))
+   (test-assert "bagof fails with no solutions" 
+               (null? (solve-all '((bagof ?x (parent susan ?x) ?l)) 'dummy)))
+
+   ;; Basic setof tests  
+   (test-equal "setof removes duplicates" '(a b) 
+               (solve-first '((setof ?x (item ?x) ?l)) '?l))
+   (test-equal "setof removes duplicates from colors" '(blue green red)
+               (solve-first '((setof ?x (color ?x) ?l)) '?l))
+   (test-equal "setof sorts results" '(book car)
+               (solve-first '((setof ?x (owns mary ?x) ?l)) '?l))
+   (test-equal "setof groups by free vars"
+               3
+               (length (solve-all '((setof ?thing (likes ?person ?thing) ?l)) '(?person ?l))))
+   (test-equal "setof with compound template"
+               '((likes mary food) (likes mary music) (likes mary wine))
+               (solve-first '((setof (likes mary ?x) (likes mary ?x) ?l)) '?l))
+   (test-assert "setof fails with no solutions"
+               (null? (solve-all '((setof ?x (parent susan ?x) ?l)) 'dummy)))
+
+   ;; Edge case tests
+   (<- (digit 1)) (<- (digit 2)) (<- (digit 1))
+   (test-equal "bagof with variables only" '(1 2 1)
+               (solve-first '((bagof ?x (digit ?x) ?l)) '?l))
+   (test-equal "setof with variables only" '(1 2)
+               (solve-first '((setof ?x (digit ?x) ?l)) '?l))
+   (test-equal "bagof empty goal succeeds" '(a)
+               (solve-first '((bagof a true ?l)) '?l))
+   (test-equal "setof empty goal succeeds" '(a)
+               (solve-first '((setof a true ?l)) '?l))
+   (test-equal "bagof with anonymous variables" '(mary michael)
+               (solve-first '((bagof ?c (parent ?_ ?c) ?l)) '?l))
+   (test-equal "setof with anonymous variables" '(mary michael)
+               (solve-first '((setof ?c (parent ?_ ?c) ?l)) '?l))
+
+   (test-equal "findall gets all solutions" '(mary michael) (solve-first '((findall ?c (parent john ?c) ?l)) '?l))
+   (test-equal "findall with no solutions" '() (solve-first '((findall ?x (parent susan ?x) ?l)) '?l))
 
    (test-equal "sort numbers" '(1 2 3) (solve-first '((sort (3 1 2) ?s)) '?s))
    (test-equal "sort removes duplicates" '(1 2 3) (solve-first '((sort (3 1 2 3 1) ?s)) '?s))
