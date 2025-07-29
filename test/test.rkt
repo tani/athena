@@ -4,4 +4,6 @@
          "../src/prolog.rkt"
          racket/include)
 
-(include "test.scm")
+(include "helpers.scm")
+(include "core.scm")
+(include "lib.scm")

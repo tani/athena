@@ -1,0 +1,12 @@
+(define (solve-first goals term)
+  (let ((ss (make-solution-stream goals)))
+    (if (stream-null? ss)
+      '()
+      (substitute-bindings (stream-car ss) term))))
+
+(define (solve-all goals term)
+  (let loop ((ss (make-solution-stream goals)))
+    (if (stream-null? ss)
+      '()
+      (cons (substitute-bindings (stream-car ss) term)
+            (loop (stream-cdr ss))))))

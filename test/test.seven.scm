@@ -5,5 +5,11 @@
         (prolog))
 
 (cond-expand
-  (chibi (include "test/test.scm"))
-  (else  (include "test.scm")))
+  (chibi 
+    (include "test/helpers.scm")
+    (include "test/core.scm")
+    (include "test/lib.scm"))
+  (else  
+    (include "helpers.scm")
+    (include "core.scm")
+    (include "lib.scm")))
