@@ -12,6 +12,35 @@
 (begin
   (define current-solution-accumulator (make-parameter '()))
   (define current-lisp-environment (make-parameter (interaction-environment)))
+
+  ;; Macro for defining pure Scheme predicates
+
+  (define-syntax define-predicate
+    (syntax-rules ()
+      ((_ (name . arguments) . body)
+       (set-clauses! 'name (lambda arguments . body)))))
+
+  (define (ground? term)
+    (let ((resolved-term (substitute-bindings (current-bindings)  term)))
+      (cond
+       ((variable? resolved-term) #f)
+       ((pair? resolved-term)
+        (let ((car-ground? (ground? (car resolved-term)))
+              (cdr-ground? (ground? (cdr resolved-term))))
+          (and car-ground? cdr-ground?)))
+       (else #t))))
+
+  (define current-dynamic-parameters (make-parameter '()))
+
+  (define (get-dynamic-parameter variable-symbol)
+    (let ((entry (assoc variable-symbol (current-dynamic-parameters))))
+      (if entry
+          (cdr entry)
+          (let* ((new-parameter (make-parameter #f))
+                 (new-dynamic-parameters (alist-cons variable-symbol new-parameter (current-dynamic-parameters))))
+            (current-dynamic-parameters new-dynamic-parameters)
+            new-parameter))))
+
   ;; Basic predicates
 
   (define-predicate (= term1 term2)
