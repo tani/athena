@@ -10,6 +10,8 @@
 ;; - List manipulation predicates (member, append, maplist)
 
 (begin
+  (define current-solution-accumulator (make-parameter '()))
+  (define current-lisp-environment (make-parameter (interaction-environment)))
   ;; Basic predicates
 
   (define-predicate (= term1 term2)
@@ -235,3 +237,4 @@
   (<-- (setof ?template ?goal ?result-set)
        (bagof ?template ?goal ?result-bag)
        (sort ?result-bag ?result-set)))
+

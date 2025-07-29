@@ -435,8 +435,5 @@
       retrieve-success-bindings
       success?
       execute-success-continuation
-      (initial-continuation)))
+      (initial-continuation))))
 
-  (define current-solution-accumulator (make-parameter '()))
-
-  (define current-lisp-environment (make-parameter (interaction-environment))))
