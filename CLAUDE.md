@@ -18,7 +18,7 @@ Athena is a comprehensive Prolog engine implemented in Scheme, designed for embe
 ### Multi-Implementation Support
 
 The codebase supports multiple Scheme implementations through conditional compilation:
-- Racket, Gambit, Chez Scheme, Gauche, Sagittarius, Chibi Scheme, Guile, Chicken Scheme, MIT Scheme
+- Racket, Gambit, Chez Scheme, Gauche, Sagittarius, Chibi Scheme, Guile, Chicken Scheme
 
 Each implementation has specific import/include patterns handled in `prolog.sld` using `cond-expand`.
 

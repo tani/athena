@@ -25,18 +25,7 @@
     (import (srfi 41) (srfi 132)))
    (guile
     (import (srfi 41) (rnrs sorting)))
-   (mit
-    (begin
-      (define (list-sort x y) (sort y x))
-      (define-syntax define-stream
-        (syntax-rules ()
-          ((_ (name . formals) body ...)
-           (define (name . formals)
-             body ...))))
-      (define (stream-unfold f p g seed)
-        (if (p seed)
-            '()
-            (cons-stream (f seed) (stream-unfold f p g (g seed))))))))
+)
   ;; Implementation
   (begin
     (define-record-type <failure> (make-failure) failure?)
@@ -56,7 +45,7 @@
         (write object)
         (get-output-string (current-output-port)))))
   (cond-expand
-   ((or chicken mit)
+   (chicken
     (include "prolog.scm"))
    (guile
     (import (only (guile) include-from-path))
