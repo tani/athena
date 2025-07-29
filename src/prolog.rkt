@@ -8,8 +8,7 @@
  substitute-bindings variables-in
  replace-anonymous-variables unify object->string
  remove-clauses-with-arity!
- current-clause-database primitive-clause-database
- standard-clause-database run-query
+ current-clause-database run-query
  add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
  prove-all ?- current-lisp-environment current-spy-predicates current-spy-indent?
  success-bindings success-continuation make-solution-stream)
@@ -37,4 +36,5 @@
 (define (interaction-environment)
   (namespace-anchor->namespace anchor))
 
-(include "prolog.scm")
+(include "prolog-core.scm")
+(include "prolog-lib.scm")

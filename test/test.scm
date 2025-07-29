@@ -95,10 +95,6 @@
     (remove-clauses-with-arity! 'r 1)
     (test-equal "arity removal" 1 (length (get-clauses 'r))))
 
-  ;; primitive vs standard databases
-  (test-assert "standard has maplist" (assoc 'maplist (standard-clause-database)))
-  (test-assert "primitive lacks maplist" (not (assoc 'maplist (primitive-clause-database))))
-
   ;; prove-all and success structures
   (let ((res (prove-all '((= ?x 1) (member ?y (1 2))) '())))
     (test-assert "prove-all success" (success? res))

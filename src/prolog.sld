@@ -5,8 +5,7 @@
    variable? named-variable? atom? failure? success?
    substitute-bindings variables-in replace-anonymous-variables
    unify object->string remove-clauses-with-arity!
-   current-clause-database primitive-clause-database
-   standard-clause-database run-query
+   current-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate prove-all ?- min-arity call-with-current-choice-point
    current-lisp-environment current-spy-predicates current-spy-indent?
    success-bindings success-continuation make-solution-stream)
@@ -24,8 +23,8 @@
    ((or gambit chicken)
     (import (srfi 41) (srfi 132)))
    (guile
-    (import (srfi 41) (rnrs sorting)))
-)
+    (import (srfi 41) (rnrs sorting))))
+
   ;; Implementation
   (begin
     (define-record-type <failure> (make-failure) failure?)
@@ -46,9 +45,13 @@
         (get-output-string (current-output-port)))))
   (cond-expand
    (chicken
-    (include "prolog.scm"))
+    (include "prolog-core.scm")
+    (include "prolog-lib.scm"))
    (guile
     (import (only (guile) include-from-path))
-    (begin (include-from-path "prolog.scm")))
-   ((or gauche chibi sagittarius gambit)
-    (include-library-declarations "prolog.scm"))))
+    (begin
+      (include-from-path "prolog-core.scm")
+      (include-from-path "prolog-lib.scm")))
+   ((or gauche sagittarius gambit chibi)
+    (include-library-declarations "prolog-core.scm")
+    (include-library-declarations "prolog-lib.scm"))))
