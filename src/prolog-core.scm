@@ -9,7 +9,7 @@
 ;; - Solution streams and query execution
 
 (begin
-  (define %gensym
+  (define gensym
     (let ((counter 0))
       (lambda (prefix)
         (let* ((counter-string (number->string counter))
@@ -18,7 +18,7 @@
           (string->symbol name)))))
 
   (define (call-with-current-choice-point proc)
-    (let ((tag (%gensym "choice-point-")))
+    (let ((tag (gensym "choice-point-")))
       (guard (exception
               ((and (cut-exception? exception)
                     (eq? tag (cut-exception-tag exception)))
@@ -74,7 +74,7 @@
 
   (define (replace-anonymous-variables expression)
     (cond
-     ((eq? expression '?) (%gensym "?"))
+     ((eq? expression '?) (gensym "?"))
      ((atom? expression) expression)
      (else
       (let* ((car-replaced (replace-anonymous-variables (car expression)))
@@ -186,7 +186,7 @@
 
   (define (make-renaming-pair variable)
     (let ((var-string (symbol->string variable)))
-      (cons variable (%gensym var-string))))
+      (cons variable (gensym var-string))))
 
   (define (rename-vars expression)
     (let* ((variables (variables-in expression))
