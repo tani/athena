@@ -13,6 +13,11 @@
   (define current-solution-accumulator (make-parameter '()))
   (define current-lisp-environment (make-parameter (interaction-environment)))
 
+  (define (object->string object)
+      (let ((p (open-output-string)))
+        (write object p)
+        (get-output-string p)))
+
   ;; Macro for defining pure Scheme predicates
 
   (define-syntax define-predicate
@@ -157,8 +162,8 @@
                      (if existing
                          (let ((updated (cons key (append (cdr existing) (list template)))))
                            (loop (cdr remaining) (cons updated (filter (lambda (g) (not (equal? (car g) key))) acc))))
-                         (loop (cdr remaining) (cons (cons key (list template)) acc)))))))
-           )
+                         (loop (cdr remaining) (cons (cons key (list template)) acc))))))))
+
       (define (enumerate-groups groups)
         (if (null? groups)
             (make-failure)

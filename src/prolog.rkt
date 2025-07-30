@@ -25,10 +25,6 @@
 
 (struct cut-exception (tag value) #:transparent #:constructor-name make-cut-exception)
 
-(define (object->string object)
-  (with-output-to-string
-    (lambda () (write object))))
-
 (define (list-sort lis pred) (sort pred lis))
 
 (define-namespace-anchor anchor)

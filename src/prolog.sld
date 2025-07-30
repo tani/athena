@@ -37,12 +37,8 @@
     (define-record-type <cut-exception>
       (make-cut-exception tag value) cut-exception?
       (tag cut-exception-tag)
-      (value cut-exception-value))
+      (value cut-exception-value)))
 
-    (define (object->string object)
-      (parameterize ((current-output-port (open-output-string)))
-        (write object)
-        (get-output-string (current-output-port)))))
   (cond-expand
    (chicken
     (include "prolog-core.scm")

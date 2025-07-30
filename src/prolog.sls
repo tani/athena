@@ -18,7 +18,7 @@
           (srfi :39)
           (srfi :41)
           (only (srfi :1) alist-delete alist-cons delete-duplicates)
-          (only (chezscheme) include interaction-environment))
+          (only (chezscheme) include open-output-string get-output-string interaction-environment))
 
   ;; Implementation
   (begin
@@ -34,10 +34,6 @@
       (fields
        (immutable tag cut-exception-tag)
        (immutable value cut-exception-value)))
-
-    (define (object->string object)
-      (call-with-string-output-port
-       (lambda (p) (write object p))))
 
     (include "prolog-core.scm")
     (include "prolog-lib.scm")))
