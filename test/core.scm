@@ -1,5 +1,3 @@
-(test-begin "prolog-core")
-
 ;; -----------------------------------------------------------
 ;; Low-level helpers
 ;; -----------------------------------------------------------
@@ -451,7 +449,3 @@
       (test-equal "indent off"
                   "CALL: (parent)\nCALL: (child)\nEXIT: (child)\nEXIT: (parent)\n"
                   result2))))
-
-  
-
-(test-end "prolog-core")

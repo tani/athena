@@ -4,12 +4,14 @@
         (scheme r5rs)
         (prolog))
 
+(test-begin "prolog")
 (cond-expand
-  (chibi 
+  (chibi
     (include "test/helpers.scm")
     (include "test/core.scm")
     (include "test/lib.scm"))
-  (else  
+  (else
     (include "helpers.scm")
     (include "core.scm")
     (include "lib.scm")))
+(test-end "prolog")

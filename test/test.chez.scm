@@ -4,6 +4,8 @@
         (prolog)
         (only (chezscheme) include interaction-environment))
 
+(test-begin "prolog")
 (include "test/helpers.scm")
 (include "test/core.scm")
 (include "test/lib.scm")
+(test-end "prolog")

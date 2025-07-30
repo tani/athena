@@ -1,5 +1,3 @@
-(test-begin "prolog-lib")
-
 ;; -----------------------------------------------------------
 ;; Library predicates (or/member/append/repeat/true)
 ;; -----------------------------------------------------------
@@ -48,5 +46,3 @@
   (test-equal "maplist = unify lists"
               '(a b c)
               (solve-first '((maplist = (a b c) (?x ?y ?z))) '(?x ?y ?z))))
-
-(test-end "prolog-lib")
