@@ -200,7 +200,6 @@
     (make-parameter 'prompt))
 
   (define current-spy-predicates (make-parameter '()))
-  (define current-spy-depth (make-parameter 0))
   (define current-spy-indent? (make-parameter #t))
 
   (define (simple-repl)
@@ -231,10 +230,6 @@
 
   (define (spy-message kind goal bindings)
     (let ((resolved (substitute-bindings bindings goal)))
-      (when (current-spy-indent?)
-        (do ((i 0 (+ i 1)))
-            ((= i (current-spy-depth)))
-          (display " ")))
       (display kind)
       (display ": ")
       (write resolved)
@@ -255,10 +250,7 @@
           (lambda ()
             (when show?
               (spy-message "CALL" goal bindings)))
-          (lambda ()
-            (parameterize ((current-spy-depth (+ (current-spy-depth) 1)))
-              (set! result (thunk))
-              result))
+          (lambda () (set! result (thunk)))
           (lambda ()
             (when show?
               (if (or (not result) (failure? result))
