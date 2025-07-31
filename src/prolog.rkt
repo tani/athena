@@ -10,7 +10,7 @@
  remove-clauses-with-arity!
  current-clause-database run-query
  add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
- prove-all ?- current-lisp-environment current-spy-predicates current-spy-indent?
+ prove-all ?- current-lisp-environment current-spy-predicates
  success-bindings success-continuation make-solution-stream)
 
 ;; Imports

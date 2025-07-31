@@ -7,7 +7,7 @@
    unify object->string remove-clauses-with-arity!
    current-clause-database run-query
    add-clause! get-clauses <- <-- define-predicate prove-all ?- min-arity call-with-current-choice-point
-   current-lisp-environment current-spy-predicates current-spy-indent?
+   current-lisp-environment current-spy-predicates
    success-bindings success-continuation make-solution-stream)
   ;; Imports
   (import
