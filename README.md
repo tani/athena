@@ -7,7 +7,7 @@ This project provides a comprehensive Prolog engine implemented in Scheme, offer
   - **Full Prolog Engine**: Implements a core Prolog engine with support for rules, facts, and queries.
   - **Seamless Scheme Integration**: Define Prolog predicates using Scheme procedures and evaluate Scheme code from within Prolog.
   - **Interactive Querying**: Use the `?-` macro for running interactive Prolog queries directly in your REPL.
-  - **Debugging Tools**: Includes a spy and break functionality for tracing and debugging predicate execution.
+  - **Debugging Tools**: Includes spy functionality for tracing predicate execution.
   - **Cross-Implementation Support**: Compatible with multiple Scheme standards (R6RS/R7RS) and implementations:
     - Racket
     - Gambit
@@ -98,15 +98,13 @@ The engine provides a rich set of standard built-in predicates for control flow,
 
 ## Debugging
 
-The Prolog engine includes a simple spy and break functionality for debugging.
+The Prolog engine includes a simple spy functionality for debugging.
 
   - `current-spy-predicates`: A parameter that holds a list of predicates to spy on.
-  - `current-spy-indent?`: When true, indent spy messages according to predicate depth.
   - **Spy Commands**:
       - `l` (leap): Continue execution without spying.
       - `c` (creep): Step through the current goal.
       - `n` (nodebug): Disable spying.
-      - `b` (break): Enter a Scheme REPL for debugging.
 
 ## License
 
