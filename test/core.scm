@@ -416,5 +416,5 @@
         (solve-all '((watched)) 'dummy)
         (set! result (get-output-string out)))
       (test-equal "spy output"
-                  "Spy on (watched)? [l=leap c=creep n=nodebug b=break] CALL: (watched)\nEXIT: (watched)\n"
+                  "Spy on (watched)? [l=leap c=creep n=nodebug] CALL: (watched)\nEXIT: (watched)\n"
                   result))))
