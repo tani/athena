@@ -24,38 +24,38 @@
       "lefthook install"
     ],
     "scripts": {
-      "test": [
-        "devbox run racket",
-        "devbox run gauche",
-        "devbox run guile",
-        "devbox run chicken",
-        "devbox run chibi",
-        "devbox run sagittarius",
-        "devbox run gambit",
-        "devbox run chez"
+      "test-all": [
+        "devbox run test-racket",
+        "devbox run test-gauche",
+        "devbox run test-guile",
+        "devbox run test-chicken",
+        "devbox run test-chibi",
+        "devbox run test-sagittarius",
+        "devbox run test-gambit",
+        "devbox run test-chez"
       ],
-      "racket": [
+      "test-racket": [
         "racket test/test.rkt"
       ],
-      "gauche": [
+      "test-gauche": [
         "gosh -r 7 -I src test/test.7.scm"
       ],
-      "chicken": [
+      "test-chicken": [
         "csi -require-extension r7rs -include-path src -eval '(include \"src/prolog.sld\")' -script test/test.7.scm"
       ],
-      "guile": [
+      "test-guile": [
         "guile --fresh-auto-compile -x .sld -L src test/test.7.scm"
       ],
-      "chibi": [
+      "test-chibi": [
         "chibi-scheme -I src -I test test/test.7.scm"
       ],
-      "sagittarius": [
+      "test-sagittarius": [
         "sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=src test/test.7.scm"
       ],
-      "chez": [
+      "test-chez": [
         "scheme --libdirs $CHEZSCHEMELIBDIRS:$PWD/src --script test/test.6.scm"
       ],
-      "gambit": [
+      "test-gambit": [
         "gsi -:r7rs src/ test/test.7.scm"
       ],
       "clean": [
