@@ -2,14 +2,27 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
+  outputs = inputs@{ crane, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
-      perSystem = { pkgs, system, ... }:
+      perSystem = { pkgs, ... }:
         let
+          craneLib = crane.mkLib pkgs;
+          schemat-src = pkgs.fetchCrate {
+              pname = "schemat";
+              version = "0.4.2";
+              hash = "sha256-C5H/lykodY99UZAbFjH1aKP1B+dPP/+IDVidEKisKL4=";
+          };
+          schemat = craneLib.buildPackage {
+            src = schemat-src;
+          };
           rlwrapCmd = { cmd, pkg }: pkgs.writeShellScriptBin "${cmd}x" ''
             ${pkgs.rlwrap}/bin/rlwrap -n ${pkg}/bin/${cmd} "$@"
           '';
@@ -26,7 +39,7 @@
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
-              gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi
+              gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi schemat moreutils
             ]) ++ (with rlwraps; [
               gauche chicken sagittarius-scheme chibi guile gambit chez
             ]) ++ (with pkgs.chickenPackages_5.chickenEggs; [

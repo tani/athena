@@ -1,8 +1,9 @@
-(import (scheme base)
-        (srfi 64)
-        (srfi 41)
-        (scheme r5rs)
-        (prolog))
+(import
+  (scheme base)
+  (srfi 64)
+  (srfi 41)
+  (scheme r5rs)
+  (prolog))
 
 (test-begin "prolog")
 (cond-expand

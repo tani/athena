@@ -1,8 +1,10 @@
 #lang racket/base
-(require srfi/64
-         srfi/41
-         "../src/prolog.rkt"
-         racket/include)
+
+(require
+  srfi/64
+  srfi/41
+  "../src/prolog.rkt"
+  racket/include)
 
 (test-begin "prolog")
 (include "helpers.scm")

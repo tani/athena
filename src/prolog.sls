@@ -2,23 +2,41 @@
 (library (prolog)
   ;; Public symbols
   (export
-   variable? named-variable? atom?
-   failure? success?
-   substitute-bindings variables-in
-   replace-anonymous-variables unify object->string
-   remove-clauses-with-arity!
-   current-clause-database run-query
-   add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
-   prove-all ?- current-lisp-environment current-spy-predicates
-   success-bindings success-continuation make-solution-stream)
+    variable?
+    named-variable?
+    atom?
+    failure?
+    success?
+    substitute-bindings
+    variables-in
+    replace-anonymous-variables
+    unify
+    object->string
+    remove-clauses-with-arity!
+    current-clause-database
+    run-query
+    add-clause!
+    get-clauses
+    <-
+    <--
+    define-predicate
+    call-with-current-choice-point
+    prove-all
+    ?-
+    current-lisp-environment
+    current-spy-predicates
+    success-bindings
+    success-continuation
+    make-solution-stream)
 
   ;; Imports
-  (import (rnrs)
-          (rnrs eval)
-          (srfi :39)
-          (srfi :41)
-          (only (srfi :1) alist-delete alist-cons delete-duplicates)
-          (only (chezscheme) include open-output-string get-output-string interaction-environment))
+  (import
+    (rnrs)
+    (rnrs eval)
+    (srfi :39)
+    (srfi :41)
+    (only (srfi :1) alist-delete alist-cons delete-duplicates)
+    (only (chezscheme) include open-output-string get-output-string interaction-environment))
 
   ;; Implementation
   (begin
@@ -27,13 +45,13 @@
 
     (define-record-type (<success> make-success success?)
       (fields
-       (immutable bindings success-bindings)
-       (immutable continuation success-continuation)))
+        (immutable bindings success-bindings)
+        (immutable continuation success-continuation)))
 
     (define-record-type (<cut-exception> make-cut-exception cut-exception?)
       (fields
-       (immutable tag cut-exception-tag)
-       (immutable value cut-exception-value)))
+        (immutable tag cut-exception-tag)
+        (immutable value cut-exception-value)))
 
     (include "prolog-core.scm")
     (include "prolog-lib.scm")))

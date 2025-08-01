@@ -23,16 +23,16 @@
     (test-equal "substitute-bindings with list" '(g foo (bar)) (substitute-bindings bindings '(g ?x ?y))))
 
   (let* ((cycle-bindings (cons (cons '?x '?y)
-                               (cons (cons '?y '?x) '()))))
+                          (cons (cons '?y '?x) '()))))
     (test-equal "substitute-bindings simple cycle"
-                '?x
-                (substitute-bindings cycle-bindings '?x)))
+      '?x
+      (substitute-bindings cycle-bindings '?x)))
 
   (let* ((nested-bindings (cons (cons '?x '(a ?y))
-                                (cons (cons '?y '(b ?x)) '()))))
+                           (cons (cons '?y '(b ?x)) '()))))
     (test-equal "substitute-bindings nested cycle"
-                '(a (b ?x))
-                (substitute-bindings nested-bindings '?x)))
+      '(a (b ?x))
+      (substitute-bindings nested-bindings '?x)))
 
   (test-equal "variables-in simple" '(?x ?y) (variables-in '(f ?x (g ?y ?x))))
   (test-equal "variables-in with no vars" '() (variables-in '(a b (c))))
@@ -63,7 +63,6 @@
 
   (test-assert "occurs-check simple" (failure? (unify '?x '(foo ?x) '())))
   (test-assert "occurs-check nested" (failure? (unify '?y '(bar (baz ?y)) '()))))
-  
 
 ;; -----------------------------------------------------------
 ;; API function coverage
@@ -91,7 +90,7 @@
 
   ;; call-with-current-choice-point
   (test-equal "call-with-current-choice-point" 'ok
-              (call-with-current-choice-point (lambda (tag) 'ok)))
+    (call-with-current-choice-point (lambda (tag) 'ok)))
 
   ;; current-lisp-environment via eval
   (test-equal "eval env" 42 (eval '42 (current-lisp-environment)))
@@ -143,7 +142,6 @@
       (<-- (father ?x ?y) (male ?x) (parent ?x ?y))
       (test-equal "<- overwrites" 1 (length (get-clauses 'father))))))
 
-
 ;; -----------------------------------------------------------
 ;; Engine simple recursion
 ;; -----------------------------------------------------------
@@ -157,7 +155,6 @@
 
     (<- (ancestor ?x ?y) (parent ?x ?y))
     (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
-
 
     (test-equal "direct fact" 'mary (solve-first '((parent john ?child)) '?child))
     (test-equal "all direct facts" '(mary michael) (solve-all '((parent john ?child)) '?child))
@@ -183,7 +180,6 @@
     ;; calls using bare predicate symbol
     (test-assert "zero-arity fact bare" (not (null? (solve-all '(hello) 'dummy))))
     (test-assert "zero-arity rule bare" (not (null? (solve-all '(greet) 'dummy))))))
-    
 
 ;; -----------------------------------------------------------
 ;; Variadic predicate definitions
@@ -193,13 +189,13 @@
   (parameterize ((current-clause-database (current-clause-database)))
     (<- (capture-rest ?out ?first . ?rest) (= ?out ?rest))
     (test-equal "variadic rest collects args"
-                '(b c)
-                (solve-first '((capture-rest ?r a b c)) '?r))
+      '(b c)
+      (solve-first '((capture-rest ?r a b c)) '?r))
     (test-equal "variadic rest empty"
-                '()
-                (solve-first '((capture-rest ?r a)) '?r))
+      '()
+      (solve-first '((capture-rest ?r a)) '?r))
     (test-assert "variadic too few arguments"
-                 (null? (solve-all '((capture-rest ?r)) '?r)))))
+      (null? (solve-all '((capture-rest ?r)) '?r)))))
 
 ;; -----------------------------------------------------------
 ;; Cut behavior in control structures
@@ -213,9 +209,9 @@
     (<- (q 1))
     (<- (q 2))
     (<- (s ?x ?y)
-        (p ?x)
-        (or (and (q ?y) (== ?x b) !)
-            (q ?y)))
+      (p ?x)
+      (or (and (q ?y) (== ?x b) !)
+        (q ?y)))
 
     (test-equal "No Cut (Baseline)"
       '((a 1) (a 2) (b 1) (b 2) (c 1) (c 2))
@@ -230,7 +226,7 @@
     (test-equal "Cut inside 'or'"
       '(b a b c)
       (solve-all '((or (and (p ?X) (== ?X b) !) (p ?X))) '?X))
-    
+
     (test-equal "'and' with 'or' containing '!'"
       '(c)
       (solve-all '((and (p ?X) (or (and (== ?X c) !) (fail)))) '?X))
@@ -244,27 +240,23 @@
     (test-equal "Cut affecting parent goals (s/2)"
       '((a 1) (a 2) (b 1) (b 2) (b 1) (b 2) (c 1) (c 2))
       (solve-all '((s ?X ?Y)) '(?X ?Y)))))
-    
 
 ;; -----------------------------------------------------------
 ;; Advanced backtracking and ! propagation
 ;; -----------------------------------------------------------
-
 
 (test-group "advanced-cut-behavior"
   (parameterize ((current-clause-database (current-clause-database)))
     ;; test predicates
     (<- (q 1))
     (<- (q 2))
-    
+
     (<-- (p ?x) (= ?x 1) ! (fail)) ; p(1) triggers a hard failure
-    (<- (p ?x) (= ?x 2))             ; p(2) succeeds
-    
+    (<- (p ?x) (= ?x 2)) ; p(2) succeeds
+
     (test-equal "hard failure in p(x) should not block backtracking in q(y)"
       2
       (solve-first '((q ?y) (p ?y)) '?y))))
-    
-
 
 (test-group "spy-behavior"
   (parameterize ((current-clause-database (current-clause-database)))
@@ -279,5 +271,5 @@
         (solve-all '((watched)) 'dummy)
         (set! result (get-output-string out)))
       (test-equal "spy output"
-                  "Spy on (watched)? [l=leap c=creep n=nodebug] CALL: (watched)\nEXIT: (watched)\n"
-                  result))))
+        "Spy on (watched)? [l=leap c=creep n=nodebug] CALL: (watched)\nEXIT: (watched)\n"
+        result))))

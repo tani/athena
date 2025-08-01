@@ -14,37 +14,37 @@
   (define current-lisp-environment (make-parameter (interaction-environment)))
 
   (define (object->string object)
-      (let ((p (open-output-string)))
-        (write object p)
-        (get-output-string p)))
+    (let ((p (open-output-string)))
+      (write object p)
+      (get-output-string p)))
 
   ;; Macro for defining pure Scheme predicates
 
   (define-syntax define-predicate
     (syntax-rules ()
       ((_ (name . arguments) . body)
-       (set-clauses! 'name (lambda arguments . body)))))
+        (set-clauses! 'name (lambda arguments . body)))))
 
   (define (ground? term)
-    (let ((resolved-term (substitute-bindings (current-bindings)  term)))
+    (let ((resolved-term (substitute-bindings (current-bindings) term)))
       (cond
-       ((variable? resolved-term) #f)
-       ((pair? resolved-term)
-        (let ((car-ground? (ground? (car resolved-term)))
-              (cdr-ground? (ground? (cdr resolved-term))))
-          (and car-ground? cdr-ground?)))
-       (else #t))))
+        ((variable? resolved-term) #f)
+        ((pair? resolved-term)
+          (let ((car-ground? (ground? (car resolved-term)))
+                (cdr-ground? (ground? (cdr resolved-term))))
+            (and car-ground? cdr-ground?)))
+        (else #t))))
 
   (define current-dynamic-parameters (make-parameter '()))
 
   (define (get-dynamic-parameter variable-symbol)
     (let ((entry (assoc variable-symbol (current-dynamic-parameters))))
       (if entry
-          (cdr entry)
-          (let* ((new-parameter (make-parameter #f))
-                 (new-dynamic-parameters (alist-cons variable-symbol new-parameter (current-dynamic-parameters))))
-            (current-dynamic-parameters new-dynamic-parameters)
-            new-parameter))))
+        (cdr entry)
+        (let* ((new-parameter (make-parameter #f))
+               (new-dynamic-parameters (alist-cons variable-symbol new-parameter (current-dynamic-parameters))))
+          (current-dynamic-parameters new-dynamic-parameters)
+          new-parameter))))
 
   ;; Basic predicates
 
@@ -56,15 +56,15 @@
     (let* ((substituted-term1 (substitute-bindings (current-bindings) term1))
            (substituted-term2 (substitute-bindings (current-bindings) term2)))
       (if (equal? substituted-term1 substituted-term2)
-          (let ((goals (current-remaining-goals)))
-            (prove-all goals (current-bindings)))
-          (make-failure))))
+        (let ((goals (current-remaining-goals)))
+          (prove-all goals (current-bindings)))
+        (make-failure))))
 
   (define-predicate (! choice-point)
     (raise
-     (make-cut-exception
-      choice-point
-      (prove-all (current-remaining-goals) (current-bindings)))))
+      (make-cut-exception
+        choice-point
+        (prove-all (current-remaining-goals) (current-bindings)))))
 
   (define-predicate (call pred-or-goal . args)
     (call-with-current-choice-point
@@ -93,36 +93,36 @@
   (define-predicate (atom term)
     (let ((value (substitute-bindings (current-bindings) term)))
       (if (and (symbol? value) (not (variable? value)))
-          (prove-all (current-remaining-goals) (current-bindings))
-          (make-failure))))
+        (prove-all (current-remaining-goals) (current-bindings))
+        (make-failure))))
 
   (define-predicate (atomic term)
     (let ((value (substitute-bindings (current-bindings) term)))
       (if (and (not (variable? value)) (not (pair? value)))
-          (prove-all (current-remaining-goals) (current-bindings))
-          (make-failure))))
+        (prove-all (current-remaining-goals) (current-bindings))
+        (make-failure))))
 
   (define-predicate (var term)
     (if (variable? (substitute-bindings (current-bindings) term))
-        (prove-all (current-remaining-goals) (current-bindings))
-        (make-failure)))
+      (prove-all (current-remaining-goals) (current-bindings))
+      (make-failure)))
 
   (define-predicate (ground term)
     (if (ground? term)
-        (prove-all (current-remaining-goals) (current-bindings))
-        (make-failure)))
+      (prove-all (current-remaining-goals) (current-bindings))
+      (make-failure)))
 
   (define-predicate (number term)
     (let ((value (substitute-bindings (current-bindings) term)))
       (if (number? value)
-          (prove-all (current-remaining-goals) (current-bindings))
-          (make-failure))))
+        (prove-all (current-remaining-goals) (current-bindings))
+        (make-failure))))
 
   (define-predicate (string term)
     (let ((value (substitute-bindings (current-bindings) term)))
       (if (string? value)
-          (prove-all (current-remaining-goals) (current-bindings))
-          (make-failure))))
+        (prove-all (current-remaining-goals) (current-bindings))
+        (make-failure))))
 
   ;; Dynamic parameter predicates
 
@@ -160,30 +160,30 @@
            (grouped-solutions
              (let loop ((remaining all-solutions) (acc '()))
                (if (null? remaining)
-                   (reverse acc)
-                   (let* ((pair (car remaining))
-                          (key (car pair))
-                          (template (cdr pair))
-                          (existing (assoc key acc)))
-                     (if existing
-                         (let ((updated (cons key (append (cdr existing) (list template)))))
-                           (loop (cdr remaining) (cons updated (filter (lambda (g) (not (equal? (car g) key))) acc))))
-                         (loop (cdr remaining) (cons (cons key (list template)) acc))))))))
+                 (reverse acc)
+                 (let* ((pair (car remaining))
+                        (key (car pair))
+                        (template (cdr pair))
+                        (existing (assoc key acc)))
+                   (if existing
+                     (let ((updated (cons key (append (cdr existing) (list template)))))
+                       (loop (cdr remaining) (cons updated (filter (lambda (g) (not (equal? (car g) key))) acc))))
+                     (loop (cdr remaining) (cons (cons key (list template)) acc))))))))
 
       (define (enumerate-groups groups)
         (if (null? groups)
-            (make-failure)
-            (let* ((group (car groups))
-                   (key (car group))
-                   (templates (cdr group))
-                   (b1 (unify free-vars key (current-bindings)))
-                   (b2 (unify result-bag templates b1)))
-              (if (failure? b2)
-                  (enumerate-groups (cdr groups))
-                  (let* ((proof-stream (prove-all (current-remaining-goals) b2))
-                         (continuation (success-continuation proof-stream))
-                         (next-thunk (lambda () (enumerate-groups (cdr groups)))))
-                    (make-success (success-bindings proof-stream) (combine continuation next-thunk)))))))
+          (make-failure)
+          (let* ((group (car groups))
+                 (key (car group))
+                 (templates (cdr group))
+                 (b1 (unify free-vars key (current-bindings)))
+                 (b2 (unify result-bag templates b1)))
+            (if (failure? b2)
+              (enumerate-groups (cdr groups))
+              (let* ((proof-stream (prove-all (current-remaining-goals) b2))
+                     (continuation (success-continuation proof-stream))
+                     (next-thunk (lambda () (enumerate-groups (cdr groups)))))
+                (make-success (success-bindings proof-stream) (combine continuation next-thunk)))))))
       (enumerate-groups grouped-solutions)))
 
   (define-predicate (sort unsorted-list result-list)
@@ -243,28 +243,27 @@
 
   (<- (append () ?list ?list))
   (<- (append (?head . ?tail) ?list (?head . ?result))
-      (append ?tail ?list ?result))
+    (append ?tail ?list ?result))
 
   (<- (--all-null ()))
   (<- (--all-null (() . ?rest)) (--all-null ?rest))
 
   (<- (--get-heads () ()))
   (<- (--get-heads ((?h . ?t) . ?rest-lists) (?h . ?rest-heads))
-      (--get-heads ?rest-lists ?rest-heads))
+    (--get-heads ?rest-lists ?rest-heads))
 
   (<- (--get-tails () ()))
   (<- (--get-tails ((?h . ?t) . ?rest-lists) (?t . ?rest-tails))
-      (--get-tails ?rest-lists ?rest-tails))
+    (--get-tails ?rest-lists ?rest-tails))
 
   (<- (maplist ?pred . ?lists)
-      (if (--all-null ?lists)
-          true
-          (and
-           (--get-heads ?lists ?heads)
-           (--get-tails ?lists ?tails)
-           (call (?pred . ?heads))
-           (call (maplist ?pred . ?tails)))))
+    (if (--all-null ?lists)
+      true
+      (and
+        (--get-heads ?lists ?heads)
+        (--get-tails ?lists ?tails)
+        (call (?pred . ?heads))
+        (call (maplist ?pred . ?tails)))))
 
   (define-predicate (setof template goal result-set)
     (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) (current-bindings))))
-

@@ -9,4 +9,4 @@
     (if (stream-null? ss)
       '()
       (cons (substitute-bindings (stream-car ss) term)
-            (loop (stream-cdr ss))))))
+        (loop (stream-cdr ss))))))

@@ -2,7 +2,7 @@ IMPLS=racket gauche guile chicken chibi sagittarius gambit chez
 
 all: $(IMPLS)
 
-.PHONY: $(IMPLS) clean
+.PHONY: $(IMPLS) clean format format-src format-test
 
 gauche:
 	gosh -r 7 -I src test/test.7.scm
@@ -30,3 +30,23 @@ gambit:
 
 clean:
 	rm -f *.log test/*.log
+
+format: format-src format-test
+
+format-src:
+	@echo "Formatting source files..."
+	@for file in src/*.scm src/*.sld src/*.rkt src/*.sls; do \
+		if [ -f "$$file" ]; then \
+			echo "Formatting $$file"; \
+			schemat < "$$file" | sponge "$$file"; \
+		fi; \
+	done
+
+format-test:
+	@echo "Formatting test files..."
+	@for file in test/*.scm test/*.rkt; do \
+		if [ -f "$$file" ]; then \
+			echo "Formatting $$file"; \
+			schemat < "$$file" | sponge "$$file"; \
+		fi; \
+	done

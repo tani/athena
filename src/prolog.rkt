@@ -1,22 +1,41 @@
 #lang racket
+
 ;; Scheme wrapper for the Prolog engine
 
 ;; Public symbols
 (provide
- variable? named-variable? atom?
- failure? success?
- substitute-bindings variables-in
- replace-anonymous-variables unify object->string
- remove-clauses-with-arity!
- current-clause-database run-query
- add-clause! get-clauses <- <-- define-predicate call-with-current-choice-point
- prove-all ?- current-lisp-environment current-spy-predicates
- success-bindings success-continuation make-solution-stream)
+  variable?
+  named-variable?
+  atom?
+  failure?
+  success?
+  substitute-bindings
+  variables-in
+  replace-anonymous-variables
+  unify
+  object->string
+  remove-clauses-with-arity!
+  current-clause-database
+  run-query
+  add-clause!
+  get-clauses
+  <-
+  <--
+  define-predicate
+  call-with-current-choice-point
+  prove-all
+  ?-
+  current-lisp-environment
+  current-spy-predicates
+  success-bindings
+  success-continuation
+  make-solution-stream)
 
 ;; Imports
-(require srfi/41
-         (only-in srfi/1 alist-delete alist-cons delete-duplicates)
-         (only-in rnrs flush-output-port guard raise))
+(require
+  srfi/41
+  (only-in srfi/1 alist-delete alist-cons delete-duplicates)
+  (only-in rnrs flush-output-port guard raise))
 
 ;; Implementation
 (struct failure () #:transparent #:constructor-name make-failure)

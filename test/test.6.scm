@@ -1,8 +1,9 @@
-(import (rnrs base)
-        (srfi :64)
-        (srfi :41)
-        (prolog)
-        (only (chezscheme) include interaction-environment))
+(import
+  (rnrs base)
+  (srfi :64)
+  (srfi :41)
+  (prolog)
+  (only (chezscheme) include interaction-environment))
 
 (test-begin "prolog")
 (include "test/helpers.scm")
