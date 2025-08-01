@@ -28,10 +28,10 @@ To use this library, include the appropriate wrapper for your Scheme implementat
 - **R7RS implementations**: Use `src/prolog.sld`
 - **R6RS implementations**: Use `src/prolog.sls`
 
-For development, use the Nix flake to set up an environment with all supported Scheme implementations:
+For development, use Devbox to set up an environment with all supported Scheme implementations:
 
 ```bash
-nix develop    # Enters shell with all Scheme interpreters
+devbox shell    # Enters shell with all Scheme interpreters
 ```
 
 Try Athena online at [https://tani.github.io/athena](https://tani.github.io/athena).

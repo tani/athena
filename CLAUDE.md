@@ -56,9 +56,9 @@ make clean     # Remove log files
 ```
 
 ### Development Environment
-Use Nix flake for development environment with all Scheme implementations:
+Use Devbox for development environment with all Scheme implementations:
 ```bash
-nix develop    # Enters shell with all Scheme interpreters
+devbox shell    # Enters shell with all Scheme interpreters
 ```
 
 ### Code Formatting
