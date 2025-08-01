@@ -26,7 +26,7 @@
         in {
           devShells.default = pkgs.mkShell {
             packages = (with pkgs; [
-              gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi schemat moreutils
+              gauche chicken sagittarius-scheme chibi guile gambit chez chez-srfi schemat moreutils lefthook
             ]) ++ (with rlwraps; [
               gauche chicken sagittarius-scheme chibi guile gambit chez
             ]) ++ (with pkgs.chickenPackages_5.chickenEggs; [
