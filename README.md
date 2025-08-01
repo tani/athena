@@ -140,6 +140,14 @@ make sagittarius # Test with Sagittarius
 make gambit      # Test with Gambit
 ```
 
+### Code Formatting
+
+Format all source and test files:
+
+```bash
+make format      # Format using schemat
+```
+
 ### Building for Web
 
 Build the Gambit version for web deployment:
@@ -147,6 +155,16 @@ Build the Gambit version for web deployment:
 ```bash
 ./script/build.sh
 ```
+
+### Git Hooks
+
+The project uses lefthook for automated code formatting:
+
+```bash
+lefthook install # Install git hooks (runs automatically after setup)
+```
+
+Git hooks will automatically run `make format` before each commit and stage any formatting changes.
 
 ### Clean
 

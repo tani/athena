@@ -61,10 +61,23 @@ Use Nix flake for development environment with all Scheme implementations:
 nix develop    # Enters shell with all Scheme interpreters
 ```
 
+### Code Formatting
+```bash
+make format        # Format all source and test files using schemat
+```
+
 ### Build for Web (Gambit)
 ```bash
 ./script/build.sh   # Builds Gambit version for web deployment
 ```
+
+### Git Hooks
+The project uses lefthook for automated formatting on commit:
+```bash
+lefthook install   # Install git hooks (runs automatically after setup)
+```
+
+Git hooks will automatically run `make format` before each commit and stage any formatting changes.
 
 ## Testing Framework
 
