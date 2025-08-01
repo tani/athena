@@ -22,10 +22,21 @@ This project provides a comprehensive Prolog engine implemented in Scheme, offer
 
 ### Installation
 
-To use this library, include the `prolog.scm` file along with the appropriate wrapper for your Scheme implementation in your project. See `src/` directory.
-Try athena at [https://tani.github.io/athena](https://tani.github.io/athena).
+To use this library, include the appropriate wrapper for your Scheme implementation from the `src/` directory:
 
-### Running Queries
+- **Racket**: Use `src/prolog.rkt`
+- **R7RS implementations**: Use `src/prolog.sld`
+- **R6RS implementations**: Use `src/prolog.sls`
+
+For development, use the Nix flake to set up an environment with all supported Scheme implementations:
+
+```bash
+nix develop    # Enters shell with all Scheme interpreters
+```
+
+Try Athena online at [https://tani.github.io/athena](https://tani.github.io/athena).
+
+### Quick Start
 
 To start running queries, you can use the interactive `?-` macro. Here’s how you can define a simple knowledge base and query it:
 
@@ -105,6 +116,68 @@ The Prolog engine includes a simple spy functionality for debugging.
       - `l` (leap): Continue execution without spying.
       - `c` (creep): Step through the current goal.
       - `n` (nodebug): Disable spying.
+
+## Development
+
+### Testing
+
+Run tests across all supported Scheme implementations:
+
+```bash
+make all
+```
+
+Test specific implementations:
+
+```bash
+make racket      # Test with Racket
+make gauche      # Test with Gauche  
+make chicken     # Test with Chicken Scheme
+make chez        # Test with Chez Scheme
+make guile       # Test with Guile
+make chibi       # Test with Chibi Scheme
+make sagittarius # Test with Sagittarius
+make gambit      # Test with Gambit
+```
+
+### Building for Web
+
+Build the Gambit version for web deployment:
+
+```bash
+./script/build.sh
+```
+
+### Clean
+
+```bash
+make clean       # Remove log files
+```
+
+### Testing Framework
+
+Tests use SRFI-64 (Scheme Testing Framework) with implementation-specific test runners:
+- **`test/test.scm`**: Main test suite with core and library tests
+- **`test/test.7.scm`**: R7RS test runner
+- **`test/test.6.scm`**: R6RS test runner
+- **`test/test.rkt`**: Racket specific tests
+
+## Architecture
+
+The project is organized into several key components:
+
+- **`src/prolog-core.scm`**: Core Prolog engine implementation (highly commonized)
+- **`src/prolog-lib.scm`**: Standard library predicates
+- **`src/prolog.sld`**: R7RS library wrapper with conditional compilation
+- **`src/prolog.rkt`**: Racket-specific wrapper  
+- **`src/prolog.sls`**: R6RS library wrapper
+
+The core engine handles:
+- **Unification**: Variable binding and term unification
+- **Backtracking**: Choice points implemented using exceptions and continuations
+- **Clause Database**: Dynamic predicate storage with arity-based indexing
+- **Built-in Predicates**: Standard Prolog predicates (arithmetic, control flow, list operations)
+- **Debugging Support**: Spy/trace functionality with configurable indentation
 
 ## License
 
