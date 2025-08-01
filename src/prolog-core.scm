@@ -23,7 +23,7 @@
               ((and
                   (cut-exception? exception)
                   (eq? tag (cut-exception-tag exception)))
-               (cut-exception-value exception))
+                (cut-exception-value exception))
               (else
                 (raise exception)))
         (proc tag))))
@@ -52,10 +52,10 @@
         ((failure? bindings) (make-failure))
         ((null? bindings) expression)
         ((and (variable? expression) (assoc expression bindings))
-         (if (member expression visited)
-           expression
-           (let ((value (lookup-variable expression bindings)))
-             (substitute-bindings bindings value (cons expression visited)))))
+          (if (member expression visited)
+            expression
+            (let ((value (lookup-variable expression bindings)))
+              (substitute-bindings bindings value (cons expression visited)))))
         ((atom? expression) expression)
         (else
           (let* ((substituted-car (substitute-bindings bindings (car expression) visited))
@@ -88,24 +88,24 @@
     (cond
       ((eq? variable expression) #t)
       ((and (variable? expression) (assoc expression bindings))
-       (let ((value (lookup-variable expression bindings)))
-         (occurs-check? variable value bindings)))
+        (let ((value (lookup-variable expression bindings)))
+          (occurs-check? variable value bindings)))
       ((pair? expression)
-       (let ((car-occurs-check? (occurs-check? variable (car expression) bindings))
-             (cdr-occurs-check? (occurs-check? variable (cdr expression) bindings)))
-         (or car-occurs-check? cdr-occurs-check?)))
+        (let ((car-occurs-check? (occurs-check? variable (car expression) bindings))
+              (cdr-occurs-check? (occurs-check? variable (cdr expression) bindings)))
+          (or car-occurs-check? cdr-occurs-check?)))
       (else #f)))
 
   (define (unify-var variable value bindings)
     (cond
       ((assoc variable bindings)
-       (let ((bound-term (lookup-variable variable bindings)))
-         (unify bound-term value bindings)))
+        (let ((bound-term (lookup-variable variable bindings)))
+          (unify bound-term value bindings)))
       ((and (variable? value) (assoc value bindings))
-       (let ((bound-term (lookup-variable value bindings)))
-         (unify variable bound-term bindings)))
+        (let ((bound-term (lookup-variable value bindings)))
+          (unify variable bound-term bindings)))
       ((and (current-occurs-check) (occurs-check? variable value bindings))
-       (make-failure))
+        (make-failure))
       (else (alist-cons variable value bindings))))
 
   (define (unify term1 term2 bindings)
@@ -115,8 +115,8 @@
       ((variable? term1) (unify-var term1 term2 bindings))
       ((variable? term2) (unify-var term2 term1 bindings))
       ((and (pair? term1) (pair? term2))
-       (let ((car-bindings (unify (car term1) (car term2) bindings)))
-         (unify (cdr term1) (cdr term2) car-bindings)))
+        (let ((car-bindings (unify (car term1) (car term2) bindings)))
+          (unify (cdr term1) (cdr term2) car-bindings)))
       (else (make-failure))))
 
   ;; Clause database
@@ -149,9 +149,9 @@
   (define-syntax <-
     (syntax-rules ()
       ((_ (name . args) . body)
-       (add-clause! (replace-anonymous-variables '((name . args) . body))))
+        (add-clause! (replace-anonymous-variables '((name . args) . body))))
       ((_ name . body)
-       (add-clause! (replace-anonymous-variables '((name) . body))))))
+        (add-clause! (replace-anonymous-variables '((name) . body))))))
 
   (define (remove-clauses-with-arity! predicate-symbol arity)
     (define (has-different-arity? clause)
@@ -163,13 +163,13 @@
   (define-syntax <--
     (syntax-rules ()
       ((_ (name . args) . body)
-       (let ((arity (min-arity 'args)))
-         (remove-clauses-with-arity! 'name arity)
-         (add-clause! (replace-anonymous-variables '((name . args) . body)))))
+        (let ((arity (min-arity 'args)))
+          (remove-clauses-with-arity! 'name arity)
+          (add-clause! (replace-anonymous-variables '((name . args) . body)))))
       ((_ name . body)
-       (let ((arity 0))
-         (remove-clauses-with-arity! 'name arity)
-         (add-clause! (replace-anonymous-variables '((name) . body)))))))
+        (let ((arity 0))
+          (remove-clauses-with-arity! 'name arity)
+          (add-clause! (replace-anonymous-variables '((name) . body)))))))
 
   ;; Prover engine
 
@@ -322,8 +322,8 @@
     (cond
       ((failure? bindings) (make-failure))
       ((null? goals)
-       (let ((terminal-cont (lambda () (make-failure))))
-         (make-success bindings terminal-cont)))
+        (let ((terminal-cont (lambda () (make-failure))))
+          (make-success bindings terminal-cont)))
       (else (prove (car goals) bindings (cdr goals)))))
 
   (define (solve goals on-success on-failure)
@@ -392,4 +392,4 @@
   (define-syntax ?-
     (syntax-rules ()
       ((_ . goals)
-       (run-query (replace-anonymous-variables 'goals))))))
+        (run-query (replace-anonymous-variables 'goals))))))

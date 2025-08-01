@@ -35,8 +35,8 @@
     (scheme write)
     (scheme read)
     (scheme eval)
-    (only (scheme r5rs) interaction-environment)
-    (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
+    (scheme r5rs)
+    (only (srfi 1) alist-delete alist-cons filter delete-duplicates))
   (cond-expand
     ((or gauche chibi sagittarius)
       (import (scheme sort)))
