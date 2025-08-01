@@ -118,6 +118,12 @@
           (prove-all (current-remaining-goals) (current-bindings))
           (make-failure))))
 
+  (define-predicate (string term)
+    (let ((value (substitute-bindings (current-bindings) term)))
+      (if (string? value)
+          (prove-all (current-remaining-goals) (current-bindings))
+          (make-failure))))
+
   ;; Dynamic parameter predicates
 
   (define-predicate (dynamic-put variable-symbol value-expression)
