@@ -40,7 +40,7 @@ jobs:
         run: |
           cd gambit
           git apply ../index_html.patch || true
-          cp ../src/prolog.* ./contrib/try/try
+          cp ../src/* ./contrib/try/try
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
