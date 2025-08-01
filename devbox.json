@@ -15,11 +15,9 @@
     "chickenPackages_5.chickenEggs.r7rs@latest",
     "chickenPackages_5.chickenEggs.srfi-1@latest",
     "chickenPackages_5.chickenEggs.srfi-64@latest",
-    "chickenPackages_5.chickenEggs.srfi-132@latest"
+    "chickenPackages_5.chickenEggs.srfi-132@latest",
+    "moreutils@latest"
   ],
-  "env": {
-
-  },
   "shell": {
     "init_hook": [
       "export CHEZSCHEMELIBDIRS=$(echo $buildInputs | xargs -n1 | grep chez-srfi)/lib/csv10.2-site/",
