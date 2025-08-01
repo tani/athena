@@ -1,0 +1,71 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.2/.schema/devbox.schema.json",
+  "packages": [
+    "racket@8.14",
+    "schemat@latest",
+    "gambit@latest",
+    "guile@latest",
+    "chez@latest",
+    "chez-srfi@latest",
+    "chibi@latest",
+    "sagittarius-scheme@latest",
+    "gauche@latest",
+    "lefthook@latest",
+    "chicken@latest",
+    "chickenPackages_5.chickenEggs.r7rs@latest",
+    "chickenPackages_5.chickenEggs.srfi-1@latest",
+    "chickenPackages_5.chickenEggs.srfi-64@latest",
+    "chickenPackages_5.chickenEggs.srfi-132@latest"
+  ],
+  "env": {
+
+  },
+  "shell": {
+    "init_hook": [
+      "export CHEZSCHEMELIBDIRS=$(echo $buildInputs | xargs -n1 | grep chez-srfi)/lib/csv10.2-site/",
+      "lefthook install"
+    ],
+    "scripts": {
+      "test": [
+        "devbox run racket",
+        "devbox run gauche",
+        "devbox run guile",
+        "devbox run chicken",
+        "devbox run chibi",
+        "devbox run sagittarius",
+        "devbox run gambit",
+        "devbox run chez"
+      ],
+      "racket": [
+        "racket test/test.rkt"
+      ],
+      "gauche": [
+        "gosh -r 7 -I src test/test.7.scm"
+      ],
+      "chicken": [
+        "csi -require-extension r7rs -include-path src -eval '(include \"src/prolog.sld\")' -script test/test.7.scm"
+      ],
+      "guile": [
+        "guile --fresh-auto-compile -x .sld -L src test/test.7.scm"
+      ],
+      "chibi": [
+        "chibi-scheme -I src -I test test/test.7.scm"
+      ],
+      "sagittarius": [
+        "sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=src test/test.7.scm"
+      ],
+      "chez": [
+        "scheme --libdirs $CHEZSCHEMELIBDIRS:$PWD/src --script test/test.6.scm"
+      ],
+      "gambit": [
+        "gsi -:r7rs src/ test/test.7.scm"
+      ],
+      "clean": [
+        "rm -f *.log test/*.log"
+      ],
+      "format": [
+        "find src test -type f \\( -name '*.scm' -o -name '*.sld' -o -name '*.rkt' -o -name '*.sls' \\) -exec sh -c 'echo \"Formatting {}\"; schemat < \"{}\" | sponge \"{}\"' \\;"
+      ]
+    }
+  }
+}

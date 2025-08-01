@@ -13,19 +13,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-22.04-arm, macos-latest, macos-14]
         impl: [gauche, guile, chicken, chibi, sagittarius, racket, gambit, chez]
-        exclude:
-          - os: macos-latest
-            impl: racket
-          - os: macos-14
-            impl: racket
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: nixbuild/nix-quick-install-action@v30
-        with:
-          nix_conf: extra-experimental-features = nix-command flakes
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.12.0
 
-      - run: nix develop -c make ${{ matrix.impl }}
+      - run: devbox run test
