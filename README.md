@@ -72,7 +72,7 @@ Continue ? (y/n) n
 
   - `?-`: Executes an interactive query and displays solutions.
   - `run-query`: A programmatic way to run queries.
-  - `make-solution-stream`: Returns a stream of all possible solutions for a given goal.
+  - `solve`: Executes queries with callback-based solution handling.
 
 ## Built-in Predicates
 

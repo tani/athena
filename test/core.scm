@@ -95,10 +95,13 @@
   ;; current-lisp-environment via eval
   (test-equal "eval env" 42 (eval '42 (current-lisp-environment)))
 
-  ;; make-solution-stream
-  (let* ((ss (make-solution-stream '((= ?z 5))))
-         (first (stream-car ss)))
-    (test-equal "make-solution-stream" '((?z . 5)) first))
+  ;; solve function
+  (let ((result #f))
+    (solve
+      '((= ?z 5))
+      (lambda (solution) (set! result solution))
+      (lambda () #f))
+    (test-equal "solve function" '((?z . 5)) result))
 
   ;; run-query success
   (let ((out (open-output-string))

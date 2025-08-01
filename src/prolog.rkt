@@ -29,11 +29,10 @@
   current-spy-predicates
   success-bindings
   success-continuation
-  make-solution-stream)
+  solve)
 
 ;; Imports
 (require
-  srfi/41
   (only-in srfi/1 alist-delete alist-cons delete-duplicates)
   (only-in rnrs flush-output-port guard raise))
 

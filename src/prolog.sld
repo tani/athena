@@ -28,7 +28,7 @@
     current-spy-predicates
     success-bindings
     success-continuation
-    make-solution-stream)
+    solve)
   ;; Imports
   (import
     (scheme base)
@@ -39,11 +39,11 @@
     (only (srfi 1) alist-delete filter delete-duplicates alist-cons))
   (cond-expand
     ((or gauche chibi sagittarius)
-      (import (scheme sort) (scheme stream)))
+      (import (scheme sort)))
     ((or gambit chicken)
-      (import (srfi 41) (srfi 132)))
+      (import (srfi 132)))
     (guile
-      (import (srfi 41) (rnrs sorting))))
+      (import (rnrs sorting))))
 
   ;; Implementation
   (begin

@@ -84,7 +84,7 @@ Tests use SRFI-64 (Scheme Testing Framework):
 ### Querying
 - `?-`: Interactive query macro
 - `run-query`: Programmatic query execution
-- `make-solution-stream`: Returns stream of all solutions
+- `solve`: Execute queries with callback-based solution handling
 
 ### Built-in Predicates
 Core predicates include unification (`=`), arithmetic (`is`), control flow (`if`, `not`, `!`), and list operations (`member`, `append`, `maplist`, `findall`, `bagof`).

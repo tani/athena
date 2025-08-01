@@ -27,14 +27,13 @@
     current-spy-predicates
     success-bindings
     success-continuation
-    make-solution-stream)
+    solve)
 
   ;; Imports
   (import
     (rnrs)
     (rnrs eval)
     (srfi :39)
-    (srfi :41)
     (only (srfi :1) alist-delete alist-cons delete-duplicates)
     (only (chezscheme) include open-output-string get-output-string interaction-environment))
 

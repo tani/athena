@@ -1,12 +1,19 @@
 (define (solve-first goals term)
-  (let ((ss (make-solution-stream goals)))
-    (if (stream-null? ss)
-      '()
-      (substitute-bindings (stream-car ss) term))))
+  (call/cc
+    (lambda (exit)
+      (solve
+        goals
+        (lambda (solution)
+          (let ((result (substitute-bindings solution term)))
+            (exit result)))
+        (lambda () (exit '()))))))
 
 (define (solve-all goals term)
-  (let loop ((ss (make-solution-stream goals)))
-    (if (stream-null? ss)
-      '()
-      (cons (substitute-bindings (stream-car ss) term)
-        (loop (stream-cdr ss))))))
+  (let ((results '()))
+    (solve
+      goals
+      (lambda (solution)
+        (let ((result (substitute-bindings solution term)))
+          (set! results (cons result results))))
+      (lambda () #f))
+    (reverse results)))
