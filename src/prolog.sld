@@ -41,13 +41,13 @@
 
   (cond-expand
    (chicken
-    (include "./prolog-core.scm")
-    (include "./prolog-lib.scm"))
+    (include "prolog-core.scm")
+    (include "prolog-lib.scm"))
    (guile
     (import (only (guile) include-from-path))
     (begin
-      (include-from-path "./prolog-core.scm")
-      (include-from-path "./prolog-lib.scm")))
+      (include-from-path "prolog-core.scm")
+      (include-from-path "prolog-lib.scm")))
    ((or gauche sagittarius gambit chibi)
-    (include-library-declarations "./prolog-core.scm")
-    (include-library-declarations "./prolog-lib.scm"))))
+    (include-library-declarations "prolog-core.scm")
+    (include-library-declarations "prolog-lib.scm"))))
