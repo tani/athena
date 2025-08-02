@@ -1,5 +1,5 @@
 pre-commit:
   commands:
     format:
-      run: devbox run format
+      run: nix develop -c make format
       stage_fixed: true
