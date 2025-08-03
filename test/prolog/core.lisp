@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test/core)
+(in-package :prolog-test)
 
 ;; Define test suite for core engine
 (def-suite :prolog/test/core :in :prolog-tests)
@@ -164,10 +164,11 @@
   (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
     ;; The famous countdown test that was in the original suite
     (prolog:<- (countdown 0))
-    (prolog:<- (countdown ?n) 
-               (number ?n) 
-               (> ?n 0) 
-               (is ?n1 (- ?n 1)) 
+    (prolog:<- (countdown ?n)
+               (number ?n)
+               (lisp t (> ?n 0))
+               !
+               (is ?n1 (- ?n 1))
                (countdown ?n1))
     
     ;; Test the same depth as the original test

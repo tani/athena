@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test/primitive)
+(in-package :prolog-test)
 
 ;; Define test suite for primitive predicates
 (def-suite :prolog/test/primitive :in :prolog-tests)

@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test/stdlib)
+(in-package :prolog-test)
 
 ;; Define test suite for standard library
 (def-suite :prolog/test/stdlib :in :prolog-tests)
@@ -85,20 +85,3 @@
              (lambda () nil))
       (is (>= count 5) "repeat generates multiple solutions"))))
 
-;; -----------------------------------------------------------
-;; Performance and stress tests
-;; -----------------------------------------------------------
-
-(test performance
-  "Test performance with the deep recursion countdown"
-  (let ((*current-clause-database* (copy-list *current-clause-database*)))
-    ;; Define countdown predicates
-    (<- (countdown 0))
-    (<- (countdown ?n) 
-        (number ?n)
-        (> ?n 0)
-        (is ?n1 (- ?n 1))
-        (countdown ?n1))
-    
-    ;; Test deep recursion (this was the original failing test)
-    (is (not (null (solve-all '((countdown 50)) 'dummy))) "deep recursion (countdown from 50)")))

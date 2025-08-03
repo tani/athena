@@ -36,6 +36,7 @@
           shellHook = ''
             lefthook install
             raco pkg install --user --auto srfi-lib
+            export CL_SOURCE_REGISTRY="$PWD"
           '';
         };
       });

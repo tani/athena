@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test)
+(in-package :prolog-test)
 
 ;; Define the main test entry point
 (defun run-all-tests ()
