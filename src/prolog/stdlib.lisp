@@ -51,3 +51,11 @@
              (call (?pred . ?heads))
              (call (maplist ?pred . ?tails)))))
 
+;; Arithmetic comparison predicates using lisp/2
+(<- (> ?x ?y) (lisp ?result (> ?x ?y)) (== ?result t))
+(<- (< ?x ?y) (lisp ?result (< ?x ?y)) (== ?result t))
+(<- (>= ?x ?y) (lisp ?result (>= ?x ?y)) (== ?result t))
+(<- (<= ?x ?y) (lisp ?result (<= ?x ?y)) (== ?result t))
+(<- (|=:=| ?x ?y) (lisp ?result (= ?x ?y)) (== ?result t))
+(<- (|=\\=| ?x ?y) (lisp ?result (not (= ?x ?y))) (== ?result t))
+

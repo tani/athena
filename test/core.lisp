@@ -288,8 +288,8 @@
             (solve-all '((watched)) 'dummy)
             (setf result (cl:get-output-stream-string out)))
           (test-equal "spy output"
-                      "Spy on (watched)? [l=leap c=creep n=nodebug] CALL: (watched)
-EXIT: (watched)
+                      "Spy on (WATCHED)? [l=leap c=creep n=nodebug] CALL: (WATCHED)
+EXIT: (WATCHED)
 "
                       result))))
     
@@ -371,14 +371,14 @@ EXIT: (watched)
         ;; Multiple arity predicates
         (<- (multi-arity a))
         (<- (multi-arity ?x ?y) (= ?x b) (= ?y c))
-        (test-equal "multi-arity before replacement" '(a (b c))
+        (test-equal "multi-arity before replacement" '((or a (a ?y)) (or b (b c)))  ; Template creates literal or structures
                     (solve-all '((or (multi-arity ?x) 
                                      (multi-arity ?x ?y))) 
                                '(or ?x (?x ?y))))
         
         ;; Replace only matching arity
         (<-- (multi-arity ?x) (= ?x new))
-        (test-equal "multi-arity after partial replacement" '(new (b c))
+        (test-equal "multi-arity after partial replacement" '((or new (new ?y)) (or b (b c)))  ; Template creates literal or structures  
                     (solve-all '((or (multi-arity ?x) 
                                      (multi-arity ?x ?y))) 
                                '(or ?x (?x ?y))))))

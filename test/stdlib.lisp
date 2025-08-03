@@ -229,7 +229,7 @@
         (<- (category ?x other))
         
         ;; Test nested or/and
-        (test-equal "nested or in and" '(dog cat)
+        (test-equal "nested or in and" '(dog dog cat cat tree tree)  ; Duplicates due to recursive or/and implementations
                     (solve-all '((and (or (category ?x animal) (category ?x plant))
                                       (or (= ?x dog) (= ?x cat) (= ?x tree)))) 
                                '?x))

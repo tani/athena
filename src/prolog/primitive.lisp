@@ -193,14 +193,17 @@
 
 ;; bagof - simplified implementation for basic functionality
 (define-predicate (bagof template goal result-bag)
-  ;; For now, implement bagof as findall (simplified version)
-  ;; This provides the basic functionality without the complex grouping logic
+  ;; bagof should fail when no solutions exist (unlike findall which returns empty list)
   (let ((*current-solution-accumulator* '()))
     (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
       (prove-all new-goals *current-bindings*))
-    (let* ((reversed-solutions (reverse *current-solution-accumulator*))
-           (new-bindings (unify result-bag reversed-solutions *current-bindings*)))
-      (prove-all *current-remaining-goals* new-bindings))))
+    (let ((reversed-solutions (reverse *current-solution-accumulator*)))
+      ;; bagof fails if no solutions were found
+      (if (null reversed-solutions)
+          (make-failure)
+          ;; If solutions exist, unify with result-bag
+          (let ((new-bindings (unify result-bag reversed-solutions *current-bindings*)))
+            (prove-all *current-remaining-goals* new-bindings))))))
 
 ;; setof - bagof + sort
 (define-predicate (setof template goal result-set)
