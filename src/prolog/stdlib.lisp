@@ -3,14 +3,12 @@
 
 (in-package :prolog/stdlib)
 
-(<- true)
   
 ;; Control flow clauses
 (<- (and) true)
 (<- (and ?goal) (call ?goal))
 (<- (and ?goal . ?goals) (call ?goal) (call (and . ?goals)))
 
-(<- (or ?goal) (call ?goal))
 (<- (or ?goal . ?goals) (call ?goal))
 (<- (or ?goal . ?goals) (call (or . ?goals)))
 
@@ -53,7 +51,3 @@
              (call (?pred . ?heads))
              (call (maplist ?pred . ?tails)))))
 
-;; Add clause-based predicates for evaluation
-(<- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
-(<- (lisp ?expression) (--lisp-eval-internal ? ?expression))
-(<- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))

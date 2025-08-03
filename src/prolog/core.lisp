@@ -211,6 +211,14 @@
                (t count))))
     (count-args args 0)))
 
+(defun proper-list-p (lst)
+  "Check if LST is a proper list (ends with NIL, not a dotted pair)"
+  (cond
+    ((null lst) t)
+    ((atom lst) nil)
+    ((consp lst) (proper-list-p (cdr lst)))
+    (t nil)))
+
 (defun remove-clauses-with-arity! (predicate-symbol arity)
   (labels ((has-different-arity-p (clause)
              (not (= (min-arity (cdar clause)) arity))))
@@ -239,7 +247,7 @@
 (defmacro <- (&rest clause-parts)
   (let ((clause (if (consp (car clause-parts))
                     clause-parts
-                    (list clause-parts))))
+                    (cons (list (car clause-parts)) (cdr clause-parts)))))
     `(add-clause! (replace-anonymous-variables ',clause))))
 
 (defmacro <-- (&rest clause-parts)
@@ -336,7 +344,7 @@
      (let ((goal-arity (if (consp goal) (length (cdr goal)) 0)))
        (labels ((clause-match-p (clause)
                   (let* ((required (min-arity (cdar clause)))
-                         (variadic-p (not (listp (cdar clause)))))
+                         (variadic-p (not (proper-list-p (cdar clause)))))
                     (and (>= goal-arity required)
                          (or variadic-p (= goal-arity required)))))
                 (try-one-by-one (clauses-to-try)

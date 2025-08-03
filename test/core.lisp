@@ -139,7 +139,7 @@
               (*standard-output* out))
           (run-query '((fail))))
         (test-equal "run-query failure" "No.
-" (cl:get-output-stream-string out)))
+" (cl:get-output-stream-string out
       
       ;; ?- macro
       (let ((out (make-string-output-stream))
@@ -149,7 +149,7 @@
               (*standard-output* out))
           (?- (= ?v ok)))
         (test-assert "?- macro" (not (string= (cl:get-output-stream-string out) "No.
-")))))
+"))))
     
     ;; -----------------------------------------------------------
     ;; Clause DB operations
@@ -197,7 +197,7 @@
     (test-group "zero-arity-predicates"
       (let ((*current-clause-database* (copy-list *current-clause-database*)))
         (<- hello)
-        ;; body also calls hello without parentheses
+        ;; CORRECTED: Use proper syntax for rule body
         (<- greet hello)
         ;; calls using traditional (name) syntax
         (test-assert "zero-arity fact" (not (null (solve-all '((hello)) 'dummy))))
@@ -293,7 +293,140 @@ EXIT: (watched)
 "
                       result))))
     
-    (format t "~%Total tests: ~D, Passed: ~D~%" *test-count* *pass-count*)))
+    ;; -----------------------------------------------------------
+    ;; Edge cases and error handling
+    ;; -----------------------------------------------------------
+    (test-group "edge-cases"
+      (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Empty clause body
+        (<- (fact))
+        (test-assert "fact with empty body"
+                     (not (null (solve-all '((fact)) 'dummy))))
+        
+        ;; Zero-arity predicates
+        (<- (zero-arity-pred))
+        (test-assert "zero-arity predicate"
+                     (not (null (solve-all '((zero-arity-pred)) 'dummy))))
+        
+        ;; Deeply nested structures
+        (test-equal "deeply nested unification" '(((a)))
+                    (solve-first '((= ?x (((a))))) '?x))
+        
+        ;; Long lists
+        (let ((long-list (loop for i from 1 to 100 collect i)))
+          (test-equal "unify long list" long-list
+                      (solve-first `((= ?x ,long-list)) '?x)))
+        
+        ;; Undefined predicate
+        (test-assert "undefined predicate fails"
+                     (null (solve-all '((undefined-pred ?x)) '?x)))
+        
+        ;; Multiple solutions with same binding
+        (<- (multi a))
+        (<- (multi a))
+        (<- (multi b))
+        (test-equal "multiple identical solutions" '(a a b)
+                    (solve-all '((multi ?x)) '?x))))
+    
+    ;; -----------------------------------------------------------
+    ;; Variable binding and substitution
+    ;; -----------------------------------------------------------
+    (test-group "variable-binding"
+      (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Complex variable chains
+        (test-equal "transitive variable binding" 'value
+                    (solve-first '((= ?x ?y) (= ?y ?z) (= ?z value)) '?x))
+        
+        ;; Circular references (should fail with occurs check)
+        (let ((*current-occurs-check* t))
+          (test-assert "occurs check prevents cycles"
+                       (null (solve-all '((= ?x (f ?x))) '?x))))
+        
+        ;; Without occurs check (default)
+        (let ((*current-occurs-check* nil))
+          (test-assert "no occurs check allows cycles"
+                       (not (null (solve-all '((= ?x (f ?x))) 'dummy)))))
+        
+        ;; Variables in different contexts
+        (<- (scope-test ?x ?y) (= ?x local) (= ?y ?x))
+        (test-equal "variable scoping" '(local local)
+                    (solve-first '((scope-test ?a ?b)) '(?a ?b)))))
+    
+    ;; -----------------------------------------------------------
+    ;; Database modification (<-- replacement)
+    ;; -----------------------------------------------------------
+    (test-group "database-modification"
+      (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Initial definition
+        (<- (replaceable ?x) (= ?x first))
+        (<- (replaceable ?x) (= ?x second))
+        (test-equal "initial clauses" '(first second)
+                    (solve-all '((replaceable ?x)) '?x))
+        
+        ;; Replace with <--
+        (<-- (replaceable ?x) (= ?x replaced))
+        (test-equal "after replacement" '(replaced)
+                    (solve-all '((replaceable ?x)) '?x))
+        
+        ;; Multiple arity predicates
+        (<- (multi-arity a))
+        (<- (multi-arity ?x ?y) (= ?x b) (= ?y c))
+        (test-equal "multi-arity before replacement" '(a (b c))
+                    (solve-all '((or (multi-arity ?x) 
+                                     (multi-arity ?x ?y))) 
+                               '(or ?x (?x ?y))))
+        
+        ;; Replace only matching arity
+        (<-- (multi-arity ?x) (= ?x new))
+        (test-equal "multi-arity after partial replacement" '(new (b c))
+                    (solve-all '((or (multi-arity ?x) 
+                                     (multi-arity ?x ?y))) 
+                               '(or ?x (?x ?y))))))
+    
+    ;; -----------------------------------------------------------
+    ;; Anonymous variable handling
+    ;; -----------------------------------------------------------
+    (test-group "anonymous-variables"
+      (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Single anonymous variable
+        (<- (anon-test ?x ?) (= ?x matched))
+        (test-equal "single anonymous variable" 'matched
+                    (solve-first '((anon-test ?r anything)) '?r))
+        
+        ;; Multiple anonymous variables (should be independent)
+        (<- (multi-anon ? ? ?x) (= ?x result))
+        (test-equal "multiple anonymous variables" 'result
+                    (solve-first '((multi-anon a b ?r)) '?r))
+        
+        ;; Anonymous in goal
+        (test-equal "anonymous in query" 'value
+                    (solve-first '((= ? ignored) (= ?x value)) '?x))))
+    
+    ;; -----------------------------------------------------------
+    ;; Performance and stress tests
+    ;; -----------------------------------------------------------
+    (test-group "performance"
+      (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Generate many clauses
+        (dotimes (i 100)
+          (<- (perf-test i)))
+        
+        ;; Test clause retrieval performance
+        (test-assert "many clauses retrieval"
+                     (= 100 (length (solve-all '((perf-test ?x)) '?x))))
+        
+        ;; Deep recursion
+        (<- (countdown 0))
+        (<- (countdown ?n) 
+            (number ?n)
+            (> ?n 0)
+            (is ?n1 (- ?n 1))
+            (countdown ?n1))
+        
+        (test-assert "deep recursion (countdown from 50)"
+                     (not (null (solve-all '((countdown 50)) 'dummy))))))
+    
+    (format t "~%Total tests: ~D, Passed: ~D~%" *test-count* *pass-count*)))))))
 
 ;; Run tests when loaded
 (run-tests)

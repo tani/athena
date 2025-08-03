@@ -21,7 +21,10 @@
    :*current-dynamic-parameters*
 
    ;; Helper functions for tests
-   :define-predicate))
+   :define-predicate
+   
+   ;; Built-in predicates used by stdlib
+   :call :true :! :fail))
 
 (in-package :prolog/primitive)
 
@@ -202,3 +205,14 @@
 ;; setof - bagof + sort
 (define-predicate (setof template goal result-set)
   (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) *current-bindings*))
+
+;; Aliases for Lisp evaluation
+(define-predicate (is result-variable expression)
+  (prove-all `((--lisp-eval-internal ,result-variable ,expression)) *current-bindings*))
+
+(define-predicate (lisp result-variable expression)
+  (prove-all `((--lisp-eval-internal ,result-variable ,expression)) *current-bindings*))
+
+;; Simple true predicate for testing
+(define-predicate (true)
+  (prove-all *current-remaining-goals* *current-bindings*))
