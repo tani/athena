@@ -4,109 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Athena is a comprehensive Prolog engine implemented in Scheme, designed for embedding logic programming capabilities in Racket and various Scheme environments. The project provides seamless integration between Prolog's pattern-matching/backtracking and Scheme's functional programming.
-
-## Architecture
-
-### Core Components
-
-- **`src/prolog.scm`**: Core Prolog engine implementation (highly commonized)
-- **`src/prolog.sld`**: R7RS library wrapper with conditional compilation for different Scheme implementations
-- **`src/prolog.rkt`**: Racket-specific wrapper  
-- **`src/prolog.sls`**: R6RS library wrapper
-
-### Multi-Implementation Support
-
-The codebase supports multiple Scheme implementations through conditional compilation:
-- Racket, Gambit, Chez Scheme, Gauche, Sagittarius, Chibi Scheme, Guile, Chicken Scheme
-
-Each implementation has specific import/include patterns handled in `prolog.sld` using `cond-expand`.
-
-### Key Architectural Patterns
-
-- **Unification Engine**: Core logic in `prolog.scm` handles variable binding and term unification
-- **Choice Points**: Backtracking implemented using exceptions and continuations  
-- **Clause Database**: Dynamic predicate storage with arity-based indexing
-- **Built-in Predicates**: Standard Prolog predicates (arithmetic, control flow, list operations)
-- **Debugging Support**: Spy/trace functionality with configurable indentation
+Athena is a comprehensive Prolog engine with dual implementations in Scheme and Common Lisp. It supports multiple Scheme implementations (Racket, Gauche, Chez, Guile, Chibi, Sagittarius, Gambit, Chicken) and Common Lisp implementations (SBCL, ABCL, CLISP, ECL).
 
 ## Development Commands
 
 ### Testing
-Run tests across all supported Scheme implementations:
 ```bash
+# Run all tests across all Scheme implementations
 make all
-```
 
-Test specific implementations:
-```bash
-make racket    # Test with Racket
-make gauche    # Test with Gauche  
-make chicken   # Test with Chicken Scheme
-make chez      # Test with Chez Scheme
-make guile     # Test with Guile
-make chibi     # Test with Chibi Scheme
-make sagittarius # Test with Sagittarius
-make gambit    # Test with Gambit
-```
+# Test specific Scheme implementations
+make test-racket      # Racket
+make test-gauche      # Gauche with R7RS
+make test-chicken     # Chicken Scheme with R7RS
+make test-guile       # Guile with R7RS
+make test-chibi       # Chibi Scheme
+make test-sagittarius # Sagittarius Scheme
+make test-chez        # Chez Scheme with R6RS
+make test-gambit      # Gambit with R7RS
 
-### Clean
-```bash
-make clean     # Remove log files
-```
+# Common Lisp testing
+make test-sbcl        # SBCL
+make test-ecl         # ECL  
+make test-clisp       # CLISP
+make test-abcl        # ABCL
 
-### Development Environment
-Use Devbox for development environment with all Scheme implementations:
-```bash
-devbox shell    # Enters shell with all Scheme interpreters
+# Or use ASDF directly (in REPL)
+asdf:test-system :prolog
 ```
 
 ### Code Formatting
 ```bash
-make format        # Format all source and test files using schemat
+make format          # Format all source files using schemat
 ```
 
-### Build for Web (Gambit)
+### Development Environment
 ```bash
-./script/build.sh   # Builds Gambit version for web deployment
+devbox shell         # Enter Nix development shell with all implementations
+nix develop          # Alternative Nix development shell
+lefthook install     # Install git hooks (auto-runs after setup)
 ```
 
-### Git Hooks
-The project uses lefthook for automated formatting on commit:
+### Building and Cleanup
 ```bash
-lefthook install   # Install git hooks (runs automatically after setup)
+./script/build.sh    # Build Gambit version for web deployment
+make clean           # Remove log files
 ```
 
-Git hooks will automatically run `make format` before each commit and stage any formatting changes.
+## Architecture
 
-## Testing Framework
+### Core Components
+- **`src/prolog-core.scm`**: Portable Scheme implementation of core engine
+- **`src/prolog-lib.scm`**: Standard library predicates
+- **`src/prolog.lisp`**: Common Lisp main package
+- **`src/prolog/core.lisp`**: Common Lisp core engine
+- **`src/prolog/primitive.lisp`**: Common Lisp built-in predicates
+- **`src/prolog/stdlib.lisp`**: Common Lisp standard library
 
-Tests use SRFI-64 (Scheme Testing Framework):
-- **`test/test.scm`**: Main test suite 
-- **`test/test.seven.scm`**: R7RS test runner
-- **`test/test.chez.scm`**: Chez Scheme specific tests
-- **`test/test.rkt`**: Racket specific tests
+### Implementation Wrappers
+- **`src/prolog.rkt`**: Racket-specific wrapper
+- **`src/prolog.sld`**: R7RS library wrapper with conditional compilation
+- **`src/prolog.sls`**: R6RS library wrapper
 
-## Key APIs for Development
+### Engine Features
+- **Unification**: Variable binding and term unification
+- **Backtracking**: Choice points using exceptions and continuations
+- **Clause Database**: Dynamic predicate storage with arity-based indexing
+- **Built-in Predicates**: Standard Prolog predicates (arithmetic, control flow, lists)
+- **Debugging Support**: Spy/trace functionality
 
-### Defining Predicates
-- `<-`: Define Prolog clause
-- `<--`: Define clause, removing existing clauses for same predicate/arity
-- `define-predicate`: Define predicate using Scheme procedure
+### Testing Framework
+- **Scheme**: SRFI-64 with implementation-specific runners
+  - `test/test.scm`: Main test suite
+  - `test/test.7.scm`: R7RS runner
+  - `test/test.6.scm`: R6RS runner
+  - `test/test.rkt`: Racket-specific tests
+- **Common Lisp**: FiveAM framework
+  - `test/prolog/`: Modular test files with ASDF integration
+  - Supports SBCL, ECL, CLISP, and ABCL implementations
 
-### Querying
-- `?-`: Interactive query macro
-- `run-query`: Programmatic query execution
-- `solve`: Execute queries with callback-based solution handling
+## Key Development Patterns
 
-### Built-in Predicates
-Core predicates include unification (`=`), arithmetic (`is`), control flow (`if`, `not`, `!`), and list operations (`member`, `append`, `maplist`, `findall`, `bagof`).
+### Cross-Implementation Compatibility
+- Use `cond-expand` in R7RS wrapper for implementation-specific code
+- Careful handling of differences between Scheme implementations
+- Separate packages for Common Lisp components
 
-## Development Notes
+### Automated Formatting
+- Git hooks automatically format code using `schemat` before commits
+- All Scheme/Lisp files are formatted consistently
 
-- The core engine (`prolog.scm`) is implementation-agnostic
-- Wrapper files handle implementation-specific features and imports
-- Variable names starting with `?` are Prolog variables
-- Anonymous variables use `?` (replaced with unique symbols during processing)
-- Cut operator (`!`) implemented via exceptions with choice point tags
-- Debugging controlled via `current-spy-predicates` and `current-spy-indent?` parameters
+### Testing Strategy
+- All implementations must pass the same core test suite
+- Implementation-specific test runners handle differences
+- Common Lisp tests use FiveAM with custom utilities
+
+## Common Development Tasks
+
+### Adding New Built-in Predicates
+1. Add to `src/prolog-lib.scm` for Scheme version
+2. Add to `src/prolog/primitive.lisp` for Common Lisp version
+3. Add tests to appropriate test files
+4. Update documentation in README.md
+
+### Running Single Tests
+```bash
+# Scheme (example with Racket)
+racket -e '(require "test/test.rkt")' -e '(test-name)'
+
+# Common Lisp (example with SBCL)
+sbcl --eval "(require 'asdf)" --eval "(asdf:test-system :prolog)" --quit
+```
+
+### Web Deployment
+The project includes web deployment capability through Gambit Scheme compilation to JavaScript. Use `./script/build.sh` to build the web version.

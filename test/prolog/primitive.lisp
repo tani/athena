@@ -65,6 +65,9 @@
 
 (test meta-predicates  
   "Test solution collection predicates"
+  ;; Clean up any existing item facts first
+  (remove-clauses-with-arity! 'item 1)
+  
   ;; Setup test data
   (<- (item a))
   (<- (item b))

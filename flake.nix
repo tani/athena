@@ -12,6 +12,9 @@
         default = pkgs.mkShell {
           packages = [
             (pkgs.sbcl.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.sbcl) meta; })
+            (pkgs.abcl.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.abcl) meta; })
+            (pkgs.clisp.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.clisp) meta; })
+            (pkgs.ecl.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.ecl) meta; })
           ];
           buildInputs = with pkgs; [
             racket-minimal
