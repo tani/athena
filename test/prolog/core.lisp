@@ -13,23 +13,29 @@
 ;; -----------------------------------------------------------
 
 (test variable-p-tests
-  "Test variable-p predicate"
-  (is-true (variable-p '?x))
-  (is-true (variable-p '?))  
-  (is-false (variable-p 'foo))
-  (is-false (variable-p '(?x))))
+  "Test variable-p predicate for Prolog variable identification.
+   Validates correct identification of Prolog variables (symbols starting with ?).
+   This is fundamental for unification and term processing."
+  (is-true (variable-p '?x) "?x should be recognized as a Prolog variable")
+  (is-true (variable-p '?) "? should be recognized as an anonymous variable")  
+  (is-false (variable-p 'foo) "foo should not be recognized as a variable (atom)")
+  (is-false (variable-p '(?x)) "(?x) should not be recognized as a variable (list)"))
 
 (test named-variable-p-tests
-  "Test named-variable-p predicate"
-  (is-true (named-variable-p '?x))
-  (is-false (named-variable-p '?))
-  (is-false (named-variable-p 'foo)))
+  "Test named-variable-p predicate for non-anonymous variable identification.
+   Validates distinction between named variables (?x) and anonymous variables (?).
+   Important for variable scoping and binding operations."
+  (is-true (named-variable-p '?x) "?x should be recognized as a named variable")
+  (is-false (named-variable-p '?) "? should not be recognized as named (anonymous)")
+  (is-false (named-variable-p 'foo) "foo should not be recognized as a variable at all"))
 
 (test atom-p-tests
-  "Test atom-p predicate"
-  (is-false (atom-p '(a b)))
-  (is-true (atom-p 'a))
-  (is-true (atom-p 123)))
+  "Test atom-p predicate for atomic term identification.
+   Validates correct classification of atomic (non-compound) terms.
+   Essential for term structure analysis and unification."
+  (is-false (atom-p '(a b)) "List (a b) should not be classified as atomic")
+  (is-true (atom-p 'a) "Symbol 'a' should be classified as atomic")
+  (is-true (atom-p 123) "Number 123 should be classified as atomic"))
 
 (test binding-operations
   "Test basic binding operations"
@@ -175,48 +181,90 @@
     (is (not (null (solve-all '((countdown 50)) 'dummy)))
         "deep recursion (countdown from 50) - same as original test")))
 
-(test comprehensive-functionality
-  "Comprehensive test covering all major Prolog features"
+(test basic-fact-querying
+  "Test basic fact storage and retrieval in the clause database.
+   Validates that simple facts can be stored and retrieved correctly,
+   forming the foundation for all Prolog operations."
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
-    ;; Family relationship example (common in Prolog)
+    (setf *current-clause-database* '())
     (<- (parent john mary))
     (<- (parent mary susan))
     (<- (parent tom john))
+    
+    (is (eq 'mary (solve-first '((parent john ?child)) '?child))
+        "Should retrieve Mary as John's child")
+    (is (eq 'susan (solve-first '((parent mary ?child)) '?child))
+        "Should retrieve Susan as Mary's child")))
+
+(test rule-inference-resolution
+  "Test rule-based inference and goal resolution.
+   Validates that compound rules can be defined and resolved correctly,
+   demonstrating the core logic programming capability."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (setf *current-clause-database* '())
+    (<- (parent john mary))
+    (<- (parent mary susan))
     (<- (grandparent ?x ?z) (parent ?x ?y) (parent ?y ?z))
+    
+    (is (eq 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
+        "Should infer Susan as John's grandchild through rule resolution")))
+
+(test recursive-rule-evaluation
+  "Test recursive rule definitions and their evaluation.
+   Validates that recursive rules work correctly with proper termination
+   and backtracking behavior, essential for complex logic programs."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (setf *current-clause-database* '())
+    (<- (parent john mary))
+    (<- (parent mary susan))
+    (<- (parent tom john))
     (<- (ancestor ?x ?y) (parent ?x ?y))
     (<- (ancestor ?x ?z) (parent ?x ?y) (ancestor ?y ?z))
     
-    ;; Test basic facts
-    (is (eq 'mary (solve-first '((parent john ?child)) '?child))
-        "Basic fact querying")
-    
-    ;; Test rule inference
-    (is (eq 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
-        "Rule inference")
-    
-    ;; Test recursive rules
     (is (not (null (solve-first '((ancestor tom susan)) 'dummy)))
-        "Recursive rule evaluation")
-    
-    ;; Test list operations
+        "Should find Tom as ancestor of Susan through recursive resolution")))
+
+(test list-operation-integration
+  "Test integration with built-in list operations.
+   Validates that list predicates like member/2 work correctly
+   within the query resolution system."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; Don't clear database - we need built-in predicates
     (is (eq 'a (solve-first '((member ?x (a b c))) '?x))
-        "List member operation")
-    
-    ;; Test arithmetic
+        "Should find first member 'a' in list (a b c)")))
+
+(test arithmetic-evaluation-integration
+  "Test arithmetic expression evaluation within queries.
+   Validates that the 'is' predicate correctly evaluates arithmetic
+   expressions and unifies results with variables."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; Don't clear database - we need built-in predicates
     (is (eq 7 (solve-first '((is ?result (+ 3 4))) '?result))
-        "Arithmetic evaluation")
-    
-    ;; Test meta-predicates
+        "Should evaluate (+ 3 4) to 7 and bind to ?result")))
+
+(test meta-predicate-findall
+  "Test meta-predicate findall/3 for solution collection.
+   Validates that findall correctly collects all solutions to a goal
+   and returns them as a list, demonstrating meta-level operations."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; Only clear user-defined facts, keep built-ins
     (<- (color red))
     (<- (color green))
     (<- (color blue))
+    
     (is (equal '(red green blue) 
                (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
-        "Meta-predicate findall")
-    
-    ;; Test cut operator
+        "Should collect all colors into list [red, green, blue]")))
+
+(test cut-operator-behavior
+  "Test cut operator (!) for choice point elimination.
+   Validates that the cut operator correctly prevents backtracking
+   to alternative solutions, implementing deterministic behavior."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; Only clear user-defined facts, keep built-ins
     (<- (choice a))
     (<- (choice b))
     (<- (first-choice ?x) (choice ?x) !)
+    
     (is (equal '(a) (solve-all '((first-choice ?x)) '?x))
-        "Cut operator behavior")))
+        "Should return only first choice 'a' due to cut preventing backtracking")))

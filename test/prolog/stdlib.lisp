@@ -13,7 +13,9 @@
 ;; -----------------------------------------------------------
 
 (test control-flow
-  "Test control flow predicates"
+  "Test control flow predicates: or/N, and/N, not/1, and if/3.
+   Validates logical operators for conditional execution and goal combination.
+   Essential for implementing complex logical conditions in Prolog programs."
   ;; Setup test data
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
     (<- (parent john mary))
