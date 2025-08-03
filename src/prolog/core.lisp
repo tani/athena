@@ -8,7 +8,7 @@
 ;;; - Proof engine and backtracking
 ;;; - Solution streams and query execution
 
-(defpackage :prolog-core
+(defpackage :prolog/core
   (:use :common-lisp)
   (:export
    ;; Main API
@@ -17,7 +17,7 @@
    :?-
    :run-query
    :solve
-   
+
    ;; Variables and unification
    :variable-p
    :named-variable-p
@@ -26,12 +26,12 @@
    :substitute-bindings
    :variables-in
    :replace-anonymous-variables
-   
+
    ;; Database operations
    :add-clause!
    :get-clauses
    :set-clauses!
-   
+
    ;; Prover internals (needed by builtins)
    :prove
    :prove-all
@@ -40,13 +40,13 @@
    :combine
    :*current-bindings*
    :*current-remaining-goals*
-   
+
    ;; Parameters (special variables)
    :*current-clause-database*
    :*current-spy-predicates*
    :*current-spy-mode*
    :*current-occurs-check*
-   
+
    ;; Failure/success types
    :make-failure
    :failure-p
@@ -54,14 +54,16 @@
    :success-p
    :success-bindings
    :success-continuation
-   
+
    ;; Exceptions
    :cut-exception
-   :cut-exception-p
    :cut-exception-tag
    :cut-exception-value))
 
-(in-package :prolog-core)
+(in-package :prolog/core)
+
+(defun symbol= (a b)
+  (string= (symbol-name a) (symbol-name b)))
 
 ;;; Failure and success types
 (defstruct failure)
@@ -74,9 +76,6 @@
 (define-condition cut-exception (error)
   ((tag :initarg :tag :reader cut-exception-tag)
    (value :initarg :value :reader cut-exception-value)))
-
-(defun cut-exception-p (condition)
-  (typep condition 'cut-exception))
 
 ;;; Special variables (replacing Scheme parameters)
 (defparameter *current-clause-database* '())
@@ -104,20 +103,20 @@
               (char= (char symbol-string 0) #\?)))))
 
 (defun named-variable-p (term)
-  (and (variable-p term) (not (eq term '|?|))))
+  (and (variable-p term) (not (equal term '?))))
 
 (defun atom-p (term)
   (not (consp term)))
 
 (defun lookup-variable (variable bindings)
-  (cdr (assoc variable bindings :test #'eq)))
+  (cdr (assoc variable bindings :test #'symbol=)))
 
 (defun substitute-bindings (bindings expression &optional visited)
   (cond
     ((failure-p bindings) (make-failure))
     ((null bindings) expression)
-    ((and (variable-p expression) (assoc expression bindings :test #'eq))
-     (if (member expression visited :test #'eq)
+    ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
+     (if (member expression visited :test #'symbol=)
          expression
          (let ((value (lookup-variable expression bindings)))
            (substitute-bindings bindings value (cons expression visited)))))
@@ -131,7 +130,7 @@
              (cond
                ((atom-p tree)
                 (if (and (funcall predicate tree)
-                         (not (member tree accumulator :test #'eq)))
+                         (not (member tree accumulator :test #'symbol=)))
                     (cons tree accumulator)
                     accumulator))
                (t
@@ -142,7 +141,7 @@
 
 (defun replace-anonymous-variables (expression)
   (cond
-    ((eq expression '|?|) (gensym "?"))
+    ((symbol= expression '?) (gensym "?"))
     ((atom-p expression) expression)
     (t (cons (replace-anonymous-variables (car expression))
              (replace-anonymous-variables (cdr expression))))))
@@ -150,8 +149,8 @@
 ;;; Occurs check for unification
 (defun occurs-check-p (variable expression bindings)
   (cond
-    ((eq variable expression) t)
-    ((and (variable-p expression) (assoc expression bindings :test #'eq))
+    ((symbol= variable expression) t)
+    ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
      (let ((value (lookup-variable expression bindings)))
        (occurs-check-p variable value bindings)))
     ((consp expression)
@@ -163,20 +162,17 @@
 (declaim (ftype function prove prove-all))
 
 ;;; Unification
-(defun alist-cons (key value alist)
-  (cons (cons key value) alist))
-
 (defun unify-var (variable value bindings)
   (cond
-    ((assoc variable bindings :test #'eq)
+    ((assoc variable bindings :test #'symbol=)
      (let ((bound-term (lookup-variable variable bindings)))
        (unify bound-term value bindings)))
-    ((and (variable-p value) (assoc value bindings :test #'eq))
+    ((and (variable-p value) (assoc value bindings :test #'symbol=))
      (let ((bound-term (lookup-variable value bindings)))
        (unify variable bound-term bindings)))
     ((and *current-occurs-check* (occurs-check-p variable value bindings))
      (make-failure))
-    (t (alist-cons variable value bindings))))
+    (t (acons variable value bindings))))
 
 (defun unify (term1 term2 bindings)
   (cond
@@ -191,15 +187,12 @@
 
 ;;; Clause database operations
 (defun get-clauses (predicate-symbol)
-  (let ((entry (assoc predicate-symbol *current-clause-database* :test #'eq)))
+  (let ((entry (assoc predicate-symbol *current-clause-database* :test #'symbol=)))
     (if entry (cdr entry) '())))
 
-(defun alist-delete (key alist &key (test #'eql))
-  (remove-if (lambda (pair) (funcall test (car pair) key)) alist))
-
 (defun set-clauses! (predicate-symbol clauses)
-  (let* ((cleaned-db (alist-delete predicate-symbol *current-clause-database* :test #'eq))
-         (new-db (alist-cons predicate-symbol clauses cleaned-db)))
+  (let* ((cleaned-db (remove predicate-symbol *current-claude-database* :test #'symbol= :key #'car))
+         (new-db (acons predicate-symbol clauses cleaned-db)))
     (setf *current-clause-database* new-db)))
 
 (defun add-clause! (clause)
@@ -227,7 +220,7 @@
 ;;; Variable renaming for clauses
 (defun sublis* (alist tree)
   (if (atom-p tree)
-      (let ((binding (assoc tree alist :test #'eq)))
+      (let ((binding (assoc tree alist :test #'symbol=)))
         (if binding (cdr binding) tree))
       (cons (sublis* alist (car tree))
             (sublis* alist (cdr tree)))))
@@ -267,10 +260,10 @@
   (let ((resolved (substitute-bindings bindings goal)))
     (format t "Spy on ~S? [l=leap c=creep n=nodebug] " resolved)
     (force-output *standard-output*)
-    (case (read)
-      ((l) (setf *current-spy-mode* 'always) t)
-      ((c) t)
-      ((n) (setf *current-spy-mode* 'disabled) nil)
+    (case (read-char)
+      ((#\l) (setf *current-spy-mode* 'always) t)
+      ((#\c) t)
+      ((#\n) (setf *current-spy-mode* 'disabled) nil)
       (otherwise t))))
 
 (defun spy-message (kind goal bindings)
@@ -279,7 +272,7 @@
 
 (defun with-spy (goal bindings thunk)
   (let* ((predicate-symbol (if (consp goal) (car goal) goal))
-         (spy-p (member predicate-symbol *current-spy-predicates* :test #'eq))
+         (spy-p (member predicate-symbol *current-spy-predicates* :test #'symbol=))
          (mode *current-spy-mode*)
          (show-p (and spy-p
                       (case mode
@@ -289,11 +282,11 @@
          (result nil))
     (let ((*current-spy-mode* (if show-p mode 'disabled)))
       (unwind-protect
-          (progn
-            (when show-p
-              (spy-message "CALL" goal bindings))
-            (setf result (funcall thunk))
-            result)
+           (progn
+             (when show-p
+               (spy-message "CALL" goal bindings))
+             (setf result (funcall thunk))
+             result)
         (when show-p
           (if (or (not result) (failure-p result))
               (spy-message "FAIL" goal bindings)
@@ -312,8 +305,8 @@
 (defun insert-choice-point (clause choice-point)
   (labels ((insert-cut-term (term)
              (cond
-               ((and (consp term) (eq '! (car term))) (list '! choice-point))
-               ((and (atom-p term) (eq '! term)) (list '! choice-point))
+               ((and (consp term) (symbol= '! (car term))) (list '! choice-point))
+               ((and (atom-p term) (symbol= '! term)) (list '! choice-point))
                (t term))))
     (mapcar #'insert-cut-term clause)))
 
@@ -357,8 +350,8 @@
                             (let* ((result-bindings (success-bindings result))
                                    (result-continuation (success-continuation result))
                                    (new-continuation (combine result-continuation try-next-clause)))
-                              (make-success :bindings result-bindings 
-                                          :continuation new-continuation)))))))
+                              (make-success :bindings result-bindings
+                                            :continuation new-continuation)))))))
          (let ((clauses (remove-if-not #'clause-match-p all-clauses)))
            (try-one-by-one clauses)))))))
 
@@ -375,13 +368,14 @@
             (apply predicate-handler args)
             (let ((goal-for-unify (if (consp goal) goal (list goal))))
               (if (and (not (null predicate-handler))
-                       (< goal-arity (apply #'min (mapcar (lambda (c) (min-arity (cdar c))) 
-                                                         predicate-handler))))
+                       (< goal-arity (apply #'min (mapcar (lambda (c) (min-arity (cdar c)))
+                                                          predicate-handler))))
                   (make-failure)
                   (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))))
 
 (defun solve (goals on-success on-failure)
   (labels ((initial-continuation ()
+
              (call-with-current-choice-point
               (lambda (choice-point)
                 (let* ((prepared-goals (replace-anonymous-variables goals))
@@ -411,9 +405,9 @@
   (terpri)
   (format t "Continue ? (y/n) ")
   (force-output *standard-output*)
-  (case (read)
-    ((y) t)
-    ((n) nil)
+  (case (read-char)
+    ((#\y) t)
+    ((#\n) nil)
     (otherwise
      (format t " Type y for more, or n to stop.~%")
      (continue-prompt-p))))

@@ -9,46 +9,24 @@
 ;;; - Control flow predicates (and, or, not, if)
 ;;; - List manipulation predicates (member, append, maplist)
 
-(defpackage :prolog-lib
-  (:use :common-lisp :prolog-core)
-  (:import-from :prolog-core
-   :*current-bindings*
-   :*current-remaining-goals*
-   :*current-clause-database*)
+(defpackage :prolog/primitive
+  (:use :common-lisp :prolog/core)
   (:export
-   ;; Main initialization
-   :initialize-standard-library
-   
    ;; Utility functions
    :object->string
    :ground-p
-   
-   ;; Dynamic parameter functions
-   :get-dynamic-parameter
-   :set-dynamic-parameter  
-   :get-dynamic-parameter-value
-   
+
    ;; Special variables
    :*current-solution-accumulator*
    :*current-dynamic-parameters*
-   
-   ;; Helper functions for tests
-   :define-predicate
-   
-   ;; Built-in predicates (will be available via the clause database)
-   ;; Type checking: atom, atomic, var, ground, number, string
-   ;; Logic: and, or, not, if, fail, true, repeat
-   ;; Meta: call, bagof, findall, setof, sort
-   ;; List: member, append, maplist
-   ;; Evaluation: is, lisp
-   ;; Dynamic: dynamic-put, dynamic-get
-   ))
 
-(in-package :prolog-lib)
+   ;; Helper functions for tests
+   :define-predicate))
+
+(in-package :prolog/primitive)
 
 ;;; Special variables replacing Scheme parameters
 (defparameter *current-solution-accumulator* '())
-(defparameter *current-lisp-environment* nil) ; Will use current package
 (defparameter *current-dynamic-parameters* '())
 
 ;;; Utility functions
@@ -66,27 +44,6 @@
        (and (ground-p (car resolved-term))
             (ground-p (cdr resolved-term))))
       (t t))))
-
-;;; Dynamic parameter management
-(defun get-dynamic-parameter (variable-symbol)
-  "Get or create a dynamic parameter for the given symbol."
-  (let ((entry (assoc variable-symbol *current-dynamic-parameters* :test #'eq)))
-    (if entry
-        (cdr entry)
-        (let* ((new-parameter (list nil)) ; Use list for mutable container
-               (new-entry (cons variable-symbol new-parameter)))
-          (push new-entry *current-dynamic-parameters*)
-          new-parameter))))
-
-(defun set-dynamic-parameter (variable-symbol value)
-  "Set the value of a dynamic parameter."
-  (let ((parameter (get-dynamic-parameter variable-symbol)))
-    (setf (car parameter) value)))
-
-(defun get-dynamic-parameter-value (variable-symbol)
-  "Get the current value of a dynamic parameter."
-  (let ((parameter (get-dynamic-parameter variable-symbol)))
-    (car parameter)))
 
 ;;; Predicate definition utility
 (defmacro define-predicate ((name &rest arguments) &body body)
@@ -185,16 +142,13 @@
 ;; Dynamic parameter predicates
 (define-predicate (dynamic-put variable-symbol value-expression)
   (let* ((substituted-expression (substitute-bindings *current-bindings* value-expression))
-         (evaluated-value (handler-case
-                              (eval substituted-expression)
-                            (error (e)
-                              (format t "Dynamic evaluation error: ~A~%" e)
-                              nil))))
-    (set-dynamic-parameter variable-symbol evaluated-value)
+         (evaluated-value (eval substituted-expression))
+         (*current-dynamic-parameters* (acons variable-symbol evaluated-value *current-dynamic-parameters*)))
     (prove-all *current-remaining-goals* *current-bindings*)))
 
 (define-predicate (dynamic-get variable-symbol prolog-variable)
-  (let* ((value (get-dynamic-parameter-value variable-symbol))
+  (let* ((key-value (assoc variable-symbol *current-dynamic-parameters*))
+         (value (if key-value (cdr key-value) nil))
          (new-bindings (unify prolog-variable value *current-bindings*)))
     (prove-all *current-remaining-goals* new-bindings)))
 
@@ -228,13 +182,13 @@
 (define-predicate (sort unsorted-list result-list)
   (let* ((actual-list (substitute-bindings *current-bindings* unsorted-list))
          (unique-list (remove-duplicates actual-list :test #'equal))
-         (sorted-list (sort (copy-list unique-list) 
-                           (lambda (a b) 
-                             (string< (object->string a) (object->string b)))))
+         (sorted-list (sort (copy-list unique-list)
+                            (lambda (a b)
+                              (string< (object->string a) (object->string b)))))
          (new-bindings (unify result-list sorted-list *current-bindings*)))
     (prove-all *current-remaining-goals* new-bindings)))
 
-;; bagof - simplified implementation for basic functionality  
+;; bagof - simplified implementation for basic functionality
 (define-predicate (bagof template goal result-bag)
   ;; For now, implement bagof as findall (simplified version)
   ;; This provides the basic functionality without the complex grouping logic
@@ -248,72 +202,3 @@
 ;; setof - bagof + sort
 (define-predicate (setof template goal result-set)
   (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) *current-bindings*))
-
-;;; Standard Logic Predicates (Phase 5)
-
-;; Note: Control flow predicates (true, repeat, and, or, not, if) are implemented 
-;; as clauses in the initialization function rather than as function-based predicates
-
-;; All list manipulation predicates and helpers are implemented as clauses in initialization
-;; to avoid conflicts with function-based implementations
-
-;;; Initialization function - Phase 5
-(defun initialize-standard-library ()
-  "Initialize all standard library predicates and clauses."
-  ;; Basic fact
-  (<- true)
-  
-  ;; Control flow clauses
-  (<- (and) true)
-  (<- (and ?goal) (call ?goal))
-  (<- (and ?goal . ?goals) (call ?goal) (call (and . ?goals)))
-  
-  (<- (or ?goal) (call ?goal))
-  (<- (or ?goal . ?goals) (call ?goal))
-  (<- (or ?goal . ?goals) (call (or . ?goals)))
-  
-  (<- (not ?goal) (call ?goal) ! (fail))
-  (<- (not ?goal))
-  
-  (<- (if ?cond ?then ?else) (call ?cond) ! (call ?then))
-  (<- (if ?cond ?then ?else) (call ?else))
-  (<- (if ?cond ?then) (call ?cond) (call ?then))
-  
-  ;; Repeat predicate
-  (<- (repeat))
-  (<- (repeat) (repeat))
-  
-  ;; List manipulation clauses
-  (<- (member ?item (?item . ?|_|)))
-  (<- (member ?item (?|_| . ?rest)) (member ?item ?rest))
-  
-  (<- (append () ?list ?list))
-  (<- (append (?head . ?tail) ?list (?head . ?result))
-      (append ?tail ?list ?result))
-  
-  ;; Maplist helper clauses
-  (<- (--all-null ()))
-  (<- (--all-null (() . ?rest)) (--all-null ?rest))
-  
-  (<- (--get-heads () ()))
-  (<- (--get-heads ((?head . ?|_|) . ?rest) (?head . ?heads))
-      (--get-heads ?rest ?heads))
-      
-  (<- (--get-tails () ()))
-  (<- (--get-tails ((?|_| . ?tail) . ?rest) (?tail . ?tails))
-      (--get-tails ?rest ?tails))
-  
-  (<- (maplist ?pred . ?lists)
-      (if (--all-null ?lists)
-          true
-          (and (--get-heads ?lists ?heads)
-               (--get-tails ?lists ?tails)
-               (call (?pred . ?heads))
-               (call (maplist ?pred . ?tails)))))
-  
-  ;; Add clause-based predicates for evaluation
-  (<- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
-  (<- (lisp ?expression) (--lisp-eval-internal |?| ?expression))
-  (<- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
-  
-  (format t "Prolog standard library Phase 5 initialized.~%"))
