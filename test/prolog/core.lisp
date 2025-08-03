@@ -129,3 +129,93 @@
            (lambda (solution) (setf result solution))
            (lambda () nil))
     (is (equal '((?z . 5)) result) "solve function")))
+
+;; Integration and compatibility tests moved from fiveam-runner.lisp
+
+(test integration-with-asdf
+  "Test that ASDF integration works correctly"
+  (is (find-package :prolog) "Main prolog package should exist")
+  (is (find-package :prolog/core) "Core package should exist")
+  (is (find-package :prolog/primitive) "Primitive package should exist")
+  (is (find-package :prolog/stdlib) "Stdlib package should exist")
+  
+  ;; Test that we can use the public API
+  (is (fboundp 'prolog:solve) "solve function should be accessible")
+  (is (fboundp 'prolog:<-) "<- macro should be accessible")
+  (is (fboundp 'prolog:unify) "unify function should be accessible"))
+
+(test backwards-compatibility
+  "Test that FiveAM tests are compatible with existing functionality"
+  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+    ;; Use the same test patterns as the original framework
+    (prolog:<- (test-compat hello))
+    (prolog:<- (test-rule ?x) (test-compat ?x))
+    
+    ;; Test using solve-first helper (from existing framework)
+    (is (eq 'hello (solve-first '((test-rule ?y)) '?y))
+        "solve-first helper should work with FiveAM")
+    
+    ;; Test using solve-all helper
+    (is (equal '(hello) (solve-all '((test-rule ?y)) '?y))
+        "solve-all helper should work with FiveAM")))
+
+(test performance-comparison
+  "Test performance aspects that were important in original tests"
+  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+    ;; The famous countdown test that was in the original suite
+    (prolog:<- (countdown 0))
+    (prolog:<- (countdown ?n) 
+               (number ?n) 
+               (> ?n 0) 
+               (is ?n1 (- ?n 1)) 
+               (countdown ?n1))
+    
+    ;; Test the same depth as the original test
+    (is (not (null (solve-all '((countdown 50)) 'dummy)))
+        "deep recursion (countdown from 50) - same as original test")))
+
+(test comprehensive-functionality
+  "Comprehensive test covering all major Prolog features"
+  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+    ;; Family relationship example (common in Prolog)
+    (prolog:<- (parent john mary))
+    (prolog:<- (parent mary susan))
+    (prolog:<- (parent tom john))
+    (prolog:<- (grandparent ?x ?z) (parent ?x ?y) (parent ?y ?z))
+    (prolog:<- (ancestor ?x ?y) (parent ?x ?y))
+    (prolog:<- (ancestor ?x ?z) (parent ?x ?y) (ancestor ?y ?z))
+    
+    ;; Test basic facts
+    (is (eq 'mary (solve-first '((parent john ?child)) '?child))
+        "Basic fact querying")
+    
+    ;; Test rule inference
+    (is (eq 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
+        "Rule inference")
+    
+    ;; Test recursive rules
+    (is (not (null (solve-first '((ancestor tom susan)) 'dummy)))
+        "Recursive rule evaluation")
+    
+    ;; Test list operations
+    (is (eq 'a (solve-first '((member ?x (a b c))) '?x))
+        "List member operation")
+    
+    ;; Test arithmetic
+    (is (eq 7 (solve-first '((is ?result (+ 3 4))) '?result))
+        "Arithmetic evaluation")
+    
+    ;; Test meta-predicates
+    (prolog:<- (color red))
+    (prolog:<- (color green))
+    (prolog:<- (color blue))
+    (is (equal '(red green blue) 
+               (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
+        "Meta-predicate findall")
+    
+    ;; Test cut operator
+    (prolog:<- (choice a))
+    (prolog:<- (choice b))
+    (prolog:<- (first-choice ?x) (choice ?x) !)
+    (is (equal '(a) (solve-all '((first-choice ?x)) '?x))
+        "Cut operator behavior")))

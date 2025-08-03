@@ -41,11 +41,6 @@
     (format t "~%Loading tests directly - running test suite...~%")
     (run-all-tests)))
 
-;; Load the FiveAM runner if available
-(handler-case
-    (load (merge-pathnames "fiveam-runner.lisp" *load-pathname*))
-  (error (e)
-    (format t "~%Note: FiveAM runner not available: ~A~%" e)))
 
 ;; Export the main function for external use
 (export 'run-all-tests)

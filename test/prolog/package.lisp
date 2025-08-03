@@ -56,9 +56,3 @@
            (lambda () nil))
     (nreverse results)))
 
-(defun run-all-tests ()
-  "Run all Prolog tests using FiveAM"
-  (format t "~%========================================~%")
-  (format t "  Athena Prolog Engine - FiveAM Test Suite~%")
-  (format t "========================================~%")
-  (run! :prolog-tests))
