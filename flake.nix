@@ -12,6 +12,7 @@
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
             sbcl
+            sbclPackages.fiveam
             racket-minimal
             gauche
             guile
