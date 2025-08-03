@@ -49,7 +49,8 @@
                 #:if)
   (:import-from :prolog/test/utilities
                 #:solve-first
-                #:solve-all)
+                #:solve-all
+                #:solve-count)
   (:import-from :fiveam
                 #:def-suite
                 #:in-suite
