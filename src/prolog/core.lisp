@@ -229,7 +229,7 @@
 ;;; Variable renaming for clauses
 (defun sublis* (alist tree)
   (if (atom-p tree)
-      (let ((binding (assoc tree alist :test #'symbol=)))
+      (let ((binding (and (symbolp tree) (assoc tree alist :test #'symbol=))))
         (if binding (cdr binding) tree))
       (cons (sublis* alist (car tree))
             (sublis* alist (cdr tree)))))

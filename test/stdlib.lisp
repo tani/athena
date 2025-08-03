@@ -140,6 +140,18 @@
     ;; -----------------------------------------------------------
     (test-group "list-manipulation-extended"
       (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Define helper predicates needed for this test group
+        (<- (--all-null ()))
+        (<- (--all-null (() . ?rest)) (--all-null ?rest))
+        
+        (<- (--get-heads () ()))
+        (<- (--get-heads ((?head . ?) . ?rest) (?head . ?heads))
+            (--get-heads ?rest ?heads))
+        
+        (<- (--get-tails () ()))
+        (<- (--get-tails ((? . ?tail) . ?rest) (?tail . ?tails))
+            (--get-tails ?rest ?tails))
+        
         ;; append/3 edge cases
         (test-equal "append empty lists" '()
                     (solve-first '((append () () ?x)) '?x))
@@ -182,6 +194,10 @@
     ;; -----------------------------------------------------------
     (test-group "repeat-bounded"
       (let ((*current-clause-database* (copy-list *current-clause-database*)))
+        ;; Define repeat in test package (needed for this test group)
+        (<- (repeat))
+        (<- (repeat) (repeat))
+        
         ;; Test repeat with counter
         (<- (count-repeat 0 ?max) !)
         (<- (count-repeat ?n ?max) 
@@ -190,15 +206,17 @@
             (count-repeat ?n1 ?max))
         
         (test-equal "repeat generates exactly 5 solutions" 5
-                    (let ((solutions 0))
-                      (solve '((repeat))
-                             (lambda (bindings)
-                               (declare (ignore bindings))
-                               (incf solutions)
-                               (when (>= solutions 5)
-                                 (error 'prolog/core::cut-exception :tag nil :value nil)))
-                             (lambda () nil))
-                      solutions))))
+                    (catch 'repeat-count-test
+                      (let ((solutions 0))
+                        (solve '((repeat))
+                               (lambda (bindings)
+                                 (declare (ignore bindings))
+                                 (incf solutions)
+                                 (when (>= solutions 5)
+                                   (throw 'repeat-count-test solutions)))
+                               (lambda () 
+                                 (throw 'repeat-count-test solutions)))
+                        solutions)))))
     
     ;; -----------------------------------------------------------
     ;; Complex nested control structures
