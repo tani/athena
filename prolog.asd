@@ -22,16 +22,6 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   
   :in-order-to ((test-op (test-op "prolog/tests"))))
 
-(defsystem "prolog/stdlib"
-  :description "Standard library for Athena Prolog Engine"
-  :author "Masaya Taniguchi"
-  :license "GPL-3.0"
-  
-  :pathname "src"
-  :depends-on ("prolog")
-  :serial t
-  :components ((:file "prolog/stdlib")))
-
 (defsystem "prolog/tests"
   :description "Test suite for Athena Prolog Engine"
   :author "Masaya Taniguchi"
