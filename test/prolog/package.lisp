@@ -4,30 +4,37 @@
 
 (defpackage :prolog/test
   (:use :common-lisp :fiveam :prolog)
+  (:shadowing-import-from :fiveam :fail)
   (:export :prolog-tests :run-all-tests
            ;; Test helper functions (preserve from old framework)
            :solve-first :solve-all))
 
 (defpackage :prolog/test/core
   (:use :common-lisp :fiveam :prolog :prolog/test)
+  (:shadowing-import-from :fiveam :fail)
   (:import-from :prolog/core
                 ;; Import additional symbols needed for core tests
                 :named-variable-p :atom-p :variables-in :replace-anonymous-variables
                 :set-clauses! :call-with-current-choice-point
                 :make-failure :failure-p :make-success :success-p  
                 :success-bindings :success-continuation
-                :*current-spy-predicates* :*current-spy-mode* :*current-occurs-check*))
+                :*current-spy-predicates* :*current-spy-mode* :*current-occurs-check*)
+  (:import-from :prolog/primitive
+                ;; Import utility functions for tests
+                :object->string))
 
 (defpackage :prolog/test/primitive  
   (:use :common-lisp :fiveam :prolog :prolog/test)
+  (:shadowing-import-from :fiveam :fail :is)
   (:import-from :prolog/primitive
                 ;; Import symbols needed for primitive tests
                 :object->string :define-predicate
                 := :== :atom :atomic :var :ground :number :string
-                :findall :bagof :setof :sort :is :lisp))
+                :findall :bagof :setof :sort :lisp))
 
 (defpackage :prolog/test/stdlib
-  (:use :common-lisp :fiveam :prolog :prolog/test))
+  (:use :common-lisp :fiveam :prolog :prolog/test)
+  (:shadowing-import-from :fiveam :fail))
 
 (in-package :prolog/test)
 

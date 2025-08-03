@@ -24,7 +24,19 @@
    :define-predicate
    
    ;; Built-in predicates used by stdlib
-   :call :true :! :fail))
+   :call :true :! :fail
+   
+   ;; Arithmetic and evaluation predicates
+   :is :lisp
+   
+   ;; Unification predicates
+   := :==
+   
+   ;; Type checking predicates
+   :atom :atomic :var :ground :number :string
+   
+   ;; Meta-predicates for solution collection
+   :findall :bagof :setof :sort))
 
 (in-package :prolog/primitive)
 
@@ -211,10 +223,30 @@
 
 ;; Aliases for Lisp evaluation
 (define-predicate (is result-variable expression)
-  (prove-all `((--lisp-eval-internal ,result-variable ,expression)) *current-bindings*))
+  (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
+         (evaluated-result (handler-case
+                               (eval lisp-expression)
+                             (error (e)
+                               (format t "Evaluation error: ~A~%" e)
+                               nil)))
+         (result-term (substitute-bindings *current-bindings* result-variable))
+         (new-bindings (unify result-term evaluated-result *current-bindings*)))
+    (if new-bindings
+        (prove-all *current-remaining-goals* new-bindings)
+        (make-failure))))
 
 (define-predicate (lisp result-variable expression)
-  (prove-all `((--lisp-eval-internal ,result-variable ,expression)) *current-bindings*))
+  (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
+         (evaluated-result (handler-case
+                               (eval lisp-expression)
+                             (error (e)
+                               (format t "Evaluation error: ~A~%" e)
+                               nil)))
+         (result-term (substitute-bindings *current-bindings* result-variable))
+         (new-bindings (unify result-term evaluated-result *current-bindings*)))
+    (if new-bindings
+        (prove-all *current-remaining-goals* new-bindings)
+        (make-failure))))
 
 ;; Simple true predicate for testing
 (define-predicate (true)

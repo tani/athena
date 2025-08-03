@@ -66,6 +66,13 @@
 (defun symbol= (a b)
   (string= (symbol-name a) (symbol-name b)))
 
+(defun terms-equal-p (term1 term2)
+  "Compare two terms for equality, using symbol= for symbols and equal for other types"
+  (cond
+    ((and (symbolp term1) (symbolp term2))
+     (symbol= term1 term2))
+    (t (equal term1 term2))))
+
 ;;; Failure and success types
 (defstruct failure)
 
@@ -178,7 +185,7 @@
 (defun unify (term1 term2 bindings)
   (cond
     ((failure-p bindings) (make-failure))
-    ((equal term1 term2) bindings)
+    ((terms-equal-p term1 term2) bindings)
     ((variable-p term1) (unify-var term1 term2 bindings))
     ((variable-p term2) (unify-var term2 term1 bindings))
     ((and (consp term1) (consp term2))

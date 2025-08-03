@@ -44,6 +44,9 @@
 
 (test meta-call
   "Test meta-call predicates"
+  ;; Set up test data
+  (<- (parent john mary))
+  ;; Test meta-call
   (is (eq 'mary (solve-first '((call (parent john ?x))) '?x)) "call/1 simple")
   (is (eq 'mary (solve-first '((call parent john ?x)) '?x)) "call variadic simple"))
 

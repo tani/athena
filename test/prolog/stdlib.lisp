@@ -75,14 +75,15 @@
 (test backtracking
   "Test backtracking predicates"
   ;; Test repeat (generates infinite solutions)
-  (let ((count 0))
-    (solve '((repeat))
-           (lambda (solution)
-             (declare (ignore solution))
-             (incf count)
-             (when (>= count 5) (return-from backtracking nil)))
-           (lambda () nil))
-    (is (>= count 5) "repeat generates multiple solutions")))
+  (block test-repeat
+    (let ((count 0))
+      (solve '((repeat))
+             (lambda (solution)
+               (declare (ignore solution))
+               (incf count)
+               (when (>= count 5) (return-from test-repeat nil)))
+             (lambda () nil))
+      (is (>= count 5) "repeat generates multiple solutions"))))
 
 ;; -----------------------------------------------------------
 ;; Performance and stress tests
