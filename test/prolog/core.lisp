@@ -14,22 +14,22 @@
 
 (test variable-p-tests
   "Test variable-p predicate"
-  (is (eq t (variable-p '?x)) "variable-p success for '?x")
-  (is (eq t (variable-p '?)) "variable-p success for '?")  
-  (is (eq nil (variable-p 'foo)) "variable-p failure for non-var")
-  (is (eq nil (variable-p '(?x))) "variable-p failure for list"))
+  (is-true (variable-p '?x))
+  (is-true (variable-p '?))  
+  (is-false (variable-p 'foo))
+  (is-false (variable-p '(?x))))
 
 (test named-variable-p-tests
   "Test named-variable-p predicate"
-  (is (eq t (named-variable-p '?x)) "named-variable-p success for '?x")
-  (is (eq nil (named-variable-p '?)) "named-variable-p failure for '?")
-  (is (eq nil (named-variable-p 'foo)) "named-variable-p failure for non-var"))
+  (is-true (named-variable-p '?x))
+  (is-false (named-variable-p '?))
+  (is-false (named-variable-p 'foo)))
 
 (test atom-p-tests
   "Test atom-p predicate"
-  (is (eq nil (atom-p '(a b))) "atom-p for pair")
-  (is (eq t (atom-p 'a)) "atom-p for symbol")
-  (is (eq t (atom-p 123)) "atom-p for number"))
+  (is-false (atom-p '(a b)))
+  (is-true (atom-p 'a))
+  (is-true (atom-p 123)))
 
 (test binding-operations
   "Test basic binding operations"
@@ -69,9 +69,9 @@
 
 (test unification-basic
   "Test basic unification"
-  (is (equal '() (unify 'a 'a '())) "unify atom-atom success")
-  (is (failure-p (unify 'a 'b '())) "unify atom-atom mismatch")
-  (is (failure-p (unify 'a '(a) '())) "unify atom-list mismatch"))
+  (is (equal '() (unify 'a 'a '())))
+  (is-true (failure-p (unify 'a 'b '())))
+  (is-true (failure-p (unify 'a '(a) '()))))
 
 (test unification-variables
   "Test variable unification"
@@ -85,14 +85,14 @@
 
 (test unification-lists
   "Test list unification"
-  (is (equal '((?x . c)) (unify '(a b ?x) '(a b c) '())) "unify list-list success")
-  (is (failure-p (unify '(a b) '(a b c) '())) "unify list-list failure (length)")
-  (is (failure-p (unify '(a x) '(a y) '())) "unify list-list failure (element)"))
+  (is (equal '((?x . c)) (unify '(a b ?x) '(a b c) '())))
+  (is-true (failure-p (unify '(a b) '(a b c) '())))
+  (is-true (failure-p (unify '(a x) '(a y) '()))))
 
 (test occurs-check
   "Test occurs check prevention of infinite structures"
-  (is (failure-p (unify '?x '(foo ?x) '())) "occurs-check simple")
-  (is (failure-p (unify '?y '(bar (baz ?y)) '())) "occurs-check nested"))
+  (is-true (failure-p (unify '?x '(foo ?x) '())))
+  (is-true (failure-p (unify '?y '(bar (baz ?y)) '()))))
 
 ;; -----------------------------------------------------------
 ;; API function coverage
@@ -140,16 +140,16 @@
   (is (find-package :prolog/stdlib) "Stdlib package should exist")
   
   ;; Test that we can use the public API
-  (is (fboundp 'prolog:solve) "solve function should be accessible")
-  (is (fboundp 'prolog:<-) "<- macro should be accessible")
-  (is (fboundp 'prolog:unify) "unify function should be accessible"))
+  (is (fboundp 'solve) "solve function should be accessible")
+  (is (fboundp '<-) "<- macro should be accessible")
+  (is (fboundp 'unify) "unify function should be accessible"))
 
 (test backwards-compatibility
   "Test that FiveAM tests are compatible with existing functionality"
-  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; Use the same test patterns as the original framework
-    (prolog:<- (test-compat hello))
-    (prolog:<- (test-rule ?x) (test-compat ?x))
+    (<- (test-compat hello))
+    (<- (test-rule ?x) (test-compat ?x))
     
     ;; Test using solve-first helper (from existing framework)
     (is (eq 'hello (solve-first '((test-rule ?y)) '?y))
@@ -161,10 +161,10 @@
 
 (test performance-comparison
   "Test performance aspects that were important in original tests"
-  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; The famous countdown test that was in the original suite
-    (prolog:<- (countdown 0))
-    (prolog:<- (countdown ?n)
+    (<- (countdown 0))
+    (<- (countdown ?n)
                (number ?n)
                (lisp t (> ?n 0))
                !
@@ -177,14 +177,14 @@
 
 (test comprehensive-functionality
   "Comprehensive test covering all major Prolog features"
-  (let ((prolog:*current-clause-database* (copy-list prolog:*current-clause-database*)))
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; Family relationship example (common in Prolog)
-    (prolog:<- (parent john mary))
-    (prolog:<- (parent mary susan))
-    (prolog:<- (parent tom john))
-    (prolog:<- (grandparent ?x ?z) (parent ?x ?y) (parent ?y ?z))
-    (prolog:<- (ancestor ?x ?y) (parent ?x ?y))
-    (prolog:<- (ancestor ?x ?z) (parent ?x ?y) (ancestor ?y ?z))
+    (<- (parent john mary))
+    (<- (parent mary susan))
+    (<- (parent tom john))
+    (<- (grandparent ?x ?z) (parent ?x ?y) (parent ?y ?z))
+    (<- (ancestor ?x ?y) (parent ?x ?y))
+    (<- (ancestor ?x ?z) (parent ?x ?y) (ancestor ?y ?z))
     
     ;; Test basic facts
     (is (eq 'mary (solve-first '((parent john ?child)) '?child))
@@ -207,16 +207,16 @@
         "Arithmetic evaluation")
     
     ;; Test meta-predicates
-    (prolog:<- (color red))
-    (prolog:<- (color green))
-    (prolog:<- (color blue))
+    (<- (color red))
+    (<- (color green))
+    (<- (color blue))
     (is (equal '(red green blue) 
                (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
         "Meta-predicate findall")
     
     ;; Test cut operator
-    (prolog:<- (choice a))
-    (prolog:<- (choice b))
-    (prolog:<- (first-choice ?x) (choice ?x) !)
+    (<- (choice a))
+    (<- (choice b))
+    (<- (first-choice ?x) (choice ?x) !)
     (is (equal '(a) (solve-all '((first-choice ?x)) '?x))
         "Cut operator behavior")))
