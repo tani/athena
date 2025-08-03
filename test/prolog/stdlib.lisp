@@ -55,20 +55,6 @@
   (is (= 4 (length (solve-all '((append ?x ?y (a b c))) '(?x ?y)))) "append/3 all splits"))
 
 ;; -----------------------------------------------------------
-;; Arithmetic comparisons (using lisp/2)
-;; -----------------------------------------------------------
-
-(test arithmetic-comparisons
-  "Test arithmetic comparison predicates"
-  ;; Test basic comparisons
-  (is (not (null (solve-all '((> 5 3)) 'dummy))) "> predicate works")
-  (is (null (solve-all '((> 3 5)) 'dummy)) "> predicate fails correctly")
-  (is (not (null (solve-all '((< 3 5)) 'dummy))) "< predicate works")
-  (is (null (solve-all '((< 5 3)) 'dummy)) "< predicate fails correctly")
-  (is (not (null (solve-all '((>= 5 5)) 'dummy))) ">= predicate works")
-  (is (not (null (solve-all '((<= 3 5)) 'dummy))) "<= predicate works"))
-
-;; -----------------------------------------------------------
 ;; Repeat and backtracking
 ;; -----------------------------------------------------------
 

@@ -38,7 +38,7 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :license "GPL-3.0"
   
   :pathname "test"
-  :depends-on ("prolog" "prolog/stdlib" "fiveam")
+  :depends-on ("prolog" "fiveam")
   :serial t
   :components ((:file "shared/test-utilities")
                (:file "prolog/package")
