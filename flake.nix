@@ -10,9 +10,10 @@
     in {
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
+          packages = [
+            (pkgs.sbcl.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.sbcl) meta; })
+          ];
           buildInputs = with pkgs; [
-            sbcl
-            sbclPackages.fiveam
             racket-minimal
             gauche
             guile

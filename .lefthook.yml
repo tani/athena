@@ -1,0 +1,193 @@
+# .lefthook.yml — Enhanced Git hooks configuration for Athena Prolog
+# Copyright © 2025 Masaya Taniguchi
+# Released under the GNU General Public License v3.0
+
+# Pre-commit hooks
+pre-commit:
+  parallel: true
+  commands:
+    # Format code before committing
+    format:
+      tags: format style
+      run: make format
+      stage_fixed: true
+      
+    # Run quick tests to catch obvious issues
+    quick-test:
+      tags: test validation
+      run: make test-fast
+      fail_text: "Tests failed. Please fix before committing."
+      
+    # Check for common issues
+    lint:
+      tags: lint quality
+      run: |
+        echo "🔍 Running lint checks..."
+        # Check for debug statements
+        if git diff --cached --name-only | xargs grep -l "console.log\|debugger\|pdb.set_trace\|binding.pry" 2>/dev/null; then
+          echo "❌ Found debug statements in staged files"
+          exit 1
+        fi
+        
+        # Check for TODO/FIXME in new code
+        if git diff --cached | grep "^+" | grep -E "TODO|FIXME|XXX" >/dev/null; then
+          echo "⚠️  Found TODO/FIXME in new code - consider addressing before commit"
+        fi
+        
+        # Check file sizes
+        for file in $(git diff --cached --name-only); do
+          if [ -f "$file" ] && [ $(wc -c < "$file") -gt 100000 ]; then
+            echo "⚠️  Large file detected: $file (>100KB)"
+          fi
+        done
+        
+        echo "✅ Lint checks passed"
+        
+    # Check documentation
+    docs-check:
+      tags: docs
+      run: |
+        echo "📚 Checking documentation..."
+        # Check if API changes need doc updates
+        if git diff --cached --name-only | grep -E "src/.*\.(scm|lisp|sld|rkt)$" >/dev/null; then
+          if ! git diff --cached --name-only | grep -E "docs/.*\.md$" >/dev/null; then
+            echo "ℹ️  Source code changed but no docs updated - consider updating documentation"
+          fi
+        fi
+        echo "✅ Documentation check completed"
+
+# Pre-push hooks
+pre-push:
+  commands:
+    # Run comprehensive tests before pushing
+    full-test:
+      tags: test comprehensive
+      run: |
+        echo "🧪 Running comprehensive tests before push..."
+        if ! make test; then
+          echo "❌ Tests failed. Push aborted."
+          exit 1
+        fi
+        echo "✅ All tests passed"
+        
+    # Security check
+    security-check:
+      tags: security
+      run: |
+        echo "🔒 Running security checks..."
+        # Check for sensitive patterns
+        if git log --oneline HEAD~5..HEAD | grep -iE "password|key|secret|token" >/dev/null; then
+          echo "⚠️  Commit messages contain sensitive words - please review"
+        fi
+        
+        # Check for large files in history
+        if git diff --name-only HEAD~5..HEAD | xargs du -sh 2>/dev/null | grep -E "[0-9]+M" >/dev/null; then
+          echo "⚠️  Large files detected in recent commits"
+        fi
+        
+        echo "✅ Security check completed"
+
+# Commit message hooks
+commit-msg:
+  commands:
+    # Validate commit message format
+    message-format:
+      tags: format
+      run: |
+        commit_regex='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .{1,50}'
+        
+        if ! grep -qE "$commit_regex" "$1"; then
+          echo "❌ Invalid commit message format!"
+          echo ""
+          echo "Format: <type>[optional scope]: <description>"
+          echo ""
+          echo "Types:"
+          echo "  feat:     New feature"
+          echo "  fix:      Bug fix" 
+          echo "  docs:     Documentation changes"
+          echo "  style:    Code style changes (formatting, etc.)"
+          echo "  refactor: Code refactoring"
+          echo "  test:     Adding or modifying tests"
+          echo "  chore:    Maintenance tasks"
+          echo "  perf:     Performance improvements"
+          echo "  ci:       CI/CD changes"
+          echo "  build:    Build system changes"
+          echo ""
+          echo "Examples:"
+          echo "  feat(core): add new unification algorithm"
+          echo "  fix(tests): resolve timing issue in benchmarks"
+          echo "  docs: update API reference"
+          echo ""
+          exit 1
+        fi
+
+# Post-checkout hooks  
+post-checkout:
+  commands:
+    # Setup development environment after checkout
+    setup:
+      tags: setup
+      run: |
+        echo "🔧 Setting up development environment..."
+        
+        # Check if switching to a different branch
+        if [ "$3" = "1" ]; then
+          echo "📦 Branch switched - checking dependencies..."
+          
+          # Check if package files changed
+          if ! git diff --quiet HEAD@{1} HEAD -- package.json requirements.txt *.asd 2>/dev/null; then
+            echo "📦 Dependencies may have changed - consider updating"
+          fi
+          
+          # Check for new build requirements
+          if ! git diff --quiet HEAD@{1} HEAD -- Makefile .devbox.json 2>/dev/null; then
+            echo "🔨 Build configuration changed - consider running 'make setup'"
+          fi
+        fi
+        
+        echo "✅ Setup check completed"
+
+# Post-merge hooks
+post-merge:
+  commands:
+    # Update environment after merge
+    update:
+      tags: update
+      run: |
+        echo "🔄 Post-merge updates..."
+        
+        # Check for dependency updates
+        if ! git diff --quiet HEAD@{1} HEAD -- *.asd package.json 2>/dev/null; then
+          echo "📦 Dependencies updated - consider rebuilding"
+        fi
+        
+        # Check for test updates
+        if ! git diff --quiet HEAD@{1} HEAD -- test/ 2>/dev/null; then
+          echo "🧪 Tests updated - consider running test suite"
+        fi
+        
+        echo "✅ Post-merge updates completed"
+
+# Configure which hooks to skip in CI
+skip_output:
+  - meta
+  - summary
+
+# Global settings
+colors: true
+no_tty: false
+
+# Source file patterns
+source_files: &source_files
+  - "src/**/*.{scm,sld,rkt,sls,lisp}"
+  - "test/**/*.{scm,sld,rkt,sls,lisp}"
+
+# Test file patterns  
+test_files: &test_files
+  - "test/**/*"
+
+# Documentation patterns
+doc_files: &doc_files
+  - "docs/**/*.md"
+  - "README.md"
+  - "*.md"
