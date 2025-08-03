@@ -11,6 +11,7 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            sbcl
             racket-minimal
             gauche
             guile
