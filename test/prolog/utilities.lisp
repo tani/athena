@@ -1,4 +1,4 @@
-;;; test/shared/test-utilities.lisp — Shared test utilities for Common Lisp tests
+;;; utilities.lisp — Test utilities for Athena Prolog Engine
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 ;;;
@@ -6,7 +6,7 @@
 ;;; different Common Lisp test frameworks and provide consistent
 ;;; test patterns for the Athena Prolog engine.
 
-(defpackage :athena/test/utilities
+(defpackage :prolog/test/utilities
   (:use :common-lisp)
   (:export
    ;; Core test utilities
@@ -35,7 +35,7 @@
    :assert-prolog-error
    :assert-unification-failure))
 
-(in-package :athena/test/utilities)
+(in-package :prolog/test/utilities)
 
 ;;; Core Test Infrastructure
 ;;; ========================

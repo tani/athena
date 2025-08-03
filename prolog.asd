@@ -20,7 +20,7 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
                (:file "prolog/stdlib")
                (:file "prolog"))
   
-  :in-order-to ((test-op (test-op "prolog/test"))))
+  :in-order-to ((test-op (test-op "prolog/tests"))))
 
 (defsystem "prolog/stdlib"
   :description "Standard library for Athena Prolog Engine"
@@ -32,25 +32,24 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :serial t
   :components ((:file "prolog/stdlib")))
 
-(defsystem "prolog/test"
+(defsystem "prolog/tests"
   :description "Test suite for Athena Prolog Engine"
   :author "Masaya Taniguchi"
   :license "GPL-3.0"
   
-  :pathname "test"
+  :pathname "test/prolog"
   :depends-on ("prolog" "fiveam")
   :serial t
-  :components ((:file "shared/test-utilities")
-               (:file "prolog/package")
-               (:file "prolog/core")
-               (:file "prolog/primitive")
-               (:file "prolog/stdlib")
-               (:file "prolog/all"))
+  :components ((:file "utilities")
+               (:file "test")
+               (:file "core")
+               (:file "primitive")
+               (:file "stdlib"))
   
   :perform (test-op (operation system)
             (declare (ignore operation system))
-            (symbol-call :fiveam :run! :prolog-tests)))
+            (symbol-call :prolog/test :run-all-tests)))
 
 ;; Allow testing with: (asdf:test-system :prolog)
 (defmethod perform ((operation test-op) (system (eql (find-system "prolog"))))
-  (asdf:test-system "prolog/test"))
+  (asdf:test-system "prolog/tests"))

@@ -1,12 +1,12 @@
-;;; test/prolog/stdlib.lisp — Standard library tests using FiveAM
+;;; stdlib.lisp — Standard library tests
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog-test)
+(in-package :prolog/test)
 
 ;; Define test suite for standard library
-(def-suite :prolog/test/stdlib :in :prolog-tests)
-(in-suite :prolog/test/stdlib)
+(def-suite *prolog-stdlib-tests* :in *prolog-test-suite*)
+(in-suite *prolog-stdlib-tests*)
 
 ;; -----------------------------------------------------------
 ;; Control flow predicates

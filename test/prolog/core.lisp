@@ -1,12 +1,12 @@
-;;; test/prolog/core.lisp — Core Prolog engine tests using FiveAM
+;;; core.lisp — Core Prolog engine tests
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog-test)
+(in-package :prolog/test)
 
 ;; Define test suite for core engine
-(def-suite :prolog/test/core :in :prolog-tests)
-(in-suite :prolog/test/core)
+(def-suite *prolog-core-tests* :in *prolog-test-suite*)
+(in-suite *prolog-core-tests*)
 
 ;; -----------------------------------------------------------
 ;; Low-level helpers

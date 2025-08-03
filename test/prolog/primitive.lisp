@@ -1,12 +1,12 @@
-;;; test/prolog/primitive.lisp — Primitive predicate tests using FiveAM
+;;; primitive.lisp — Primitive predicate tests
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog-test)
+(in-package :prolog/test)
 
 ;; Define test suite for primitive predicates
-(def-suite :prolog/test/primitive :in :prolog-tests)
-(in-suite :prolog/test/primitive)
+(def-suite *prolog-primitive-tests* :in *prolog-test-suite*)
+(in-suite *prolog-primitive-tests*)
 
 ;; -----------------------------------------------------------
 ;; Built-in predicates
