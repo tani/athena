@@ -1,6 +1,8 @@
 (defpackage :prolog/stdlib
   (:use :common-lisp :prolog/core :prolog/primitive))
 
+(in-package :prolog/stdlib)
+
 (<- true)
   
 ;; Control flow clauses

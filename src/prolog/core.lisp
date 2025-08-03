@@ -31,6 +31,7 @@
    :add-clause!
    :get-clauses
    :set-clauses!
+   :remove-clauses-with-arity!
 
    ;; Prover internals (needed by builtins)
    :prove
@@ -103,7 +104,7 @@
               (char= (char symbol-string 0) #\?)))))
 
 (defun named-variable-p (term)
-  (and (variable-p term) (not (equal term '?))))
+  (and (variable-p term) (not (and (symbolp term) (symbol= term '?)))))
 
 (defun atom-p (term)
   (not (consp term)))
@@ -141,7 +142,7 @@
 
 (defun replace-anonymous-variables (expression)
   (cond
-    ((symbol= expression '?) (gensym "?"))
+    ((and (symbolp expression) (symbol= expression '?)) (gensym "?"))
     ((atom-p expression) expression)
     (t (cons (replace-anonymous-variables (car expression))
              (replace-anonymous-variables (cdr expression))))))
@@ -149,7 +150,7 @@
 ;;; Occurs check for unification
 (defun occurs-check-p (variable expression bindings)
   (cond
-    ((symbol= variable expression) t)
+    ((and (symbolp expression) (symbol= variable expression)) t)
     ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
      (let ((value (lookup-variable expression bindings)))
        (occurs-check-p variable value bindings)))
@@ -191,7 +192,7 @@
     (if entry (cdr entry) '())))
 
 (defun set-clauses! (predicate-symbol clauses)
-  (let* ((cleaned-db (remove predicate-symbol *current-claude-database* :test #'symbol= :key #'car))
+  (let* ((cleaned-db (remove predicate-symbol *current-clause-database* :test #'symbol= :key #'car))
          (new-db (acons predicate-symbol clauses cleaned-db)))
     (setf *current-clause-database* new-db)))
 
