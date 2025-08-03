@@ -36,6 +36,8 @@
    :prove
    :prove-all
    :insert-choice-point
+   :call-with-current-choice-point
+   :combine
    :*current-bindings*
    :*current-remaining-goals*
    
