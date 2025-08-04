@@ -6,7 +6,7 @@
   (only (chezscheme) include interaction-environment))
 
 (test-begin "prolog")
-(include "test/helpers.scm")
-(include "test/core.scm")
-(include "test/lib.scm")
+(include "scheme/test/helpers.scm")
+(include "scheme/test/core.scm")
+(include "scheme/test/lib.scm")
 (test-end "prolog")
