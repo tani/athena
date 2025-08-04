@@ -30,7 +30,7 @@ jobs:
             ${{ runner.os }}-gambit-
       - name: Build static files
         if: steps.gambit-cache.outputs.cache-hit != 'true'
-        run: sh ./script/build.sh
+        run: bash ./script/build.sh
       - name: Apply patch if cache hit
         if: steps.gambit-cache.outputs.cache-hit == 'true'
         run: |
