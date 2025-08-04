@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(defpackage :prolog-test/all
+(defpackage :prolog/test/all
   (:use :cl)
   (:import-from :prolog/all
                 #:<-
@@ -29,7 +29,7 @@
                 #:success-bindings
                 #:success-continuation
                 #:object->string)
-  (:import-from :prolog-test/utilities
+  (:import-from :prolog/test/utilities
                 #:solve-first
                 #:solve-all
                 #:solve-count)
@@ -48,7 +48,7 @@
   (:export #:run-all-tests
            #:*prolog-test-suite*))
 
-(in-package :prolog-test/all)
+(in-package :prolog/test/all)
 
 ;;; Test Suite Definition
 ;;; =====================
@@ -63,7 +63,7 @@
   "Run all Prolog tests and return success status"
   (format t "~%Running Athena Prolog Engine Test Suite~%")
   (format t "=======================================~%")
-  
+
   (let ((results (run! '*prolog-test-suite*)))
     (if results
         (progn

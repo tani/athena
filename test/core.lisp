@@ -125,7 +125,7 @@
       (is (= 2 (substitute-bindings (success-bindings next) '?y)) "next ?y")))
   
   ;; call-with-current-choice-point
-  (is (eq 'ok (call-with-current-choice-point (lambda (tag) 'ok))) "call-with-current-choice-point")
+  (is (eq 'ok (call-with-current-choice-point (lambda (tag) (declare (ignore tag)) 'ok))) "call-with-current-choice-point")
   
   ;; solve function
   (let ((result nil))

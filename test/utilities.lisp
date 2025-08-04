@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(defpackage :prolog-test/utilities
+(defpackage :prolog/test/utilities
   (:use :common-lisp)
   (:import-from :prolog/all
                 #:solve
@@ -13,7 +13,7 @@
    :solve-all
    :solve-count))
 
-(in-package :prolog-test/utilities)
+(in-package :prolog/test/utilities)
 
 ;;; Simple Prolog Query Helpers
 ;;; ============================

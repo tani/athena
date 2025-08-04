@@ -15,15 +15,16 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :source-control (:git "https://github.com/tani/athena.git")
   :pathname "src"
   :depends-on ("prolog/all")
-  :in-order-to ((test-op (test-op "prolog-test"))))
+  :in-order-to ((test-op (test-op "prolog/test"))))
 
-(defsystem "prolog-test"
-  :class :package-inferred-system
+(defsystem "prolog/test"
   :description "Test suite for Athena Prolog Engine"
   :author "Masaya Taniguchi"
   :license "GPL-3.0"
   :pathname "test"
-  :depends-on ("prolog" "prolog-test/all" "fiveam")
+  :depends-on ("prolog" "fiveam")
+  :components ((:file "utilities")
+               (:file "all" :depends-on ("utilities")))
   :perform (test-op (operation system)
             (declare (ignore operation system))
-            (symbol-call :prolog-test/all :run-all-tests)))
+            (symbol-call :prolog/test/all :run-all-tests)))
