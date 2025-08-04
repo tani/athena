@@ -3,6 +3,7 @@
 ;;; Released under the GNU General Public License v3.0
 
 (defsystem "prolog"
+  :class :package-inferred-system
   :description "Athena - A comprehensive Prolog engine implemented in Common Lisp"
   :long-description "Athena provides a complete Prolog implementation with unification,
 backtracking, cut operator, built-in predicates, and seamless Lisp integration."
@@ -12,34 +13,17 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :homepage "https://github.com/tani/athena"
   :bug-tracker "https://github.com/tani/athena/issues"
   :source-control (:git "https://github.com/tani/athena.git")
-  
   :pathname "src"
-  :serial t
-  :components ((:file "prolog/core")
-               (:file "prolog/primitive")
-               (:file "prolog/stdlib")
-               (:file "prolog"))
-  
-  :in-order-to ((test-op (test-op "prolog/tests"))))
+  :depends-on ("prolog/all")
+  :in-order-to ((test-op (test-op "prolog-test"))))
 
-(defsystem "prolog/tests"
+(defsystem "prolog-test"
+  :class :package-inferred-system
   :description "Test suite for Athena Prolog Engine"
   :author "Masaya Taniguchi"
   :license "GPL-3.0"
-  
-  :pathname "test/prolog"
-  :depends-on ("prolog" "fiveam")
-  :serial t
-  :components ((:file "utilities")
-               (:file "test")
-               (:file "core")
-               (:file "primitive")
-               (:file "stdlib"))
-  
+  :pathname "test"
+  :depends-on ("prolog" "prolog-test/all" "fiveam")
   :perform (test-op (operation system)
             (declare (ignore operation system))
-            (symbol-call :prolog/test :run-all-tests)))
-
-;; Allow testing with: (asdf:test-system :prolog)
-(defmethod perform ((operation test-op) (system (eql (find-system "prolog"))))
-  (asdf:test-system "prolog/tests"))
+            (symbol-call :prolog-test/all :run-all-tests)))

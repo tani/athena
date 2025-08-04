@@ -2,8 +2,6 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test)
-
 ;; Define test suite for core engine
 (def-suite *prolog-core-tests* :in *prolog-test-suite*)
 (in-suite *prolog-core-tests*)
@@ -136,31 +134,17 @@
            (lambda () nil))
     (is (equal '((?z . 5)) result) "solve function")))
 
-;; Integration and compatibility tests moved from fiveam-runner.lisp
-
-(test integration-with-asdf
-  "Test that ASDF integration works correctly"
-  (is (find-package :prolog) "Main prolog package should exist")
-  (is (find-package :prolog/core) "Core package should exist")
-  (is (find-package :prolog/primitive) "Primitive package should exist")
-  (is (find-package :prolog/stdlib) "Stdlib package should exist")
-  
-  ;; Test that we can use the public API
-  (is (fboundp 'solve) "solve function should be accessible")
-  (is (fboundp '<-) "<- macro should be accessible")
-  (is (fboundp 'unify) "unify function should be accessible"))
-
 (test backwards-compatibility
   "Test that FiveAM tests are compatible with existing functionality"
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; Use the same test patterns as the original framework
     (<- (test-compat hello))
     (<- (test-rule ?x) (test-compat ?x))
-    
+
     ;; Test using solve-first helper (from existing framework)
     (is (eq 'hello (solve-first '((test-rule ?y)) '?y))
         "solve-first helper should work with FiveAM")
-    
+
     ;; Test using solve-all helper
     (is (equal '(hello) (solve-all '((test-rule ?y)) '?y))
         "solve-all helper should work with FiveAM")))
@@ -171,11 +155,11 @@
     ;; The famous countdown test that was in the original suite
     (<- (countdown 0))
     (<- (countdown ?n)
-               (number ?n)
-               (lisp t (> ?n 0))
-               !
-               (is ?n1 (- ?n 1))
-               (countdown ?n1))
+        (number ?n)
+        (lisp t (> ?n 0))
+        !
+        (is ?n1 (- ?n 1))
+        (countdown ?n1))
     
     ;; Test the same depth as the original test
     (is (not (null (solve-all '((countdown 50)) 'dummy)))

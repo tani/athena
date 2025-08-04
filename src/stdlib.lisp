@@ -3,7 +3,6 @@
 
 (in-package :prolog/stdlib)
 
-  
 ;; Control flow clauses
 (<- (and) true)
 (<- (and ?goal) (call ?goal))

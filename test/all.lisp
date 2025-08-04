@@ -2,9 +2,9 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(defpackage :prolog/test
+(defpackage :prolog-test/all
   (:use :cl)
-  (:import-from :prolog
+  (:import-from :prolog/all
                 #:<-
                 #:<--
                 #:?-
@@ -18,11 +18,7 @@
                 #:remove-clauses-with-arity!
                 #:prove-all
                 #:*current-clause-database*
-                #:call
-                #:true
-                #:fail
-                #:ground-p)
-  (:import-from :prolog/core
+                #:ground-p
                 #:named-variable-p
                 #:atom-p
                 #:variables-in
@@ -31,23 +27,9 @@
                 #:failure-p
                 #:success-p
                 #:success-bindings
-                #:success-continuation)
-  (:import-from :prolog/primitive
-                #:object->string
-                #:=
-                #:number
-                #:>
-                #:member
-                #:append
-                #:maplist
-                #:findall
-                #:bagof)
-  (:import-from :prolog/stdlib
-                #:not
-                #:and
-                #:or
-                #:if)
-  (:import-from :prolog/test/utilities
+                #:success-continuation
+                #:object->string)
+  (:import-from :prolog-test/utilities
                 #:solve-first
                 #:solve-all
                 #:solve-count)
@@ -66,7 +48,7 @@
   (:export #:run-all-tests
            #:*prolog-test-suite*))
 
-(in-package :prolog/test)
+(in-package :prolog-test/all)
 
 ;;; Test Suite Definition
 ;;; =====================
@@ -109,3 +91,7 @@
              *load-pathname*
              (not (find-package :asdf)))
     (run-all-tests)))
+
+(load #p"./test/core.lisp")
+(load #p"./test/primitive.lisp")
+(load #p"./test/stdlib.lisp")

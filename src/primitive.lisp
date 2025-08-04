@@ -21,22 +21,7 @@
    :*current-dynamic-parameters*
 
    ;; Helper functions for tests
-   :define-predicate
-   
-   ;; Built-in predicates used by stdlib
-   :call :true :! :fail
-   
-   ;; Arithmetic and evaluation predicates
-   :is :lisp
-   
-   ;; Unification predicates
-   := :==
-   
-   ;; Type checking predicates
-   :atom :atomic :var :ground :number :string
-   
-   ;; Meta-predicates for solution collection
-   :findall :bagof :setof :sort))
+   :define-predicate))
 
 (in-package :prolog/primitive)
 
