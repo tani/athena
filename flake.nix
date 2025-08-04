@@ -17,6 +17,7 @@
             (pkgs.ecl.withPackages(ps: with ps; [ fiveam ]) // { inherit (pkgs.ecl) meta; })
           ];
           buildInputs = with pkgs; [
+            rlwrap
             racket-minimal
             gauche
             guile

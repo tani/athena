@@ -93,25 +93,15 @@
 (defparameter *current-bindings* '())
 (defparameter *current-remaining-goals* '())
 
-;;; Utility functions
-;;(defun call-with-current-choice-point (proc)
-;;  (let ((tag (gensym "CHOICE-POINT-")))
-;;    (handler-case
-;;      (funcall proc tag)
-;;      (cut-exception (e)
-;;        (if (eq tag (cut-exception-tag e))
-;;          (cut-exception-value e)
-;;          (error e))))))
-
+; Utility functions
 (defun call-with-current-choice-point (proc)
   (let ((tag (gensym "CHOICE-POINT-")))
-    (handler-bind
-      ((cut-exception
-          (lambda (e)
-            (if (eq tag (cut-exception-tag e))
-              (return-from call-with-current-choice-point (cut-exception-value e))
-              (signal e))))) ; 元の例外を再signal (Schemeのraise相当)
-      (funcall proc tag))))
+    (handler-case
+      (funcall proc tag)
+      (cut-exception (e)
+        (if (eq tag (cut-exception-tag e))
+          (cut-exception-value e)
+          (error e))))))
 
 ;;; Variables and unification helpers
 (defun variable-p (term)

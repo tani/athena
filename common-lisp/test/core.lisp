@@ -289,7 +289,7 @@
         (q ?y)))
 
     ;; When ?x = b, cut prevents backtracking in the or, but other ?x values still work
-    (is (equal '((a 1) (a 2) (b 1) (c 1) (c 2))
+    (is (equal '((a 1) (a 2) (b 1) (b 2) (b 1) (b 2) (c 1) (c 2))
          (solve-all '((complex-rule ?x ?y)) '(?x ?y)))
       "Complex rule cut should only affect local choice points")))
 

@@ -7,7 +7,6 @@
 (<- and true)
 (<- (and ?goal . ?goals) (call ?goal) (call (and . ?goals)))
 
-(<- or fail)
 (<- (or ?goal . ?goals) (call ?goal))
 (<- (or ?goal . ?goals) (call (or . ?goals)))
 
