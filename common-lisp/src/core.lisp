@@ -391,7 +391,7 @@
               (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))))
 
 (defun solve (goals on-success on-failure)
-  (labels ((initial-continuation () 
+  (labels ((initial-continuation ()
              (call-with-current-choice-point
                (lambda (choice-point)
                  (let* ((prepared-goals (replace-anonymous-variables goals))
