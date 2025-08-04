@@ -39,7 +39,7 @@ test-ecl:
 	ecl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
 
 test-clisp:
-	clisp -x "(require :asdf)" -x "(push #P\"./common-lisp/\" asdf:*central-registry*)" -x "(asdf:test-system :prolog)" -x "(quit)"
+	clisp -x '(require "asdf")' -x "(push #P\"./common-lisp/\" asdf:*central-registry*)" -x "(asdf:test-system :prolog)" -x "(quit)"
 
 test-abcl:
 	abcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
