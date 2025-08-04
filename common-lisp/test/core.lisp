@@ -246,10 +246,65 @@
    Validates that the cut operator correctly prevents backtracking
    to alternative solutions, implementing deterministic behavior."
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
-    ;; Only clear user-defined facts, keep built-ins
+    ;; Basic cut behavior
     (<- (choice a))
     (<- (choice b))
     (<- (first-choice ?x) (choice ?x) !)
 
     (is (equal '(a) (solve-all '((first-choice ?x)) '?x))
       "Should return only first choice 'a' due to cut preventing backtracking")))
+
+(test sophisticated-cut-behavior
+  "Test sophisticated cut behavior in complex control structures.
+   Validates that cuts work correctly within nested meta-predicates,
+   matching the advanced behavior of the Scheme implementation."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; Setup test predicates for complex cut scenarios
+    (<- (p a))
+    (<- (p b))
+    (<- (p c))
+    (<- (q 1))
+    (<- (q 2))
+
+    ;; Test cut inside 'or' - should cut the or but not outer choice points
+    (<- (test-or-cut ?x) (or (and (p ?x) (== ?x b) !) (p ?x)))
+
+    (is (equal '(b a b c) (solve-all '((test-or-cut ?x)) '?x))
+      "Cut inside 'or' should only affect the or's choice points")
+
+    ;; Test cut in 'and' with 'or' - more complex interaction
+    (<- (test-and-or-cut ?x) (and (p ?x) (or (and (== ?x c) !) (fail))))
+
+    (is (equal '(c) (solve-all '((test-and-or-cut ?x)) '?x))
+      "Cut in nested and/or should work precisely")
+
+    ;; Test cut in 'call' with 'or' - meta-predicate cut scoping
+    (is (equal '(c) (solve-all '((and (p ?x) (call (or (and (== ?x c) !) (fail))))) '?x))
+      "Cut inside call should only affect the called goal's choice points")
+
+    ;; Test complex rule with cut and backtracking
+    (<- (complex-rule ?x ?y)
+      (p ?x)
+      (or (and (q ?y) (== ?x b) !)
+        (q ?y)))
+
+    ;; When ?x = b, cut prevents backtracking in the or, but other ?x values still work
+    (is (equal '((a 1) (a 2) (b 1) (c 1) (c 2))
+         (solve-all '((complex-rule ?x ?y)) '(?x ?y)))
+      "Complex rule cut should only affect local choice points")))
+
+(test cut-scope-isolation
+  "Test that cuts properly isolate their scope and don't affect outer choice points."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (<- (outer a))
+    (<- (outer b))
+    (<- (inner 1))
+    (<- (inner 2))
+
+    ;; Cut inside inner goal should not affect outer choice points
+    (<- (test-isolation ?x ?y)
+      (outer ?x)
+      (call (and (inner ?y) (== ?y 1) !)))
+
+    (is (equal '((a 1) (b 1)) (solve-all '((test-isolation ?x ?y)) '(?x ?y)))
+      "Cut should not affect choice points outside its scope")))

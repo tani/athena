@@ -64,13 +64,14 @@
       (prove-all *current-remaining-goals* *current-bindings*)
       (make-failure))))
 
-;; Cut operation with proper exception handling
+;; Enhanced cut operation with continuation value handling
 (define-predicate (! choice-point)
-  (error (make-condition 'cut-exception
-          :tag
-          choice-point
-          :value
-          (prove-all *current-remaining-goals* *current-bindings*))))
+  (let ((continuation-result (prove-all *current-remaining-goals* *current-bindings*)))
+    (error (make-condition 'cut-exception
+            :tag
+            choice-point
+            :value
+            continuation-result))))
 
 ;; Meta-call predicate with variadic support
 (define-predicate (call pred-or-goal &rest args)

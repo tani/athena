@@ -4,10 +4,10 @@
 (in-package :prolog/stdlib)
 
 ;; Control flow clauses
-(<- (and) true)
-(<- (and ?goal) (call ?goal))
+(<- and true)
 (<- (and ?goal . ?goals) (call ?goal) (call (and . ?goals)))
 
+(<- or fail)
 (<- (or ?goal . ?goals) (call ?goal))
 (<- (or ?goal . ?goals) (call (or . ?goals)))
 
