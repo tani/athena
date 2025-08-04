@@ -20,7 +20,7 @@ test-guile:
 	guile --fresh-auto-compile -x .sld -L scheme/src scheme/test/test.7.scm
 
 test-chibi:
-	chibi-scheme -I scheme/src -I scheme/test scheme/test/test.7.scm
+	chibi-scheme -I scheme/src scheme/test/test.7.scm
 
 test-sagittarius:
 	sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=scheme/src scheme/test/test.7.scm

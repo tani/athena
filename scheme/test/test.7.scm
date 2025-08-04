@@ -7,9 +7,9 @@
 (test-begin "prolog")
 (cond-expand
   (chibi
-    (include "test/helpers.scm")
-    (include "test/core.scm")
-    (include "test/lib.scm"))
+    (include "scheme/test/helpers.scm")
+    (include "scheme/test/core.scm")
+    (include "scheme/test/lib.scm"))
   (else
     (include "helpers.scm")
     (include "core.scm")
