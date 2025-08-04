@@ -37,15 +37,6 @@
 
   (define current-dynamic-parameters (make-parameter '()))
 
-  (define (get-dynamic-parameter variable-symbol)
-    (let ((entry (assoc variable-symbol (current-dynamic-parameters))))
-      (if entry
-        (cdr entry)
-        (let* ((new-parameter (make-parameter #f))
-               (new-dynamic-parameters (alist-cons variable-symbol new-parameter (current-dynamic-parameters))))
-          (current-dynamic-parameters new-dynamic-parameters)
-          new-parameter))))
-
   ;; Basic predicates
 
   (define-predicate (= term1 term2)
@@ -127,16 +118,17 @@
   ;; Dynamic parameter predicates
 
   (define-predicate (dynamic-put variable-symbol value-expression)
-    (let* ((parameter (get-dynamic-parameter variable-symbol))
-           (substituted-expression (substitute-bindings (current-bindings) value-expression))
+    (let* ((substituted-expression (substitute-bindings (current-bindings) value-expression))
            (evaluated-value (eval substituted-expression (current-lisp-environment))))
-      (parameter evaluated-value)
-      (prove-all (current-remaining-goals) (current-bindings))))
+      (parameterize ((current-dynamic-parameters (alist-cons variable-symbol evaluated-value (current-dynamic-parameters))))
+        (prove-all (current-remaining-goals) (current-bindings)))))
 
   (define-predicate (dynamic-get variable-symbol prolog-variable)
-    (let* ((parameter (get-dynamic-parameter variable-symbol))
-           (new-bindings (unify prolog-variable (parameter) (current-bindings))))
-      (prove-all (current-remaining-goals) new-bindings)))
+    (let ((parameter (assoc variable-symbol (current-dynamic-parameters))))
+      (if parameter
+        (let ((new-bindings (unify prolog-variable (cdr parameter) (current-bindings))))
+          (prove-all (current-remaining-goals) new-bindings))
+        (make-failure))))
 
   ;; Meta-predicates for solution collection
 
