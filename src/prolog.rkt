@@ -51,4 +51,5 @@
   (namespace-anchor->namespace anchor))
 
 (include "prolog-core.scm")
-(include "prolog-lib.scm")
+(include "prolog-primitive.scm")
+(include "prolog-stdlib.scm")

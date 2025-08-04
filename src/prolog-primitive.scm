@@ -1,17 +1,18 @@
-;; prolog-lib.scm — Prolog standard library and built-in predicates
+;; prolog-primitive.scm — Prolog built-in predicates
 ;; Copyright © 2025 Masaya Taniguchi
 ;; Released under the GNU General Public License v3.0
 ;;
-;; This file contains the standard Prolog predicates and library functions:
+;; This file contains the core built-in predicates for the Prolog engine:
 ;; - Basic unification and comparison predicates
-;; - Arithmetic and type checking predicates
-;; - Meta-predicates (bagof, findall, sort)
-;; - Control flow predicates (and, or, not, if)
-;; - List manipulation predicates (member, append, maplist)
+;; - Type checking predicates
+;; - Evaluation predicates
+;; - Meta-predicates (call, !, bagof, findall, sort, setof)
+;; - Dynamic parameter predicates
 
 (begin
   (define current-solution-accumulator (make-parameter '()))
   (define current-lisp-environment (make-parameter (interaction-environment)))
+  (define current-dynamic-parameters (make-parameter '()))
 
   (define (object->string object)
     (let ((p (open-output-string)))
@@ -34,8 +35,6 @@
                 (cdr-ground? (ground? (cdr resolved-term))))
             (and car-ground? cdr-ground?)))
         (else #t))))
-
-  (define current-dynamic-parameters (make-parameter '()))
 
   ;; Basic predicates
 
@@ -203,59 +202,6 @@
 
   (define-predicate (fail)
     (make-failure))
-
-  ;; Standard clause database initialization and basic predicates
-
-  (<-- true)
-
-  (<- and true)
-  (<- (and ?g . ?gs) (call ?g) (call (and . ?gs)))
-
-  (<- or fail)
-  (<- (or ?g . ?gs) (call ?g))
-  (<- (or ?g . ?gs) (call (or . ?gs)))
-
-  (<- (not ?goal) (call ?goal) ! (fail))
-  (<- (not ?goal))
-
-  (<- (if ?cond ?then ?else) (call ?cond) ! (call ?then))
-  (<- (if ?cond ?then ?else) (call ?else))
-  (<- (if ?cond ?then) (call ?cond) (call ?then))
-
-  (<- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
-  (<- (lisp ?expression) (--lisp-eval-internal ? ?expression))
-
-  (<- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
-
-  (<- (repeat))
-  (<- (repeat) (repeat))
-
-  (<- (member ?item (?item . ?)))
-  (<- (member ?item (? . ?rest)) (member ?item ?rest))
-
-  (<- (append () ?list ?list))
-  (<- (append (?head . ?tail) ?list (?head . ?result))
-    (append ?tail ?list ?result))
-
-  (<- (--all-null ()))
-  (<- (--all-null (() . ?rest)) (--all-null ?rest))
-
-  (<- (--get-heads () ()))
-  (<- (--get-heads ((?h . ?t) . ?rest-lists) (?h . ?rest-heads))
-    (--get-heads ?rest-lists ?rest-heads))
-
-  (<- (--get-tails () ()))
-  (<- (--get-tails ((?h . ?t) . ?rest-lists) (?t . ?rest-tails))
-    (--get-tails ?rest-lists ?rest-tails))
-
-  (<- (maplist ?pred . ?lists)
-    (if (--all-null ?lists)
-      true
-      (and
-        (--get-heads ?lists ?heads)
-        (--get-tails ?lists ?tails)
-        (call (?pred . ?heads))
-        (call (maplist ?pred . ?tails)))))
 
   (define-predicate (setof template goal result-set)
     (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) (current-bindings))))
