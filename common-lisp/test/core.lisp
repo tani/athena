@@ -15,7 +15,7 @@
    Validates correct identification of Prolog variables (symbols starting with ?).
    This is fundamental for unification and term processing."
   (is-true (variable-p '?x) "?x should be recognized as a Prolog variable")
-  (is-true (variable-p '?) "? should be recognized as an anonymous variable")  
+  (is-true (variable-p '?) "? should be recognized as an anonymous variable")
   (is-false (variable-p 'foo) "foo should not be recognized as a variable (atom)")
   (is-false (variable-p '(?x)) "(?x) should not be recognized as a variable (list)"))
 
@@ -38,19 +38,20 @@
 (test binding-operations
   "Test basic binding operations"
   (is (equal '((?x . 1)) (cons (cons '?x 1) '())) "cons add binding empty")
-  (is (equal '((?y . 2) (?x . 1)) 
-             (cons (cons '?y 2) '((?x . 1)))) "cons add binding non-empty"))
+  (is (equal '((?y . 2) (?x . 1))
+       (cons (cons '?y 2) '((?x . 1))))
+    "cons add binding non-empty"))
 
 (test substitute-bindings-tests
   "Test variable substitution"
   (let* ((bindings (cons (cons '?x 'foo) (cons (cons '?y '(bar)) '()))))
     (is (eq 'foo (substitute-bindings bindings '?x)) "substitute-bindings simple")
     (is (equal '(g foo (bar)) (substitute-bindings bindings '(g ?x ?y))) "substitute-bindings with list"))
-  
+
   ;; Test cycles
   (let* ((cycle-bindings (cons (cons '?x '?y) (cons (cons '?y '?x) '()))))
     (is (eq '?x (substitute-bindings cycle-bindings '?x)) "substitute-bindings simple cycle"))
-  
+
   ;; Test nested cycles
   (let* ((nested-bindings (cons (cons '?x '(a ?y)) (cons (cons '?y '(b ?x)) '()))))
     (is (equal '(a (b ?x)) (substitute-bindings nested-bindings '?x)) "substitute-bindings nested cycle")))
@@ -82,7 +83,7 @@
   (is (equal '((?x . a)) (unify '?x 'a '())) "unify var-atom")
   (is (equal '((?x . (a b))) (unify '?x '(a b) '())) "unify var-list")
   (is (equal '((?x . ?y)) (unify '?x '?y '())) "unify var-var link")
-  
+
   ;; Test variable chains
   (let ((bindings (unify '?x '?y (unify '?y 'val '()))))
     (is (eq 'val (substitute-bindings bindings '?x)) "unify var-var with one bound")))
@@ -106,15 +107,15 @@
   "Test exported API functions"
   ;; object->string
   (is (equal "(1 2)" (object->string '(1 2))) "object->string pair")
-  
-  ;; Test clause operations  
+
+  ;; Test clause operations
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
     (setf *current-clause-database* '())
     (<- (r 1))
     (<- (r 1 2))
     (remove-clauses-with-arity! 'r 1)
     (is (= 1 (length (get-clauses 'r))) "arity removal"))
-  
+
   ;; Test prove-all and success structures
   (let ((res (prove-all '((= ?x 1) (member ?y (1 2))) '())))
     (is (success-p res) "prove-all success")
@@ -123,15 +124,15 @@
     (let ((next (funcall (success-continuation res))))
       (is (success-p next) "success-continuation")
       (is (= 2 (substitute-bindings (success-bindings next) '?y)) "next ?y")))
-  
+
   ;; call-with-current-choice-point
   (is (eq 'ok (call-with-current-choice-point (lambda (tag) (declare (ignore tag)) 'ok))) "call-with-current-choice-point")
-  
+
   ;; solve function
   (let ((result nil))
     (solve '((= ?z 5))
-           (lambda (solution) (setf result solution))
-           (lambda () nil))
+      (lambda (solution) (setf result solution))
+      (lambda () nil))
     (is (equal '((?z . 5)) result) "solve function")))
 
 (test backwards-compatibility
@@ -143,11 +144,11 @@
 
     ;; Test using solve-first helper (from existing framework)
     (is (eq 'hello (solve-first '((test-rule ?y)) '?y))
-        "solve-first helper should work with FiveAM")
+      "solve-first helper should work with FiveAM")
 
     ;; Test using solve-all helper
     (is (equal '(hello) (solve-all '((test-rule ?y)) '?y))
-        "solve-all helper should work with FiveAM")))
+      "solve-all helper should work with FiveAM")))
 
 (test performance-comparison
   "Test performance aspects that were important in original tests"
@@ -155,15 +156,15 @@
     ;; The famous countdown test that was in the original suite
     (<- (countdown 0))
     (<- (countdown ?n)
-        (number ?n)
-        (lisp t (> ?n 0))
-        !
-        (is ?n1 (- ?n 1))
-        (countdown ?n1))
-    
+      (number ?n)
+      (lisp t (> ?n 0))
+      !
+      (is ?n1 (- ?n 1))
+      (countdown ?n1))
+
     ;; Test the same depth as the original test
     (is (not (null (solve-all '((countdown 50)) 'dummy)))
-        "deep recursion (countdown from 50) - same as original test")))
+      "deep recursion (countdown from 50) - same as original test")))
 
 (test basic-fact-querying
   "Test basic fact storage and retrieval in the clause database.
@@ -174,11 +175,11 @@
     (<- (parent john mary))
     (<- (parent mary susan))
     (<- (parent tom john))
-    
+
     (is (eq 'mary (solve-first '((parent john ?child)) '?child))
-        "Should retrieve Mary as John's child")
+      "Should retrieve Mary as John's child")
     (is (eq 'susan (solve-first '((parent mary ?child)) '?child))
-        "Should retrieve Susan as Mary's child")))
+      "Should retrieve Susan as Mary's child")))
 
 (test rule-inference-resolution
   "Test rule-based inference and goal resolution.
@@ -189,9 +190,9 @@
     (<- (parent john mary))
     (<- (parent mary susan))
     (<- (grandparent ?x ?z) (parent ?x ?y) (parent ?y ?z))
-    
+
     (is (eq 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild))
-        "Should infer Susan as John's grandchild through rule resolution")))
+      "Should infer Susan as John's grandchild through rule resolution")))
 
 (test recursive-rule-evaluation
   "Test recursive rule definitions and their evaluation.
@@ -204,9 +205,9 @@
     (<- (parent tom john))
     (<- (ancestor ?x ?y) (parent ?x ?y))
     (<- (ancestor ?x ?z) (parent ?x ?y) (ancestor ?y ?z))
-    
+
     (is (not (null (solve-first '((ancestor tom susan)) 'dummy)))
-        "Should find Tom as ancestor of Susan through recursive resolution")))
+      "Should find Tom as ancestor of Susan through recursive resolution")))
 
 (test list-operation-integration
   "Test integration with built-in list operations.
@@ -215,7 +216,7 @@
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; Don't clear database - we need built-in predicates
     (is (eq 'a (solve-first '((member ?x (a b c))) '?x))
-        "Should find first member 'a' in list (a b c)")))
+      "Should find first member 'a' in list (a b c)")))
 
 (test arithmetic-evaluation-integration
   "Test arithmetic expression evaluation within queries.
@@ -224,7 +225,7 @@
   (let ((*current-clause-database* (copy-list *current-clause-database*)))
     ;; Don't clear database - we need built-in predicates
     (is (eq 7 (solve-first '((is ?result (+ 3 4))) '?result))
-        "Should evaluate (+ 3 4) to 7 and bind to ?result")))
+      "Should evaluate (+ 3 4) to 7 and bind to ?result")))
 
 (test meta-predicate-findall
   "Test meta-predicate findall/3 for solution collection.
@@ -235,10 +236,10 @@
     (<- (color red))
     (<- (color green))
     (<- (color blue))
-    
-    (is (equal '(red green blue) 
-               (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
-        "Should collect all colors into list [red, green, blue]")))
+
+    (is (equal '(red green blue)
+         (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
+      "Should collect all colors into list [red, green, blue]")))
 
 (test cut-operator-behavior
   "Test cut operator (!) for choice point elimination.
@@ -249,6 +250,6 @@
     (<- (choice a))
     (<- (choice b))
     (<- (first-choice ?x) (choice ?x) !)
-    
+
     (is (equal '(a) (solve-all '((first-choice ?x)) '?x))
-        "Should return only first choice 'a' due to cut preventing backtracking")))
+      "Should return only first choice 'a' due to cut preventing backtracking")))

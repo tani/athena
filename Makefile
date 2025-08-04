@@ -8,46 +8,46 @@ test-all: test-racket test-gauche test-guile test-chicken test-chibi test-sagitt
 
 # Test specific implementations
 test-racket:
-	racket test/test.rkt
+	racket scheme/test/test.rkt
 
 test-gauche:
-	gosh -r 7 -I src test/test.7.scm
+	gosh -r 7 -I scheme/src scheme/test/test.7.scm
 
 test-chicken:
-	csi -require-extension r7rs -include-path src -eval '(include "src/prolog.sld")' -script test/test.7.scm
+	csi -require-extension r7rs -include-path scheme/src -eval '(include "scheme/src/prolog.sld")' -script scheme/test/test.7.scm
 
 test-guile:
-	guile --fresh-auto-compile -x .sld -L src test/test.7.scm
+	guile --fresh-auto-compile -x .sld -L scheme/src scheme/test/test.7.scm
 
 test-chibi:
-	chibi-scheme -I src -I test test/test.7.scm
+	chibi-scheme -I scheme/src -I scheme/test scheme/test/test.7.scm
 
 test-sagittarius:
-	sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=src test/test.7.scm
+	sagittarius --clean-cache --disable-cache --loadsuffix=.sld --standard=7 --loadpath=scheme/src scheme/test/test.7.scm
 
 test-chez:
-	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD/src --script test/test.6.scm
+	scheme --libdirs $$CHEZSCHEMELIBDIRS:$$PWD/scheme/src --script scheme/test/test.6.scm
 
 test-gambit:
-	gsi -:r7rs src/ test/test.7.scm
+	gsi -:r7rs scheme/src/ scheme/test/test.7.scm
 
 # Test Common Lisp implementations
 test-sbcl:
-	sbcl --eval "(require 'asdf)" --eval "(asdf:test-system :prolog)" --quit
+	sbcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --quit
 
 test-ecl:
-	ecl --eval "(require 'asdf)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
+	ecl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
 
 test-clisp:
-	clisp -x "(require 'asdf)" -x "(asdf:test-system :prolog)" -x "(quit)"
+	clisp -x "(require 'asdf)" -x "(push #P\"./common-lisp/\" asdf:*central-registry*)" -x "(asdf:test-system :prolog)" -x "(quit)"
 
 test-abcl:
-	abcl --eval "(require 'asdf)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
+	abcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --eval "(quit)"
 
 # Clean build artifacts
 clean:
-	rm -f *.log test/*.log
+	rm -f *.log scheme/test/*.log common-lisp/test/*.log
 
 # Format all source files
 format:
-	find src test -type f \( -name '*.scm' -o -name '*.sld' -o -name '*.rkt' -o -name '*.sls' \) -exec sh -c 'echo "Formatting {}"; schemat < "{}" | sponge "{}"' \;
+	find scheme common-lisp -type f \( -name '*.scm' -o -name '*.sld' -o -name '*.rkt' -o -name '*.sls' -o -name '*.lisp' \) -exec sh -c 'echo "Formatting {}"; schemat < "{}" | sponge "{}"' \;

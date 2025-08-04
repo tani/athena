@@ -10,5 +10,5 @@ make -j`nproc`
 make doc TEXI2HTML=`which texi2html`
 make modules
 make -C contrib/try try
-cp ../src/* ./contrib/try/try
+cp ../scheme/src/* ./contrib/try/try
 popd

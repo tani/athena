@@ -50,6 +50,6 @@
 (define (interaction-environment)
   (namespace-anchor->namespace anchor))
 
-(include "prolog-core.scm")
-(include "prolog-primitive.scm")
-(include "prolog-stdlib.scm")
+(include "core.scm")
+(include "primitive.scm")
+(include "stdlib.scm")

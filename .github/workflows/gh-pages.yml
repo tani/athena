@@ -36,7 +36,7 @@ jobs:
         run: |
           cd gambit
           git apply ../index_html.patch || true
-          cp ../src/* ./contrib/try/try
+          cp ../scheme/src/* ./contrib/try/try
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

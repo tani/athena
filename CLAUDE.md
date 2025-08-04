@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Athena is a comprehensive Prolog engine with dual implementations in Scheme and Common Lisp. It supports multiple Scheme implementations (Racket, Gauche, Chez, Guile, Chibi, Sagittarius, Gambit, Chicken) and Common Lisp implementations (SBCL, ABCL, CLISP, ECL).
+Athena is a comprehensive Prolog engine with dual implementations in Scheme and Common Lisp. The project is organized into separate language-specific directories:
+
+- `scheme/` - Scheme implementation supporting multiple implementations (Racket, Gauche, Chez, Guile, Chibi, Sagittarius, Gambit, Chicken)
+- `common-lisp/` - Common Lisp implementation supporting multiple implementations (SBCL, ABCL, CLISP, ECL)
 
 ## Development Commands
 
@@ -40,7 +43,6 @@ make format          # Format all source files using schemat
 
 ### Development Environment
 ```bash
-devbox shell         # Enter Nix development shell with all implementations
 nix develop          # Alternative Nix development shell
 lefthook install     # Install git hooks (auto-runs after setup)
 ```
@@ -53,18 +55,24 @@ make clean           # Remove log files
 
 ## Architecture
 
-### Core Components
-- **`src/prolog-core.scm`**: Portable Scheme implementation of core engine
-- **`src/prolog-lib.scm`**: Standard library predicates
-- **`src/prolog.lisp`**: Common Lisp main package
-- **`src/prolog/core.lisp`**: Common Lisp core engine
-- **`src/prolog/primitive.lisp`**: Common Lisp built-in predicates
-- **`src/prolog/stdlib.lisp`**: Common Lisp standard library
+### Scheme Implementation (`scheme/`)
+**Core Components:**
+- **`scheme/src/core.scm`**: Portable Scheme implementation of core engine
+- **`scheme/src/primitive.scm`**: Built-in predicates and meta-predicates
+- **`scheme/src/stdlib.scm`**: Standard library clauses
 
-### Implementation Wrappers
-- **`src/prolog.rkt`**: Racket-specific wrapper
-- **`src/prolog.sld`**: R7RS library wrapper with conditional compilation
-- **`src/prolog.sls`**: R6RS library wrapper
+**Implementation Wrappers:**
+- **`scheme/src/prolog.rkt`**: Racket-specific wrapper
+- **`scheme/src/prolog.sld`**: R7RS library wrapper with conditional compilation
+- **`scheme/src/prolog.sls`**: R6RS library wrapper
+
+### Common Lisp Implementation (`common-lisp/`)
+**Core Components:**
+- **`common-lisp/src/core.lisp`**: Common Lisp core engine
+- **`common-lisp/src/primitive.lisp`**: Common Lisp built-in predicates
+- **`common-lisp/src/stdlib.lisp`**: Common Lisp standard library
+- **`common-lisp/src/all.lisp`**: Main package combining all components
+- **`common-lisp/prolog.asd`**: ASDF system definition
 
 ### Engine Features
 - **Unification**: Variable binding and term unification
@@ -75,12 +83,13 @@ make clean           # Remove log files
 
 ### Testing Framework
 - **Scheme**: SRFI-64 with implementation-specific runners
-  - `test/test.scm`: Main test suite
-  - `test/test.7.scm`: R7RS runner
-  - `test/test.6.scm`: R6RS runner
-  - `test/test.rkt`: Racket-specific tests
+  - `scheme/test/test.scm`: Main test suite
+  - `scheme/test/test.7.scm`: R7RS runner
+  - `scheme/test/test.6.scm`: R6RS runner
+  - `scheme/test/test.rkt`: Racket-specific tests
+  - `scheme/test/core.scm`, `scheme/test/helpers.scm`, `scheme/test/lib.scm`: Test utilities
 - **Common Lisp**: FiveAM framework
-  - `test/prolog/`: Modular test files with ASDF integration
+  - `common-lisp/test/`: Modular test files with ASDF integration
   - Supports SBCL, ECL, CLISP, and ABCL implementations
 
 ## Key Development Patterns
@@ -102,19 +111,19 @@ make clean           # Remove log files
 ## Common Development Tasks
 
 ### Adding New Built-in Predicates
-1. Add to `src/prolog-lib.scm` for Scheme version
-2. Add to `src/prolog/primitive.lisp` for Common Lisp version
-3. Add tests to appropriate test files
+1. Add to `scheme/src/primitive.scm` for Scheme version
+2. Add to `common-lisp/src/primitive.lisp` for Common Lisp version
+3. Add tests to appropriate test files in `scheme/test/` and `common-lisp/test/`
 4. Update documentation in README.md
 
 ### Running Single Tests
 ```bash
 # Scheme (example with Racket)
-racket -e '(require "test/test.rkt")' -e '(test-name)'
+racket -e '(require "scheme/test/test.rkt")' -e '(test-name)'
 
 # Common Lisp (example with SBCL)
-sbcl --eval "(require 'asdf)" --eval "(asdf:test-system :prolog)" --quit
+sbcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --quit
 ```
 
 ### Web Deployment
-The project includes web deployment capability through Gambit Scheme compilation to JavaScript. Use `./script/build.sh` to build the web version.
+The project includes web deployment capability through Gambit Scheme compilation to JavaScript. Use `./script/build.sh` to build the web version. The build script automatically copies the Scheme source files from `scheme/src/` to the Gambit build directory.

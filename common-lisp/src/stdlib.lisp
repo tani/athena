@@ -28,7 +28,7 @@
 
 (<- (append () ?list ?list))
 (<- (append (?head . ?tail) ?list (?head . ?result))
-    (append ?tail ?list ?result))
+  (append ?tail ?list ?result))
 
 ;; Maplist helper clauses
 (<- (--all-null ()))
@@ -36,16 +36,16 @@
 
 (<- (--get-heads () ()))
 (<- (--get-heads ((?head . ?) . ?rest) (?head . ?heads))
-    (--get-heads ?rest ?heads))
+  (--get-heads ?rest ?heads))
 
 (<- (--get-tails () ()))
 (<- (--get-tails ((? . ?tail) . ?rest) (?tail . ?tails))
-    (--get-tails ?rest ?tails))
+  (--get-tails ?rest ?tails))
 
 (<- (maplist ?pred . ?lists)
-    (if (--all-null ?lists)
-        true
-        (and (--get-heads ?lists ?heads)
-             (--get-tails ?lists ?tails)
-             (call (?pred . ?heads))
-             (call (maplist ?pred . ?tails)))))
+  (if (--all-null ?lists)
+    true
+    (and (--get-heads ?lists ?heads)
+      (--get-tails ?lists ?tails)
+      (call (?pred . ?heads))
+      (call (maplist ?pred . ?tails)))))

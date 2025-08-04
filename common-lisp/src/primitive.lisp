@@ -12,16 +12,16 @@
 (defpackage :prolog/primitive
   (:use :common-lisp :prolog/core)
   (:export
-   ;; Utility functions
-   :object->string
-   :ground-p
+    ;; Utility functions
+    :object->string
+    :ground-p
 
-   ;; Special variables
-   :*current-solution-accumulator*
-   :*current-dynamic-parameters*
+    ;; Special variables
+    :*current-solution-accumulator*
+    :*current-dynamic-parameters*
 
-   ;; Helper functions for tests
-   :define-predicate))
+    ;; Helper functions for tests
+    :define-predicate))
 
 (in-package :prolog/primitive)
 
@@ -41,8 +41,8 @@
     (cond
       ((variable-p resolved-term) nil)
       ((consp resolved-term)
-       (and (ground-p (car resolved-term))
-            (ground-p (cdr resolved-term))))
+        (and (ground-p (car resolved-term))
+          (ground-p (cdr resolved-term))))
       (t t))))
 
 ;;; Predicate definition utility
@@ -61,63 +61,65 @@
   (let* ((substituted-term1 (substitute-bindings *current-bindings* term1))
          (substituted-term2 (substitute-bindings *current-bindings* term2)))
     (if (equal substituted-term1 substituted-term2)
-        (prove-all *current-remaining-goals* *current-bindings*)
-        (make-failure))))
+      (prove-all *current-remaining-goals* *current-bindings*)
+      (make-failure))))
 
 ;; Cut operation with proper exception handling
 (define-predicate (! choice-point)
   (error (make-condition 'cut-exception
-                         :tag choice-point
-                         :value (prove-all *current-remaining-goals* *current-bindings*))))
+          :tag
+          choice-point
+          :value
+          (prove-all *current-remaining-goals* *current-bindings*))))
 
 ;; Meta-call predicate with variadic support
 (define-predicate (call pred-or-goal &rest args)
   (call-with-current-choice-point
-   (lambda (choice-point)
-     (let* ((goal (cond
+    (lambda (choice-point)
+      (let* ((goal (cond
                     ((null args) pred-or-goal)
                     ((symbolp pred-or-goal) (cons pred-or-goal args))
                     ((consp pred-or-goal) (append pred-or-goal args))
                     (t (error "call: invalid form ~S" (cons pred-or-goal args)))))
-            (substituted-goal (substitute-bindings *current-bindings* goal))
-            (cut-goals (insert-choice-point (list substituted-goal) choice-point))
-            (next-goals (append cut-goals *current-remaining-goals*)))
-       (prove-all next-goals *current-bindings*)))))
+             (substituted-goal (substitute-bindings *current-bindings* goal))
+             (cut-goals (insert-choice-point (list substituted-goal) choice-point))
+             (next-goals (append cut-goals *current-remaining-goals*)))
+        (prove-all next-goals *current-bindings*)))))
 
 ;; Type checking predicates
 (define-predicate (atom term)
   (let ((value (substitute-bindings *current-bindings* term)))
     (if (and (symbolp value) (not (variable-p value)))
-        (prove-all *current-remaining-goals* *current-bindings*)
-        (make-failure))))
+      (prove-all *current-remaining-goals* *current-bindings*)
+      (make-failure))))
 
 (define-predicate (atomic term)
   (let ((value (substitute-bindings *current-bindings* term)))
     (if (and (not (variable-p value)) (not (consp value)))
-        (prove-all *current-remaining-goals* *current-bindings*)
-        (make-failure))))
+      (prove-all *current-remaining-goals* *current-bindings*)
+      (make-failure))))
 
 (define-predicate (var term)
   (if (variable-p (substitute-bindings *current-bindings* term))
-      (prove-all *current-remaining-goals* *current-bindings*)
-      (make-failure)))
+    (prove-all *current-remaining-goals* *current-bindings*)
+    (make-failure)))
 
 (define-predicate (ground term)
   (if (ground-p term)
-      (prove-all *current-remaining-goals* *current-bindings*)
-      (make-failure)))
+    (prove-all *current-remaining-goals* *current-bindings*)
+    (make-failure)))
 
 (define-predicate (number term)
   (let ((value (substitute-bindings *current-bindings* term)))
     (if (numberp value)
-        (prove-all *current-remaining-goals* *current-bindings*)
-        (make-failure))))
+      (prove-all *current-remaining-goals* *current-bindings*)
+      (make-failure))))
 
 (define-predicate (string term)
   (let ((value (substitute-bindings *current-bindings* term)))
     (if (stringp value)
-        (prove-all *current-remaining-goals* *current-bindings*)
-        (make-failure))))
+      (prove-all *current-remaining-goals* *current-bindings*)
+      (make-failure))))
 
 ;; Control predicates
 (define-predicate (fail)
@@ -129,15 +131,15 @@
 (define-predicate (--lisp-eval-internal result-variable expression)
   (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
          (evaluated-result (handler-case
-                               (eval lisp-expression)
-                             (error (e)
-                               (format t "Evaluation error: ~A~%" e)
-                               nil)))
+                            (eval lisp-expression)
+                            (error (e)
+                              (format t "Evaluation error: ~A~%" e)
+                              nil)))
          (result-term (substitute-bindings *current-bindings* result-variable))
          (new-bindings (unify result-term evaluated-result *current-bindings*)))
     (if new-bindings
-        (prove-all *current-remaining-goals* new-bindings)
-        (make-failure))))
+      (prove-all *current-remaining-goals* new-bindings)
+      (make-failure))))
 
 ;; Dynamic parameter predicates
 (define-predicate (dynamic-put variable-symbol value-expression)
@@ -183,8 +185,8 @@
   (let* ((actual-list (substitute-bindings *current-bindings* unsorted-list))
          (unique-list (remove-duplicates actual-list :test #'equal))
          (sorted-list (sort (copy-list unique-list)
-                            (lambda (a b)
-                              (string< (object->string a) (object->string b)))))
+                       (lambda (a b)
+                         (string< (object->string a) (object->string b)))))
          (new-bindings (unify result-list sorted-list *current-bindings*)))
     (prove-all *current-remaining-goals* new-bindings)))
 
@@ -197,10 +199,10 @@
     (let ((reversed-solutions (reverse *current-solution-accumulator*)))
       ;; bagof fails if no solutions were found
       (if (null reversed-solutions)
-          (make-failure)
-          ;; If solutions exist, unify with result-bag
-          (let ((new-bindings (unify result-bag reversed-solutions *current-bindings*)))
-            (prove-all *current-remaining-goals* new-bindings))))))
+        (make-failure)
+        ;; If solutions exist, unify with result-bag
+        (let ((new-bindings (unify result-bag reversed-solutions *current-bindings*)))
+          (prove-all *current-remaining-goals* new-bindings))))))
 
 ;; setof - bagof + sort
 (define-predicate (setof template goal result-set)
@@ -210,28 +212,28 @@
 (define-predicate (is result-variable expression)
   (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
          (evaluated-result (handler-case
-                               (eval lisp-expression)
-                             (error (e)
-                               (format t "Evaluation error: ~A~%" e)
-                               nil)))
+                            (eval lisp-expression)
+                            (error (e)
+                              (format t "Evaluation error: ~A~%" e)
+                              nil)))
          (result-term (substitute-bindings *current-bindings* result-variable))
          (new-bindings (unify result-term evaluated-result *current-bindings*)))
     (if new-bindings
-        (prove-all *current-remaining-goals* new-bindings)
-        (make-failure))))
+      (prove-all *current-remaining-goals* new-bindings)
+      (make-failure))))
 
 (define-predicate (lisp result-variable expression)
   (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
          (evaluated-result (handler-case
-                               (eval lisp-expression)
-                             (error (e)
-                               (format t "Evaluation error: ~A~%" e)
-                               nil)))
+                            (eval lisp-expression)
+                            (error (e)
+                              (format t "Evaluation error: ~A~%" e)
+                              nil)))
          (result-term (substitute-bindings *current-bindings* result-variable))
          (new-bindings (unify result-term evaluated-result *current-bindings*)))
     (if new-bindings
-        (prove-all *current-remaining-goals* new-bindings)
-        (make-failure))))
+      (prove-all *current-remaining-goals* new-bindings)
+      (make-failure))))
 
 ;; Simple true predicate for testing
 (define-predicate (true)

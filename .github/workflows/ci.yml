@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-22.04-arm, macos-latest, macos-14]
-        impl: [gauche, guile, chicken, chibi, sagittarius, racket, gambit, chez]
+        impl: [gauche, guile, chicken, chibi, sagittarius, racket, gambit, chez, sbcl, ecl, clisp, abcl]
 
     runs-on: ${{ matrix.os }}
 

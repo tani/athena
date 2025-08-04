@@ -61,28 +61,28 @@
   (is (= 7 (solve-first '((is ?v (+ 3 4))) '?v)) "is (lisp alias)")
   (is (= 10 (solve-first '((lisp ?res (* 5 2))) '?res)) "lisp/2"))
 
-(test meta-predicates  
+(test meta-predicates
   "Test solution collection predicates"
   ;; Clean up any existing item facts first
   (remove-clauses-with-arity! 'item 1)
-  
+
   ;; Setup test data
   (<- (item a))
   (<- (item b))
   (<- (item a))
-  
+
   ;; Test findall
   (is (equal '(a b a) (solve-first '((findall ?x (item ?x) ?l)) '?l)))
   (is (equal '() (solve-first '((findall ?x (missing ?x) ?l)) '?l)))
-  
-  ;; Test bagof  
+
+  ;; Test bagof
   (is (equal '(a b a) (solve-first '((bagof ?x (item ?x) ?l)) '?l)))
   (is (= 0 (solve-count '((bagof ?x (missing ?x) ?l)))))
-  
+
   ;; Test setof
   (is (equal '(a b) (solve-first '((setof ?x (item ?x) ?l)) '?l)))
   (is (= 0 (solve-count '((setof ?x (missing ?x) ?l)))))
-  
+
   ;; Test sort
   (is (equal '(1 2 3) (solve-first '((sort (3 1 2) ?s)) '?s)))
   (is (equal '(1 2 3) (solve-first '((sort (3 1 2 3 1) ?s)) '?s))))

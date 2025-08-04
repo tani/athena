@@ -52,6 +52,6 @@
         (immutable tag cut-exception-tag)
         (immutable value cut-exception-value)))
 
-    (include "prolog-core.scm")
-    (include "prolog-primitive.scm")
-    (include "prolog-stdlib.scm")))
+    (include "core.scm")
+    (include "primitive.scm")
+    (include "stdlib.scm")))

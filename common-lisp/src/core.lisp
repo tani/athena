@@ -11,55 +11,55 @@
 (defpackage :prolog/core
   (:use :common-lisp)
   (:export
-   ;; Main API
-   :<-
-   :<--
-   :?-
-   :run-query
-   :solve
+    ;; Main API
+    :<-
+    :<--
+    :?-
+    :run-query
+    :solve
 
-   ;; Variables and unification
-   :variable-p
-   :named-variable-p
-   :atom-p
-   :unify
-   :substitute-bindings
-   :variables-in
-   :replace-anonymous-variables
+    ;; Variables and unification
+    :variable-p
+    :named-variable-p
+    :atom-p
+    :unify
+    :substitute-bindings
+    :variables-in
+    :replace-anonymous-variables
 
-   ;; Database operations
-   :add-clause!
-   :get-clauses
-   :set-clauses!
-   :remove-clauses-with-arity!
+    ;; Database operations
+    :add-clause!
+    :get-clauses
+    :set-clauses!
+    :remove-clauses-with-arity!
 
-   ;; Prover internals (needed by builtins)
-   :prove
-   :prove-all
-   :insert-choice-point
-   :call-with-current-choice-point
-   :combine
-   :*current-bindings*
-   :*current-remaining-goals*
+    ;; Prover internals (needed by builtins)
+    :prove
+    :prove-all
+    :insert-choice-point
+    :call-with-current-choice-point
+    :combine
+    :*current-bindings*
+    :*current-remaining-goals*
 
-   ;; Parameters (special variables)
-   :*current-clause-database*
-   :*current-spy-predicates*
-   :*current-spy-mode*
-   :*current-occurs-check*
+    ;; Parameters (special variables)
+    :*current-clause-database*
+    :*current-spy-predicates*
+    :*current-spy-mode*
+    :*current-occurs-check*
 
-   ;; Failure/success types
-   :make-failure
-   :failure-p
-   :make-success
-   :success-p
-   :success-bindings
-   :success-continuation
+    ;; Failure/success types
+    :make-failure
+    :failure-p
+    :make-success
+    :success-p
+    :success-bindings
+    :success-continuation
 
-   ;; Exceptions
-   :cut-exception
-   :cut-exception-tag
-   :cut-exception-value))
+    ;; Exceptions
+    :cut-exception
+    :cut-exception-tag
+    :cut-exception-value))
 
 (in-package :prolog/core)
 
@@ -70,7 +70,7 @@
   "Compare two terms for equality, using symbol= for symbols and equal for other types"
   (cond
     ((and (symbolp term1) (symbolp term2))
-     (symbol= term1 term2))
+      (symbol= term1 term2))
     (t (equal term1 term2))))
 
 ;;; Failure and success types
@@ -83,12 +83,12 @@
 ;;; Cut exception for implementing Prolog's cut (!)
 (define-condition cut-exception (error)
   ((tag :initarg :tag :reader cut-exception-tag)
-   (value :initarg :value :reader cut-exception-value)))
+    (value :initarg :value :reader cut-exception-value)))
 
 ;;; Special variables (replacing Scheme parameters)
 (defparameter *current-clause-database* '())
 (defparameter *current-spy-predicates* '())
-(defparameter *current-spy-mode* 'prompt)  ; 'prompt, 'always, or 'disabled
+(defparameter *current-spy-mode* 'prompt) ; 'prompt, 'always, or 'disabled
 (defparameter *current-occurs-check* t)
 (defparameter *current-bindings* '())
 (defparameter *current-remaining-goals* '())
@@ -97,18 +97,18 @@
 (defun call-with-current-choice-point (proc)
   (let ((tag (gensym "CHOICE-POINT-")))
     (handler-case
-        (funcall proc tag)
+      (funcall proc tag)
       (cut-exception (e)
         (if (eq tag (cut-exception-tag e))
-            (cut-exception-value e)
-            (error e))))))
+          (cut-exception-value e)
+          (error e))))))
 
 ;;; Variables and unification helpers
 (defun variable-p (term)
   (and (symbolp term)
-       (let ((symbol-string (symbol-name term)))
-         (and (> (length symbol-string) 0)
-              (char= (char symbol-string 0) #\?)))))
+    (let ((symbol-string (symbol-name term)))
+      (and (> (length symbol-string) 0)
+        (char= (char symbol-string 0) #\?)))))
 
 (defun named-variable-p (term)
   (and (variable-p term) (not (and (symbolp term) (symbol= term '?)))))
@@ -124,27 +124,27 @@
     ((failure-p bindings) (make-failure))
     ((null bindings) expression)
     ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
-     (if (member expression visited :test #'symbol=)
-         expression
-         (let ((value (lookup-variable expression bindings)))
-           (substitute-bindings bindings value (cons expression visited)))))
+      (if (member expression visited :test #'symbol=)
+        expression
+        (let ((value (lookup-variable expression bindings)))
+          (substitute-bindings bindings value (cons expression visited)))))
     ((atom-p expression) expression)
     (t
-     (cons (substitute-bindings bindings (car expression) visited)
-           (substitute-bindings bindings (cdr expression) visited)))))
+      (cons (substitute-bindings bindings (car expression) visited)
+        (substitute-bindings bindings (cdr expression) visited)))))
 
 (defun variables-in (expression)
   (labels ((collect-unique-if (predicate tree accumulator)
              (cond
                ((atom-p tree)
-                (if (and (funcall predicate tree)
-                         (not (member tree accumulator :test #'symbol=)))
-                    (cons tree accumulator)
-                    accumulator))
+                 (if (and (funcall predicate tree)
+                      (not (member tree accumulator :test #'symbol=)))
+                   (cons tree accumulator)
+                   accumulator))
                (t
-                (let ((accumulator-after-car
-                        (collect-unique-if predicate (car tree) accumulator)))
-                  (collect-unique-if predicate (cdr tree) accumulator-after-car))))))
+                 (let ((accumulator-after-car
+                         (collect-unique-if predicate (car tree) accumulator)))
+                   (collect-unique-if predicate (cdr tree) accumulator-after-car))))))
     (reverse (collect-unique-if #'named-variable-p expression '()))))
 
 (defun replace-anonymous-variables (expression)
@@ -152,18 +152,18 @@
     ((and (symbolp expression) (symbol= expression '?)) (gensym "?"))
     ((atom-p expression) expression)
     (t (cons (replace-anonymous-variables (car expression))
-             (replace-anonymous-variables (cdr expression))))))
+        (replace-anonymous-variables (cdr expression))))))
 
 ;;; Occurs check for unification
 (defun occurs-check-p (variable expression bindings)
   (cond
     ((and (symbolp expression) (symbol= variable expression)) t)
     ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
-     (let ((value (lookup-variable expression bindings)))
-       (occurs-check-p variable value bindings)))
+      (let ((value (lookup-variable expression bindings)))
+        (occurs-check-p variable value bindings)))
     ((consp expression)
-     (or (occurs-check-p variable (car expression) bindings)
-         (occurs-check-p variable (cdr expression) bindings)))
+      (or (occurs-check-p variable (car expression) bindings)
+        (occurs-check-p variable (cdr expression) bindings)))
     (t nil)))
 
 ;;; Forward declarations to avoid warnings
@@ -173,13 +173,13 @@
 (defun unify-var (variable value bindings)
   (cond
     ((assoc variable bindings :test #'symbol=)
-     (let ((bound-term (lookup-variable variable bindings)))
-       (unify bound-term value bindings)))
+      (let ((bound-term (lookup-variable variable bindings)))
+        (unify bound-term value bindings)))
     ((and (variable-p value) (assoc value bindings :test #'symbol=))
-     (let ((bound-term (lookup-variable value bindings)))
-       (unify variable bound-term bindings)))
+      (let ((bound-term (lookup-variable value bindings)))
+        (unify variable bound-term bindings)))
     ((and *current-occurs-check* (occurs-check-p variable value bindings))
-     (make-failure))
+      (make-failure))
     (t (acons variable value bindings))))
 
 (defun unify (term1 term2 bindings)
@@ -189,8 +189,8 @@
     ((variable-p term1) (unify-var term1 term2 bindings))
     ((variable-p term2) (unify-var term2 term1 bindings))
     ((and (consp term1) (consp term2))
-     (let ((car-bindings (unify (car term1) (car term2) bindings)))
-       (unify (cdr term1) (cdr term2) car-bindings)))
+      (let ((car-bindings (unify (car term1) (car term2) bindings)))
+        (unify (cdr term1) (cdr term2) car-bindings)))
     (t (make-failure))))
 
 ;;; Clause database operations
@@ -236,10 +236,10 @@
 ;;; Variable renaming for clauses
 (defun sublis* (alist tree)
   (if (atom-p tree)
-      (let ((binding (and (symbolp tree) (assoc tree alist :test #'symbol=))))
-        (if binding (cdr binding) tree))
-      (cons (sublis* alist (car tree))
-            (sublis* alist (cdr tree)))))
+    (let ((binding (and (symbolp tree) (assoc tree alist :test #'symbol=))))
+      (if binding (cdr binding) tree))
+    (cons (sublis* alist (car tree))
+      (sublis* alist (cdr tree)))))
 
 (defun make-renaming-pair (variable)
   (let ((var-string (symbol-name variable)))
@@ -253,8 +253,8 @@
 ;;; Macros for defining clauses
 (defmacro <- (&rest clause-parts)
   (let ((clause (if (consp (car clause-parts))
-                    clause-parts
-                    (cons (list (car clause-parts)) (cdr clause-parts)))))
+                 clause-parts
+                 (cons (list (car clause-parts)) (cdr clause-parts)))))
     `(add-clause! (replace-anonymous-variables ',clause))))
 
 (defmacro <-- (&rest clause-parts)
@@ -264,8 +264,8 @@
          (args (if (consp head) (cdr head) '()))
          (arity (min-arity args)))
     `(progn
-       (remove-clauses-with-arity! ',name ,arity)
-       (add-clause! (replace-anonymous-variables ',(cons head body))))))
+      (remove-clauses-with-arity! ',name ,arity)
+      (add-clause! (replace-anonymous-variables ',(cons head body))))))
 
 ;;; Query macro (simplified for now)
 (defmacro ?- (&rest goals)
@@ -291,22 +291,22 @@
          (spy-p (member predicate-symbol *current-spy-predicates* :test #'symbol=))
          (mode *current-spy-mode*)
          (show-p (and spy-p
-                      (case mode
-                        ((always) t)
-                        ((prompt) (spy-prompt goal bindings))
-                        (otherwise nil))))
+                  (case mode
+                    ((always) t)
+                    ((prompt) (spy-prompt goal bindings))
+                    (otherwise nil))))
          (result nil))
     (let ((*current-spy-mode* (if show-p mode 'disabled)))
       (unwind-protect
-           (progn
-             (when show-p
-               (spy-message "CALL" goal bindings))
-             (setf result (funcall thunk))
-             result)
+        (progn
+          (when show-p
+            (spy-message "CALL" goal bindings))
+          (setf result (funcall thunk))
+          result)
         (when show-p
           (if (or (not result) (failure-p result))
-              (spy-message "FAIL" goal bindings)
-              (spy-message "EXIT" goal (success-bindings result))))))
+            (spy-message "FAIL" goal bindings)
+            (spy-message "EXIT" goal (success-bindings result))))))
     result))
 
 ;;; Prover engine
@@ -314,8 +314,8 @@
   (cond
     ((failure-p bindings) (make-failure))
     ((null goals)
-     (let ((terminal-cont (lambda () (make-failure))))
-       (make-success :bindings bindings :continuation terminal-cont)))
+      (let ((terminal-cont (lambda () (make-failure))))
+        (make-success :bindings bindings :continuation terminal-cont)))
     (t (prove (car goals) bindings (cdr goals)))))
 
 (defun insert-choice-point (clause choice-point)
@@ -332,44 +332,45 @@
          (clause-body (cdr renamed-clause))
          (new-bindings (unify goal clause-head bindings)))
     (if (failure-p new-bindings)
-        (make-failure)
-        (prove-all (append clause-body remaining-goals) new-bindings))))
+      (make-failure)
+      (prove-all (append clause-body remaining-goals) new-bindings))))
 
 (defun combine (continuation-a continuation-b)
   (lambda ()
     (let ((result-a (funcall continuation-a)))
       (if (or (not result-a) (failure-p result-a))
-          (funcall continuation-b)
-          (let* ((bindings (success-bindings result-a))
-                 (result-continuation (success-continuation result-a))
-                 (new-continuation (combine result-continuation continuation-b)))
-            (make-success :bindings bindings :continuation new-continuation))))))
+        (funcall continuation-b)
+        (let* ((bindings (success-bindings result-a))
+               (result-continuation (success-continuation result-a))
+               (new-continuation (combine result-continuation continuation-b)))
+          (make-success :bindings bindings :continuation new-continuation))))))
 
 (defun try-clauses (goal bindings remaining-goals all-clauses)
   (call-with-current-choice-point
-   (lambda (choice-point)
-     (let ((goal-arity (if (consp goal) (length (cdr goal)) 0)))
-       (labels ((clause-match-p (clause)
-                  (let* ((required (min-arity (cdar clause)))
-                         (variadic-p (not (proper-list-p (cdar clause)))))
-                    (and (>= goal-arity required)
-                         (or variadic-p (= goal-arity required)))))
-                (try-one-by-one (clauses-to-try)
-                  (if (null clauses-to-try)
-                      (make-failure)
-                      (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
-                             (remaining-clauses (cdr clauses-to-try))
-                             (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                             (result (process-one goal current-clause bindings remaining-goals)))
-                        (if (failure-p result)
-                            (funcall try-next-clause)
-                            (let* ((result-bindings (success-bindings result))
-                                   (result-continuation (success-continuation result))
-                                   (new-continuation (combine result-continuation try-next-clause)))
-                              (make-success :bindings result-bindings
-                                            :continuation new-continuation)))))))
-         (let ((clauses (remove-if-not #'clause-match-p all-clauses)))
-           (try-one-by-one clauses)))))))
+    (lambda (choice-point)
+      (let ((goal-arity (if (consp goal) (length (cdr goal)) 0)))
+        (labels ((clause-match-p (clause)
+                   (let* ((required (min-arity (cdar clause)))
+                          (variadic-p (not (proper-list-p (cdar clause)))))
+                     (and (>= goal-arity required)
+                       (or variadic-p (= goal-arity required)))))
+                 (try-one-by-one (clauses-to-try)
+                   (if (null clauses-to-try)
+                     (make-failure)
+                     (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
+                            (remaining-clauses (cdr clauses-to-try))
+                            (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
+                            (result (process-one goal current-clause bindings remaining-goals)))
+                       (if (failure-p result)
+                         (funcall try-next-clause)
+                         (let* ((result-bindings (success-bindings result))
+                                (result-continuation (success-continuation result))
+                                (new-continuation (combine result-continuation try-next-clause)))
+                           (make-success :bindings result-bindings
+                             :continuation
+                             new-continuation)))))))
+          (let ((clauses (remove-if-not #'clause-match-p all-clauses)))
+            (try-one-by-one clauses)))))))
 
 (defun prove (goal bindings remaining-goals)
   (with-spy goal bindings
@@ -381,41 +382,40 @@
              (args (if (consp goal) (cdr goal) '()))
              (goal-arity (length args)))
         (if (functionp predicate-handler)
-            (apply predicate-handler args)
-            (let ((goal-for-unify (if (consp goal) goal (list goal))))
-              (if (and (not (null predicate-handler))
-                       (< goal-arity (apply #'min (mapcar (lambda (c) (min-arity (cdar c)))
-                                                          predicate-handler))))
-                  (make-failure)
-                  (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))))
+          (apply predicate-handler args)
+          (let ((goal-for-unify (if (consp goal) goal (list goal))))
+            (if (and (not (null predicate-handler))
+                 (< goal-arity (apply #'min (mapcar (lambda (c) (min-arity (cdar c)))
+                                             predicate-handler))))
+              (make-failure)
+              (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))))
 
 (defun solve (goals on-success on-failure)
-  (labels ((initial-continuation ()
-
+  (labels ((initial-continuation () 
              (call-with-current-choice-point
-              (lambda (choice-point)
-                (let* ((prepared-goals (replace-anonymous-variables goals))
-                       (cut-goals (insert-choice-point prepared-goals choice-point)))
-                  (prove-all cut-goals '())))))
+               (lambda (choice-point)
+                 (let* ((prepared-goals (replace-anonymous-variables goals))
+                        (cut-goals (insert-choice-point prepared-goals choice-point)))
+                   (prove-all cut-goals '())))))
            (retrieve-success-bindings (result)
              (let* ((bindings (success-bindings result))
                     (query-variables (variables-in goals)))
                (mapcar (lambda (v) (cons v (substitute-bindings bindings v)))
-                       query-variables)))
+                 query-variables)))
            (execute-success-continuation (result)
              (funcall (success-continuation result))))
     (do ((result (initial-continuation) (execute-success-continuation result)))
-        ((not (success-p result)) (funcall on-failure))
+      ((not (success-p result)) (funcall on-failure))
       (funcall on-success (retrieve-success-bindings result)))))
 
 (defun display-solution (bindings)
   (if (null bindings)
-      (progn
-        (terpri)
-        (format t "Yes"))
-      (dolist (var-val bindings)
-        (terpri)
-        (format t "~A = ~A" (car var-val) (cdr var-val)))))
+    (progn
+      (terpri)
+      (format t "Yes"))
+    (dolist (var-val bindings)
+      (terpri)
+      (format t "~A = ~A" (car var-val) (cdr var-val)))))
 
 (defun continue-prompt-p ()
   (terpri)
@@ -425,16 +425,16 @@
     ((#\y) t)
     ((#\n) nil)
     (otherwise
-     (format t " Type y for more, or n to stop.~%")
-     (continue-prompt-p))))
+      (format t " Type y for more, or n to stop.~%")
+      (continue-prompt-p))))
 
 (defun run-query (goals)
   (block query-exit
     (solve goals
-           (lambda (solution)
-             (display-solution solution)
-             (unless (continue-prompt-p)
-               (return-from query-exit)))
-           (lambda ()
-             (format t "No.~%")
-             (return-from query-exit)))))
+      (lambda (solution)
+        (display-solution solution)
+        (unless (continue-prompt-p)
+          (return-from query-exit)))
+      (lambda ()
+        (format t "No.~%")
+        (return-from query-exit)))))
