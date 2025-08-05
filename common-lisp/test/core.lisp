@@ -2,6 +2,8 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
+(in-package :prolog/test/all)
+
 ;; Define test suite for core engine
 (def-suite *prolog-core-tests* :in *prolog-test-suite*)
 (in-suite *prolog-core-tests*)
@@ -308,3 +310,166 @@
 
     (is (equal '((a 1) (b 1)) (solve-all '((test-isolation ?x ?y)) '(?x ?y)))
       "Cut should not affect choice points outside its scope")))
+
+;; -----------------------------------------------------------
+;; Zero-arity predicate definitions
+;; -----------------------------------------------------------
+
+(test zero-arity-predicates
+  "Test zero-arity predicate definitions and calls.
+   Validates that predicates with no arguments can be defined and called
+   using both traditional (name) syntax and bare predicate symbol syntax."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (<- hello)
+    ;; body also calls hello without parentheses
+    (<- greet hello)
+    ;; calls using traditional (name) syntax
+    (is (not (null (solve-all '((hello)) 'dummy))) "zero-arity fact with parentheses")
+    (is (not (null (solve-all '((greet)) 'dummy))) "zero-arity rule with parentheses")
+    ;; calls using bare predicate symbol
+    (is (not (null (solve-all '(hello) 'dummy))) "zero-arity fact bare symbol")
+    (is (not (null (solve-all '(greet) 'dummy))) "zero-arity rule bare symbol")))
+
+;; -----------------------------------------------------------
+;; Variadic predicate definitions
+;; -----------------------------------------------------------
+
+(test variadic-predicates
+  "Test variadic predicate definitions with rest arguments.
+   Validates that predicates can use dot notation to capture
+   remaining arguments into a list, similar to Lisp's &rest."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (<- (capture-rest ?out ?first . ?rest) (= ?out ?rest))
+    (is (equal '(b c) (solve-first '((capture-rest ?r a b c)) '?r))
+      "variadic rest collects remaining arguments")
+    (is (equal '() (solve-first '((capture-rest ?r a)) '?r))
+      "variadic rest empty when no extra arguments")
+    (is (null (solve-all '((capture-rest ?r)) '?r))
+      "variadic fails with too few arguments")))
+
+;; -----------------------------------------------------------
+;; Advanced cut behavior and hard failures
+;; -----------------------------------------------------------
+
+(test advanced-cut-hard-failure
+  "Test advanced cut behavior with hard failures.
+   Validates that cuts creating hard failures in one branch
+   don't prevent backtracking in independent queries."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    ;; test predicates
+    (<- (q 1))
+    (<- (q 2))
+
+    (<-- (p ?x) (= ?x 1) ! (fail)) ; p(1) triggers a hard failure
+    (<- (p ?x) (= ?x 2)) ; p(2) succeeds
+
+    (is (= 2 (solve-first '((q ?y) (p ?y)) '?y))
+      "hard failure in p(x) should not block backtracking in q(y)")))
+
+;; -----------------------------------------------------------
+;; Spy/trace behavior
+;; -----------------------------------------------------------
+
+(test spy-behavior
+  "Test spy/trace functionality for debugging.
+   Validates that spy predicates produce appropriate debugging output
+   when enabled, showing CALL and EXIT traces."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (setf *current-clause-database* '())
+    (<- (watched))
+    (let ((output (make-string-output-stream))
+          (input (make-string-input-stream "l"))
+          (result ""))
+      (let ((prolog/all:*current-spy-predicates* '(watched))
+            (*standard-input* input)
+            (*standard-output* output))
+        (solve-all '((watched)) 'dummy)
+        (setf result (get-output-stream-string output)))
+      (is (search "CALL: (WATCHED)" result) "spy should show CALL trace")
+      (is (search "EXIT: (WATCHED)" result) "spy should show EXIT trace"))))
+
+;; -----------------------------------------------------------
+;; Clause database operations
+;; -----------------------------------------------------------
+
+(test clause-database-operations
+  "Test advanced clause database operations.
+   Validates clause addition, retrieval, and the <-- overwrite operator
+   for replacing existing clauses with the same head."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (setf *current-clause-database* '())
+    (let ((clause1 '((parent alice bob)))
+          (clause2 '((parent alice carol))))
+      (add-clause! clause1)
+      (is (equal (list clause1) (get-clauses 'parent)) "get-clauses after one add")
+      (add-clause! clause2)
+      (is (equal (list clause1 clause2) (get-clauses 'parent)) "get-clauses after two adds")
+      (is (equal '() (get-clauses 'unknown)) "get-clauses for unknown predicate")
+
+      ;; Test <-- overwrite functionality
+      (<-- (father ?x ?y) (male ?x) (parent ?x ?y))
+      (is (= 1 (length (get-clauses 'father))) "<-- overwrites existing clauses"))))
+
+;; -----------------------------------------------------------
+;; Run-query and ?- macro tests
+;; -----------------------------------------------------------
+
+(test run-query-success
+  "Test run-query function for interactive query execution.
+   Validates that successful queries produce appropriate output
+   and handle user interaction correctly."
+  (let ((output (make-string-output-stream))
+        (input (make-string-input-stream "n\n")))
+    (let ((*standard-input* input)
+          (*standard-output* output))
+      (run-query '((= ?a 1))))
+    (let ((txt (get-output-stream-string output)))
+      (is (not (string= txt (format nil "No.~%"))) "run-query should succeed for satisfiable query"))))
+
+(test run-query-failure
+  "Test run-query function for failing queries.
+   Validates that queries with no solutions produce 'No.' output."
+  (let ((output (make-string-output-stream))
+        (input (make-string-input-stream "")))
+    (let ((*standard-input* input)
+          (*standard-output* output))
+      (run-query '((fail))))
+    (is (string= (format nil "No.~%") (get-output-stream-string output)) "run-query should output 'No.' for failing query")))
+
+(test query-macro
+  "Test ?- macro for interactive query execution.
+   Validates that the ?- macro correctly delegates to run-query
+   and produces expected output for queries."
+  (let ((output (make-string-output-stream))
+        (input (make-string-input-stream "n\n")))
+    (let ((*standard-input* input)
+          (*standard-output* output))
+      (?- (= ?v ok)))
+    (is (not (string= (get-output-stream-string output) "No.\n")) "?- macro should work for successful query")))
+
+;; -----------------------------------------------------------
+;; Engine simple recursion tests
+;; -----------------------------------------------------------
+
+(test engine-simple-recursion
+  "Test engine with simple recursive rules.
+   Validates basic fact retrieval, rule application, and recursive
+   rule evaluation including transitive relations like ancestor."
+  (let ((*current-clause-database* (copy-list *current-clause-database*)))
+    (<- (parent john mary))
+    (<- (parent john michael))
+    (<- (parent mary susan))
+    (<- (parent michael david))
+    (<- (grandparent ?x ?y) (parent ?x ?z) (parent ?z ?y))
+
+    (<- (ancestor ?x ?y) (parent ?x ?y))
+    (<- (ancestor ?x ?y) (parent ?x ?z) (ancestor ?z ?y))
+
+    (is (eq 'mary (solve-first '((parent john ?child)) '?child)) "direct fact")
+    (is (equal '(mary michael) (solve-all '((parent john ?child)) '?child)) "all direct facts")
+    (is (eq 'susan (solve-first '((grandparent john ?grandchild)) '?grandchild)) "simple rule")
+    (is (equal '(susan david) (solve-all '((grandparent john ?grandchild)) '?grandchild)) "all simple rule")
+    (is (eq 'mary (solve-first '((ancestor john ?d)) '?d)) "recursion first result")
+    (is (equal '(mary michael susan david) (solve-all '((ancestor john ?d)) '?d)) "recursion all results")
+    (is (eq 'mary (solve-first '((ancestor ?a susan)) '?a)) "recursion backward query")
+    (is (null (solve-all '((parent david ?x)) '?x)) "failing goal")))
