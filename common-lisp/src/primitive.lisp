@@ -5,7 +5,7 @@
 ;;; This file contains the standard Prolog predicates and library functions:
 ;;; - Basic unification and comparison predicates
 ;;; - Arithmetic and type checking predicates
-;;; - Meta-predicates (bagof, findall, sort)
+;;; - Meta-predicates
 ;;; - Control flow predicates (and, or, not, if)
 ;;; - List manipulation predicates (member, append, maplist)
 
@@ -165,49 +165,6 @@
          (new-solutions (cons entry *current-solution-accumulator*)))
     (setf *current-solution-accumulator* new-solutions))
   (make-failure))
-
-(define-predicate (--add-solution-and-fail template)
-  (let* ((substituted-template (substitute-bindings *current-bindings* template))
-         (new-solutions (cons substituted-template *current-solution-accumulator*)))
-    (setf *current-solution-accumulator* new-solutions))
-  (make-failure))
-
-;; findall - collect all solutions
-(define-predicate (findall template goal result-list)
-  (let ((*current-solution-accumulator* '()))
-    (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
-      (prove-all new-goals *current-bindings*))
-    (let* ((reversed-solutions (reverse *current-solution-accumulator*))
-           (new-bindings (unify result-list reversed-solutions *current-bindings*)))
-      (prove-all *current-remaining-goals* new-bindings))))
-
-;; sort - sort and deduplicate list
-(define-predicate (sort unsorted-list result-list)
-  (let* ((actual-list (substitute-bindings *current-bindings* unsorted-list))
-         (unique-list (remove-duplicates actual-list :test #'equal))
-         (sorted-list (sort (copy-list unique-list)
-                       (lambda (a b)
-                         (string< (object->string a) (object->string b)))))
-         (new-bindings (unify result-list sorted-list *current-bindings*)))
-    (prove-all *current-remaining-goals* new-bindings)))
-
-;; bagof - simplified implementation for basic functionality
-(define-predicate (bagof template goal result-bag)
-  ;; bagof should fail when no solutions exist (unlike findall which returns empty list)
-  (let ((*current-solution-accumulator* '()))
-    (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
-      (prove-all new-goals *current-bindings*))
-    (let ((reversed-solutions (reverse *current-solution-accumulator*)))
-      ;; bagof fails if no solutions were found
-      (if (null reversed-solutions)
-        (make-failure)
-        ;; If solutions exist, unify with result-bag
-        (let ((new-bindings (unify result-bag reversed-solutions *current-bindings*)))
-          (prove-all *current-remaining-goals* new-bindings))))))
-
-;; setof - bagof + sort
-(define-predicate (setof template goal result-set)
-  (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) *current-bindings*))
 
 ;; Aliases for Lisp evaluation
 (define-predicate (is result-variable expression)

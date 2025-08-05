@@ -37,13 +37,6 @@
     (scheme eval)
     (scheme r5rs)
     (only (srfi 1) alist-delete alist-cons filter delete-duplicates))
-  (cond-expand
-    ((or gauche chibi sagittarius)
-      (import (scheme sort)))
-    ((or gambit chicken)
-      (import (srfi 132)))
-    (guile
-      (import (rnrs sorting))))
 
   ;; Implementation
   (begin

@@ -6,7 +6,7 @@
 ;; - Basic unification and comparison predicates
 ;; - Type checking predicates
 ;; - Evaluation predicates
-;; - Meta-predicates (call, !, bagof, findall, sort, setof)
+;; - Meta-predicates (call, !)
 ;; - Dynamic parameter predicates
 
 (begin
@@ -131,77 +131,5 @@
 
   ;; Meta-predicates for solution collection
 
-  (define-predicate (--add-solution-with-vars-and-fail template . vars)
-    (let* ((substituted-template (substitute-bindings (current-bindings) template))
-           (substituted-vars (map (lambda (v) (substitute-bindings (current-bindings) v)) vars))
-           (entry (cons substituted-vars substituted-template))
-           (new-solutions (cons entry (current-solution-accumulator))))
-      (current-solution-accumulator new-solutions))
-    (make-failure))
-
-  (define-predicate (bagof template goal result-bag)
-    (let* ((goal-vars (variables-in (substitute-bindings (current-bindings) goal)))
-           (template-vars (variables-in (substitute-bindings (current-bindings) template)))
-           (free-vars (filter (lambda (v) (not (memq v template-vars))) goal-vars))
-           (collector-goal `(--add-solution-with-vars-and-fail ,template ,@free-vars))
-           (all-solutions
-             (parameterize ((current-solution-accumulator '()))
-               (prove-all `(,goal ,collector-goal fail) (current-bindings))
-               (reverse (current-solution-accumulator))))
-           (grouped-solutions
-             (let loop ((remaining all-solutions) (acc '()))
-               (if (null? remaining)
-                 (reverse acc)
-                 (let* ((pair (car remaining))
-                        (key (car pair))
-                        (template (cdr pair))
-                        (existing (assoc key acc)))
-                   (if existing
-                     (let ((updated (cons key (append (cdr existing) (list template)))))
-                       (loop (cdr remaining) (cons updated (filter (lambda (g) (not (equal? (car g) key))) acc))))
-                     (loop (cdr remaining) (cons (cons key (list template)) acc))))))))
-
-      (define (enumerate-groups groups)
-        (if (null? groups)
-          (make-failure)
-          (let* ((group (car groups))
-                 (key (car group))
-                 (templates (cdr group))
-                 (b1 (unify free-vars key (current-bindings)))
-                 (b2 (unify result-bag templates b1)))
-            (if (failure? b2)
-              (enumerate-groups (cdr groups))
-              (let* ((proof-stream (prove-all (current-remaining-goals) b2))
-                     (continuation (success-continuation proof-stream))
-                     (next-thunk (lambda () (enumerate-groups (cdr groups)))))
-                (make-success (success-bindings proof-stream) (combine continuation next-thunk)))))))
-      (enumerate-groups grouped-solutions)))
-
-  (define-predicate (sort unsorted-list result-list)
-    (let* ((actual-list (substitute-bindings (current-bindings) unsorted-list))
-           (unique-list (delete-duplicates actual-list equal?))
-           (sorted-list (list-sort (lambda (a b) (string<? (object->string a) (object->string b))) unique-list))
-           (new-bindings (unify result-list sorted-list (current-bindings)))
-           (goals (current-remaining-goals)))
-      (prove-all goals new-bindings)))
-
-  (define-predicate (--add-solution-and-fail template)
-    (let* ((substituted-template (substitute-bindings (current-bindings) template))
-           (new-solutions (cons substituted-template (current-solution-accumulator))))
-      (current-solution-accumulator new-solutions))
-    (make-failure))
-
-  (define-predicate (findall template goal result-list)
-    (parameterize ((current-solution-accumulator '()))
-      (let ((new-goals (list goal (list '--add-solution-and-fail template) 'fail)))
-        (prove-all new-goals (current-bindings)))
-      (let* ((reversed-solutions (reverse (current-solution-accumulator)))
-             (new-bindings (unify result-list reversed-solutions (current-bindings)))
-             (goals (current-remaining-goals)))
-        (prove-all goals new-bindings))))
-
   (define-predicate (fail)
-    (make-failure))
-
-  (define-predicate (setof template goal result-set)
-    (prove-all `((bagof ,template ,goal ?result-bag) (sort ?result-bag ,result-set)) (current-bindings))))
+    (make-failure)))

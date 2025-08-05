@@ -107,8 +107,6 @@ The engine provides a rich set of standard built-in predicates for control flow,
 | `(member ?elem ?list)` | Succeeds if `?elem` is a member of `?list`. |
 | `(append ?list1 ?list2 ?list3)` | Succeeds if `?list3` is the result of appending `?list1` and `?list2`. |
 | `(maplist ?pred ?list1 ...)` | Applies `?pred` to corresponding elements of one or more lists. |
-| `(findall ?template ?goal ?results)` | Collects all solutions for `?goal` that match `?template` into the list `?results`. |
-| `(bagof ?template ?goal ?results)` | Groups solutions of `?goal` by the bindings of any free variables and collects the corresponding `?template` values into `?results`. |
 | `(dynamic-get ?name ?var)` | Retrieves the value associated with the dynamic variable `?name` and unifies it with `?var`. |
 | `(dynamic-put ?name ?value)` | Sets the value of the dynamic variable `?name` to `?value`. |
 

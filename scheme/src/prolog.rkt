@@ -43,8 +43,6 @@
 
 (struct cut-exception (tag value) #:transparent #:constructor-name make-cut-exception)
 
-(define (list-sort lis pred) (sort pred lis))
-
 (define-namespace-anchor anchor)
 
 (define (interaction-environment)

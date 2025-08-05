@@ -229,20 +229,6 @@
     (is (eq 7 (solve-first '((is ?result (+ 3 4))) '?result))
       "Should evaluate (+ 3 4) to 7 and bind to ?result")))
 
-(test meta-predicate-findall
-  "Test meta-predicate findall/3 for solution collection.
-   Validates that findall correctly collects all solutions to a goal
-   and returns them as a list, demonstrating meta-level operations."
-  (let ((*current-clause-database* (copy-list *current-clause-database*)))
-    ;; Only clear user-defined facts, keep built-ins
-    (<- (color red))
-    (<- (color green))
-    (<- (color blue))
-
-    (is (equal '(red green blue)
-         (solve-first '((findall ?x (color ?x) ?colors)) '?colors))
-      "Should collect all colors into list [red, green, blue]")))
-
 (test cut-operator-behavior
   "Test cut operator (!) for choice point elimination.
    Validates that the cut operator correctly prevents backtracking
