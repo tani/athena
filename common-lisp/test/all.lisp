@@ -74,16 +74,6 @@
         (format t "~%❌ Some tests failed!~%")
         nil))))
 
-;;; Script Support
-;;; ==============
-
-#+sbcl
-(defun main ()
-  "Main entry point for SBCL script execution"
-  (when (member "--test" sb-ext:*posix-argv* :test #'string=)
-    (let ((success (run-all-tests)))
-      (sb-ext:quit :unix-status (if success 0 1)))))
-
 ;;; Direct Execution Support
 ;;; ========================
 
