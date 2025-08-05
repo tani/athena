@@ -1,6 +1,6 @@
 # Athena Prolog
 
-This project provides a comprehensive Prolog engine implemented in Scheme, offering a robust wrapper for embedding logic programming capabilities directly within Racket and various Scheme environments. It is designed for seamless integration, allowing developers to leverage Prolog's powerful pattern-matching and backtracking features alongside the flexibility of a functional programming language.
+Athena is a comprehensive Prolog engine with dual implementations in Scheme and Common Lisp. The project provides robust logic programming capabilities that can be embedded directly within various Scheme and Common Lisp environments. It is designed for seamless integration, allowing developers to leverage Prolog's powerful pattern-matching and backtracking features alongside functional programming.
 
 ## Features
 
@@ -22,16 +22,21 @@ This project provides a comprehensive Prolog engine implemented in Scheme, offer
 
 ### Installation
 
-To use this library, include the appropriate wrapper for your Scheme implementation from the `src/` directory:
+To use this library, include the appropriate wrapper for your implementation:
 
-- **Racket**: Use `src/prolog.rkt`
-- **R7RS implementations**: Use `src/prolog.sld`
-- **R6RS implementations**: Use `src/prolog.sls`
+**Scheme implementations** (from `scheme/src/` directory):
+- **Racket**: Use `scheme/src/prolog.rkt`
+- **R7RS implementations**: Use `scheme/src/prolog.sld`
+- **R6RS implementations**: Use `scheme/src/prolog.sls`
 
-For development, use Devbox to set up an environment with all supported Scheme implementations:
+**Common Lisp implementations** (using ASDF):
+- Add the `common-lisp/` directory to your `asdf:*central-registry*`
+- Load with `(asdf:load-system :prolog)`
+
+For development, use Nix to set up an environment with all supported implementations:
 
 ```bash
-devbox shell    # Enters shell with all Scheme interpreters
+nix develop     # Enters shell with all Scheme and Common Lisp interpreters
 ```
 
 Try Athena online at [https://tani.github.io/athena](https://tani.github.io/athena).
@@ -130,14 +135,21 @@ make all
 Test specific implementations:
 
 ```bash
-make racket      # Test with Racket
-make gauche      # Test with Gauche  
-make chicken     # Test with Chicken Scheme
-make chez        # Test with Chez Scheme
-make guile       # Test with Guile
-make chibi       # Test with Chibi Scheme
-make sagittarius # Test with Sagittarius
-make gambit      # Test with Gambit
+# Scheme implementations
+make test-racket      # Test with Racket
+make test-gauche      # Test with Gauche
+make test-chicken     # Test with Chicken Scheme
+make test-chez        # Test with Chez Scheme
+make test-guile       # Test with Guile
+make test-chibi       # Test with Chibi Scheme
+make test-sagittarius # Test with Sagittarius
+make test-gambit      # Test with Gambit
+
+# Common Lisp implementations
+make test-sbcl        # Test with SBCL
+make test-ecl         # Test with ECL
+make test-clisp       # Test with CLISP
+make test-abcl        # Test with ABCL
 ```
 
 ### Code Formatting
@@ -174,28 +186,45 @@ make clean       # Remove log files
 
 ### Testing Framework
 
-Tests use SRFI-64 (Scheme Testing Framework) with implementation-specific test runners:
-- **`test/test.scm`**: Main test suite with core and library tests
-- **`test/test.7.scm`**: R7RS test runner
-- **`test/test.6.scm`**: R6RS test runner
-- **`test/test.rkt`**: Racket specific tests
+- **Scheme**: SRFI-64 with implementation-specific runners
+  - `scheme/test/test.scm`: Main test suite
+  - `scheme/test/test.7.scm`: R7RS runner
+  - `scheme/test/test.6.scm`: R6RS runner
+  - `scheme/test/test.rkt`: Racket-specific tests
+  - `scheme/test/core.scm`, `scheme/test/helpers.scm`, `scheme/test/lib.scm`: Test utilities
+- **Common Lisp**: FiveAM framework
+  - `common-lisp/test/`: Modular test files with ASDF integration
+  - Supports SBCL, ECL, CLISP, and ABCL implementations
 
 ## Architecture
 
-The project is organized into several key components:
+The project is organized into language-specific directories:
 
-- **`src/prolog-core.scm`**: Core Prolog engine implementation (highly commonized)
-- **`src/prolog-lib.scm`**: Standard library predicates
-- **`src/prolog.sld`**: R7RS library wrapper with conditional compilation
-- **`src/prolog.rkt`**: Racket-specific wrapper  
-- **`src/prolog.sls`**: R6RS library wrapper
+### Scheme Implementation (`scheme/`)
+**Core Components:**
+- **`scheme/src/core.scm`**: Portable Scheme implementation of core engine
+- **`scheme/src/primitive.scm`**: Built-in predicates and meta-predicates
+- **`scheme/src/stdlib.scm`**: Standard library clauses
 
-The core engine handles:
+**Implementation Wrappers:**
+- **`scheme/src/prolog.rkt`**: Racket-specific wrapper
+- **`scheme/src/prolog.sld`**: R7RS library wrapper with conditional compilation
+- **`scheme/src/prolog.sls`**: R6RS library wrapper
+
+### Common Lisp Implementation (`common-lisp/`)
+**Core Components:**
+- **`common-lisp/src/core.lisp`**: Common Lisp core engine
+- **`common-lisp/src/primitive.lisp`**: Common Lisp built-in predicates
+- **`common-lisp/src/stdlib.lisp`**: Common Lisp standard library
+- **`common-lisp/src/all.lisp`**: Main package combining all components
+- **`common-lisp/prolog.asd`**: ASDF system definition
+
+### Engine Features
 - **Unification**: Variable binding and term unification
-- **Backtracking**: Choice points implemented using exceptions and continuations
+- **Backtracking**: Choice points using exceptions and continuations
 - **Clause Database**: Dynamic predicate storage with arity-based indexing
-- **Built-in Predicates**: Standard Prolog predicates (arithmetic, control flow, list operations)
-- **Debugging Support**: Spy/trace functionality with configurable indentation
+- **Built-in Predicates**: Standard Prolog predicates (arithmetic, control flow, lists)
+- **Debugging Support**: Spy/trace functionality
 
 ## License
 

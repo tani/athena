@@ -13,7 +13,7 @@ Athena is a comprehensive Prolog engine with dual implementations in Scheme and 
 
 ### Testing
 ```bash
-# Run all tests across all Scheme implementations
+# Run all tests across all implementations (Scheme and Common Lisp)
 make all
 
 # Test specific Scheme implementations
@@ -43,7 +43,7 @@ make format          # Format all source files using schemat
 
 ### Development Environment
 ```bash
-nix develop          # Alternative Nix development shell
+nix develop          # Nix development shell with all dependencies
 lefthook install     # Install git hooks (auto-runs after setup)
 ```
 
@@ -119,7 +119,7 @@ make clean           # Remove log files
 ### Running Single Tests
 ```bash
 # Scheme (example with Racket)
-racket -e '(require "scheme/test/test.rkt")' -e '(test-name)'
+racket scheme/test/test.rkt
 
 # Common Lisp (example with SBCL)
 sbcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-registry*)" --eval "(asdf:test-system :prolog)" --quit
@@ -127,3 +127,10 @@ sbcl --eval "(require 'asdf)" --eval "(push #P\"./common-lisp/\" asdf:*central-r
 
 ### Web Deployment
 The project includes web deployment capability through Gambit Scheme compilation to JavaScript. Use `./script/build.sh` to build the web version. The build script automatically copies the Scheme source files from `scheme/src/` to the Gambit build directory.
+
+## Important Instructions
+
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User
