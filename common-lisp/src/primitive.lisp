@@ -17,7 +17,6 @@
     :ground-p
 
     ;; Special variables
-    :*current-solution-accumulator*
     :*current-dynamic-parameters*
 
     ;; Helper functions for tests
@@ -26,7 +25,6 @@
 (in-package :prolog/primitive)
 
 ;;; Special variables replacing Scheme parameters
-(defparameter *current-solution-accumulator* '())
 (defparameter *current-dynamic-parameters* '())
 
 ;;; Utility functions
@@ -154,45 +152,3 @@
          (value (if key-value (cdr key-value) nil))
          (new-bindings (unify prolog-variable value *current-bindings*)))
     (prove-all *current-remaining-goals* new-bindings)))
-
-;;; Meta-predicates (Phase 4)
-
-;; Solution collection helpers
-(define-predicate (--add-solution-with-vars-and-fail template &rest vars)
-  (let* ((substituted-template (substitute-bindings *current-bindings* template))
-         (substituted-vars (mapcar (lambda (v) (substitute-bindings *current-bindings* v)) vars))
-         (entry (cons substituted-vars substituted-template))
-         (new-solutions (cons entry *current-solution-accumulator*)))
-    (setf *current-solution-accumulator* new-solutions))
-  (make-failure))
-
-;; Aliases for Lisp evaluation
-(define-predicate (is result-variable expression)
-  (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
-         (evaluated-result (handler-case
-                            (eval lisp-expression)
-                            (error (e)
-                              (format t "Evaluation error: ~A~%" e)
-                              nil)))
-         (result-term (substitute-bindings *current-bindings* result-variable))
-         (new-bindings (unify result-term evaluated-result *current-bindings*)))
-    (if new-bindings
-      (prove-all *current-remaining-goals* new-bindings)
-      (make-failure))))
-
-(define-predicate (lisp result-variable expression)
-  (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
-         (evaluated-result (handler-case
-                            (eval lisp-expression)
-                            (error (e)
-                              (format t "Evaluation error: ~A~%" e)
-                              nil)))
-         (result-term (substitute-bindings *current-bindings* result-variable))
-         (new-bindings (unify result-term evaluated-result *current-bindings*)))
-    (if new-bindings
-      (prove-all *current-remaining-goals* new-bindings)
-      (make-failure))))
-
-;; Simple true predicate for testing
-(define-predicate (true)
-  (prove-all *current-remaining-goals* *current-bindings*))

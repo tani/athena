@@ -10,7 +10,6 @@
 ;; - Dynamic parameter predicates
 
 (begin
-  (define current-solution-accumulator (make-parameter '()))
   (define current-lisp-environment (make-parameter (interaction-environment)))
   (define current-dynamic-parameters (make-parameter '()))
 

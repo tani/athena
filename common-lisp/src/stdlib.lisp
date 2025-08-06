@@ -3,12 +3,14 @@
 
 (in-package :prolog/stdlib)
 
-;; Control flow clauses
-(<- and true)
-(<- (and ?goal . ?goals) (call ?goal) (call (and . ?goals)))
+(<- true)
 
-(<- (or ?goal . ?goals) (call ?goal))
-(<- (or ?goal . ?goals) (call (or . ?goals)))
+(<- and true)
+(<- (and ?g . ?gs) (call ?g) (call (and . ?gs)))
+
+(<- or fail)
+(<- (or ?g . ?gs) (call ?g))
+(<- (or ?g . ?gs) (call (or . ?gs)))
 
 (<- (not ?goal) (call ?goal) ! (fail))
 (<- (not ?goal))
@@ -17,11 +19,14 @@
 (<- (if ?cond ?then ?else) (call ?else))
 (<- (if ?cond ?then) (call ?cond) (call ?then))
 
-;; Repeat predicate
+(<- (lisp ?result ?expression) (--lisp-eval-internal ?result ?expression))
+(<- (lisp ?expression) (--lisp-eval-internal ? ?expression))
+
+(<- (is ?result ?expression) (--lisp-eval-internal ?result ?expression))
+
 (<- (repeat))
 (<- (repeat) (repeat))
 
-;; List manipulation clauses
 (<- (member ?item (?item . ?)))
 (<- (member ?item (? . ?rest)) (member ?item ?rest))
 
@@ -29,22 +34,22 @@
 (<- (append (?head . ?tail) ?list (?head . ?result))
   (append ?tail ?list ?result))
 
-;; Maplist helper clauses
 (<- (--all-null ()))
 (<- (--all-null (() . ?rest)) (--all-null ?rest))
 
 (<- (--get-heads () ()))
-(<- (--get-heads ((?head . ?) . ?rest) (?head . ?heads))
-  (--get-heads ?rest ?heads))
+(<- (--get-heads ((?h . ?t) . ?rest-lists) (?h . ?rest-heads))
+  (--get-heads ?rest-lists ?rest-heads))
 
 (<- (--get-tails () ()))
-(<- (--get-tails ((? . ?tail) . ?rest) (?tail . ?tails))
-  (--get-tails ?rest ?tails))
+(<- (--get-tails ((?h . ?t) . ?rest-lists) (?t . ?rest-tails))
+  (--get-tails ?rest-lists ?rest-tails))
 
 (<- (maplist ?pred . ?lists)
   (if (--all-null ?lists)
     true
-    (and (--get-heads ?lists ?heads)
+    (and
+      (--get-heads ?lists ?heads)
       (--get-tails ?lists ?tails)
       (call (?pred . ?heads))
       (call (maplist ?pred . ?tails)))))
