@@ -70,7 +70,7 @@
   "Compare two terms for equality, using symbol= for symbols and equal for other types"
   (cond
     ((and (symbolp term1) (symbolp term2))
-      (symbol= term1 term2))
+     (symbol= term1 term2))
     (t (equal term1 term2))))
 
 ;;; Failure and success types
@@ -83,7 +83,7 @@
 ;;; Cut exception for implementing Prolog's cut (!)
 (define-condition cut-exception (error)
   ((tag :initarg :tag :reader cut-exception-tag)
-    (value :initarg :value :reader cut-exception-value)))
+   (value :initarg :value :reader cut-exception-value)))
 
 ;;; Special variables (replacing Scheme parameters)
 (defparameter *current-clause-database* '())
@@ -124,10 +124,10 @@
     ((failure-p bindings) (make-failure))
     ((null bindings) expression)
     ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
-      (if (member expression visited :test #'symbol=)
-        expression
-        (let ((value (lookup-variable expression bindings)))
-          (substitute-bindings bindings value (cons expression visited)))))
+     (if (member expression visited :test #'symbol=)
+       expression
+       (let ((value (lookup-variable expression bindings)))
+         (substitute-bindings bindings value (cons expression visited)))))
     ((atom-p expression) expression)
     (t
       (cons (substitute-bindings bindings (car expression) visited)
@@ -137,10 +137,10 @@
   (labels ((collect-unique-if (predicate tree accumulator)
              (cond
                ((atom-p tree)
-                 (if (and (funcall predicate tree)
-                      (not (member tree accumulator :test #'symbol=)))
-                   (cons tree accumulator)
-                   accumulator))
+                (if (and (funcall predicate tree)
+                     (not (member tree accumulator :test #'symbol=)))
+                  (cons tree accumulator)
+                  accumulator))
                (t
                  (let ((accumulator-after-car
                          (collect-unique-if predicate (car tree) accumulator)))
@@ -159,11 +159,11 @@
   (cond
     ((and (symbolp expression) (symbol= variable expression)) t)
     ((and (variable-p expression) (assoc expression bindings :test #'symbol=))
-      (let ((value (lookup-variable expression bindings)))
-        (occurs-check-p variable value bindings)))
+     (let ((value (lookup-variable expression bindings)))
+       (occurs-check-p variable value bindings)))
     ((consp expression)
-      (or (occurs-check-p variable (car expression) bindings)
-        (occurs-check-p variable (cdr expression) bindings)))
+     (or (occurs-check-p variable (car expression) bindings)
+       (occurs-check-p variable (cdr expression) bindings)))
     (t nil)))
 
 ;;; Forward declarations to avoid warnings
@@ -173,13 +173,13 @@
 (defun unify-var (variable value bindings)
   (cond
     ((assoc variable bindings :test #'symbol=)
-      (let ((bound-term (lookup-variable variable bindings)))
-        (unify bound-term value bindings)))
+     (let ((bound-term (lookup-variable variable bindings)))
+       (unify bound-term value bindings)))
     ((and (variable-p value) (assoc value bindings :test #'symbol=))
-      (let ((bound-term (lookup-variable value bindings)))
-        (unify variable bound-term bindings)))
+     (let ((bound-term (lookup-variable value bindings)))
+       (unify variable bound-term bindings)))
     ((and *current-occurs-check* (occurs-check-p variable value bindings))
-      (make-failure))
+     (make-failure))
     (t (acons variable value bindings))))
 
 (defun unify (term1 term2 bindings)
@@ -189,8 +189,8 @@
     ((variable-p term1) (unify-var term1 term2 bindings))
     ((variable-p term2) (unify-var term2 term1 bindings))
     ((and (consp term1) (consp term2))
-      (let ((car-bindings (unify (car term1) (car term2) bindings)))
-        (unify (cdr term1) (cdr term2) car-bindings)))
+     (let ((car-bindings (unify (car term1) (car term2) bindings)))
+       (unify (cdr term1) (cdr term2) car-bindings)))
     (t (make-failure))))
 
 ;;; Clause database operations
@@ -320,8 +320,8 @@
   (cond
     ((failure-p bindings) (make-failure))
     ((null goals)
-      (let ((terminal-cont (lambda () (make-failure))))
-        (make-success :bindings bindings :continuation terminal-cont)))
+     (let ((terminal-cont (lambda () (make-failure))))
+       (make-success :bindings bindings :continuation terminal-cont)))
     (t (prove goals bindings))))
 
 (defun insert-choice-point (clause choice-point)
@@ -421,17 +421,13 @@
 
 (defun display-solution (bindings)
   (if (null bindings)
-    (progn
-      (terpri)
-      (format t "Yes"))
+    (format t "~%Yes")
     (dolist (var-val bindings)
-      (terpri)
-      (format t "~A = ~A" (car var-val) (cdr var-val)))))
+      (format t "~%~A = ~A" (car var-val) (cdr var-val)))))
 
 (defun continue-prompt-p ()
   (let ((*package* (find-package :prolog/core)))
-    (terpri)
-    (format t "Continue ? (y/n) ")
+    (format t "~%Continue ? (y/n) ")
     (force-output *standard-output*)
     (case (read)
       ((y) t)
