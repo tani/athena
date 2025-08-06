@@ -2,17 +2,30 @@
   description = "Athena - A comprehensive Prolog engine implemented in Scheme and Common Lisp";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs@{ nixpkgs, flake-parts, ... }:
+  outputs = inputs@{ crane, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [ flake-parts.flakeModules.easyOverlay ];
       systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
       perSystem = { config, pkgs, lib, system, ... }:
         let
+          craneLib = crane.mkLib pkgs;
+          schemat-src = pkgs.fetchCrate {
+              pname = "schemat";
+              version = "0.4.2";
+              hash = "sha256-C5H/lykodY99UZAbFjH1aKP1B+dPP/+IDVidEKisKL4=";
+          };
+          schemat = craneLib.buildPackage {
+            src = schemat-src;
+          };
           # Project configuration
           pname = "prolog";
           clSrc = ./common-lisp;
@@ -264,6 +277,7 @@
             inherit LD_LIBRARY_PATH;
             packages = with pkgs; [
               # Scheme implementations
+              schemat
               rlwrap
               racket-minimal
               gauche
@@ -279,7 +293,6 @@
               chickenPackages.chickenEggs.srfi-64
               chickenPackages.chickenEggs.srfi-132
               # Tools
-              schemat
               moreutils
               findutils
               lefthook

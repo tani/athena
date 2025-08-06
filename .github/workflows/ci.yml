@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-22.04-arm, macos-15]
-        impl: [gauche, guile, chicken, chibi, sagittarius, racket, gambit, chez, sbcl, ecl, clisp, abcl, ccl, mkcl, cmucl_binary, clasp-common-lisp]
+        lisp: [gauche, guile, chicken, chibi, sagittarius, racket, gambit, chez, sbcl, ecl, clisp, abcl, ccl, mkcl, cmucl_binary, clasp-common-lisp]
         exclude:
           - os: macos-15
             lisp: ccl
@@ -40,4 +40,4 @@ jobs:
         with:
           nix_conf: extra-experimental-features = nix-command flakes
 
-      - run: nix run .#test-${{ matrix.impl }}
+      - run: nix run .#test-${{ matrix.lisp }}
