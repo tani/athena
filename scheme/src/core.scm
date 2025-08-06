@@ -264,26 +264,28 @@
                  (new-continuation (combine result-continuation continuation-b)))
             (make-success bindings new-continuation))))))
 
-  (define (prove goal remaining-goals bindings)
-    (with-spy
-      goal
-      bindings
-      (lambda ()
-        (parameterize ((current-remaining-goals remaining-goals)
-                       (current-bindings bindings))
-          (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-                 (predicate-handler (get-clauses predicate-symbol))
-                 (args (if (pair? goal) (cdr goal) '()))
-                 (goal-arity (length args))
-                 (get-min-arity (lambda (c) (min-arity (cdar c)))))
-            (if (procedure? predicate-handler)
-              (apply predicate-handler args)
-              (let ((goal-for-unify (if (pair? goal) goal (list goal))))
-                (if (and
-                     (not (null? predicate-handler))
-                     (< goal-arity (apply min (map get-min-arity predicate-handler))))
-                  (make-failure)
-                  (try-clauses goal-for-unify bindings remaining-goals predicate-handler)))))))))
+  (define (prove goals bindings)
+    (let ((goal (car goals))
+          (remaining-goals (cdr goals)))
+      (with-spy
+        goal
+        bindings
+        (lambda ()
+          (parameterize ((current-remaining-goals remaining-goals)
+                         (current-bindings bindings))
+            (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
+                   (predicate-handler (get-clauses predicate-symbol))
+                   (args (if (pair? goal) (cdr goal) '()))
+                   (goal-arity (length args))
+                   (get-min-arity (lambda (c) (min-arity (cdar c)))))
+              (if (procedure? predicate-handler)
+                (apply predicate-handler args)
+                (let ((goal-for-unify (if (pair? goal) goal (list goal))))
+                  (if (and
+                       (not (null? predicate-handler))
+                       (< goal-arity (apply min (map get-min-arity predicate-handler))))
+                    (make-failure)
+                    (try-clauses goal-for-unify bindings remaining-goals predicate-handler))))))))))
   (define (insert-choice-point clause choice-point)
     (define (insert-cut-term term)
       (cond
@@ -324,7 +326,7 @@
       ((null? goals)
         (let ((terminal-cont (lambda () (make-failure))))
           (make-success bindings terminal-cont)))
-      (else (prove (car goals) (cdr goals) bindings))))
+      (else (prove goals bindings))))
 
   (define (solve goals on-success on-failure)
     (define (initial-continuation)
