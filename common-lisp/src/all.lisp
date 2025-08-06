@@ -7,6 +7,7 @@
 ;;; packages.
 
 (uiop:define-package :prolog/all
+  (:nicknames prolog)
   (:use-reexport
     :prolog/core
     :prolog/primitive
