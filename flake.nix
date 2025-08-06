@@ -79,7 +79,10 @@
           schemeTests = {
             test-racket = mkSchemeTest {
               name = "racket";
-              cmd = "${pkgs.racket-minimal}/bin/racket scheme/test/test.rkt";
+              cmd = ''
+                ${pkgs.racket-minimal}/bin/raco pkg install --user --auto srfi-lib
+                ${pkgs.racket-minimal}/bin/racket scheme/test/test.rkt
+              '';
             };
 
             test-gauche = mkSchemeTest {
@@ -89,7 +92,23 @@
 
             test-chicken = mkSchemeTest {
               name = "chicken";
-              cmd = "${pkgs.chicken}/bin/csi -require-extension r7rs -include-path scheme/src -eval '(include \"scheme/src/prolog.sld\")' -script scheme/test/test.7.scm";
+              cmd = let
+                chickenEnv = pkgs.buildEnv {
+                  name = "chicken-test-env";
+                  paths = with pkgs; [
+                    chicken
+                    chickenPackages.chickenEggs.r7rs
+                    chickenPackages.chickenEggs.srfi-1
+                    chickenPackages.chickenEggs.srfi-13
+                    chickenPackages.chickenEggs.srfi-14
+                    chickenPackages.chickenEggs.srfi-64
+                    chickenPackages.chickenEggs.srfi-132
+                  ];
+                };
+              in ''
+                export CHICKEN_REPOSITORY_PATH=${chickenEnv}/lib/chicken/11
+                ${chickenEnv}/bin/csi -require-extension r7rs -include-path scheme/src -eval '(include "scheme/src/prolog.sld")' -script scheme/test/test.7.scm
+              '';
             };
 
             test-guile = mkSchemeTest {

@@ -1,4 +1,4 @@
-name: scheme-ci
+name: test
 
 on:
   push:
