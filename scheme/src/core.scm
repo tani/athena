@@ -264,7 +264,7 @@
                  (new-continuation (combine result-continuation continuation-b)))
             (make-success bindings new-continuation))))))
 
-  (define (prove goal bindings remaining-goals)
+  (define (prove goal remaining-goals bindings)
     (with-spy
       goal
       bindings
@@ -324,7 +324,7 @@
       ((null? goals)
         (let ((terminal-cont (lambda () (make-failure))))
           (make-success bindings terminal-cont)))
-      (else (prove (car goals) bindings (cdr goals)))))
+      (else (prove (car goals) (cdr goals) bindings))))
 
   (define (solve goals on-success on-failure)
     (define (initial-continuation)

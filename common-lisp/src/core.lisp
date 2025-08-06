@@ -316,7 +316,7 @@
     ((null goals)
       (let ((terminal-cont (lambda () (make-failure))))
         (make-success :bindings bindings :continuation terminal-cont)))
-    (t (prove (car goals) bindings (cdr goals)))))
+    (t (prove (car goals) (cdr goals) bindings))))
 
 (defun insert-choice-point (clause choice-point)
   (labels ((insert-cut-term (term)
@@ -372,7 +372,7 @@
           (let ((clauses (remove-if-not #'clause-match-p all-clauses)))
             (try-one-by-one clauses)))))))
 
-(defun prove (goal bindings remaining-goals)
+(defun prove (goal remaining-goals bindings)
   (with-spy goal bindings
     (lambda ()
       (let* ((*current-remaining-goals* remaining-goals)
