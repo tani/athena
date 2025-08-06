@@ -6,7 +6,7 @@
 ;;; public API by re-exporting selected symbols from the implementation
 ;;; packages.
 
-(uiop:define-package :prolog/all
+(uiop:define-package :prolog/package
   (:nicknames prolog)
   (:use-reexport
     :prolog/core

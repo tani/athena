@@ -14,7 +14,7 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :bug-tracker "https://github.com/tani/athena/issues"
   :source-control (:git "https://github.com/tani/athena.git")
   :pathname "src"
-  :depends-on ("prolog/all")
+  :depends-on ("prolog/package")
   :in-order-to ((test-op (test-op "prolog/test"))))
 
 (defsystem "prolog/test"
@@ -25,7 +25,7 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :depends-on ("prolog" "fiveam")
   :serial t
   :components ((:file "utilities")
-               (:file "all")
+               (:file "package")
                (:file "core")
                (:file "primitive")
                (:file "stdlib"))

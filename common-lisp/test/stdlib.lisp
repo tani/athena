@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test/all)
+(in-package :prolog/test/package)
 
 ;; Define test suite for standard library
 (def-suite :prolog-stdlib-tests :in :prolog-test-suite)

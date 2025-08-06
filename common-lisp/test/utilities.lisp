@@ -4,7 +4,7 @@
 
 (defpackage :prolog/test/utilities
   (:use :common-lisp)
-  (:import-from :prolog/all
+  (:import-from :prolog/package
     #:solve
     #:substitute-bindings)
   (:export

@@ -2,7 +2,7 @@
 ;;; Copyright © 2025 Masaya Taniguchi
 ;;; Released under the GNU General Public License v3.0
 
-(in-package :prolog/test/all)
+(in-package :prolog/test/package)
 
 ;; Define test suite for core engine
 (def-suite :prolog-core-tests :in :prolog-test-suite)
@@ -366,7 +366,7 @@
     (let ((output (make-string-output-stream))
           (input (make-string-input-stream "l"))
           (result ""))
-      (let ((prolog/all:*current-spy-predicates* '(watched))
+      (let ((*current-spy-predicates* '(watched))
             (*standard-input* input)
             (*standard-output* output))
         (solve-all '((watched)) 'dummy)
