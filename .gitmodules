@@ -1,0 +1,3 @@
+[submodule "gambit"]
+	path = gambit
+	url = https://github.com/gambit/gambit
