@@ -211,6 +211,8 @@
 
 ;;; Helper functions for clause management
 (defun min-arity (args)
+  #+sbcl
+  (declare (optimize (sb-ext:inhibit-warnings 3)))
   (labels ((count-args (lst count)
              (cond
                ((consp lst) (count-args (cdr lst) (1+ count)))
