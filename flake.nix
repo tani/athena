@@ -26,7 +26,6 @@
 
           # Development shell
           devShells.default = pkgs.mkShell {
-            inherit (common-lisp) LD_LIBRARY_PATH;
             packages = with pkgs; [
               rlwrap
               moreutils

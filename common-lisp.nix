@@ -6,8 +6,6 @@ let
 
   # Common Lisp dependencies
   lispLibs = lisp: with lisp.pkgs; [ fiveam ];
-  nativeLibs = with pkgs; [ ];
-  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath nativeLibs;
 
   # Supported implementations
   lispImpls = [ "abcl" "sbcl" "ecl" "ccl" "mkcl" "clisp" "cmucl_binary" "clasp-common-lisp" ];
@@ -48,7 +46,7 @@ let
   packageBuilders = {
     unbundled = { lisp, mainProgram, evalFlag, extraArgs }: rec {
       mainLib = lisp.buildASDFSystem {
-        inherit pname version systems nativeLibs;
+        inherit pname version systems;
         src = clSrc;
         lispLibs = lispLibs lisp;
       };
@@ -60,7 +58,6 @@ let
         TMPLOG=$(mktemp)
         trap "rm -f $TMPLOG" EXIT
         
-        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
         ${lisp'}/bin/${mainProgram} ${extraArgs} ${evalFlag} '(require "asdf")' ${evalFlag} "$(cat <<EOF
           (progn
             (asdf:test-system :${pname})
@@ -78,7 +75,7 @@ let
 
     bundled = { lisp, mainProgram, evalFlag, extraArgs }: rec {
       mainLib = lisp.buildASDFSystem {
-        inherit pname version systems nativeLibs;
+        inherit pname version systems;
         src = clSrc;
         lispLibs = lispLibs lisp;
       };
@@ -90,7 +87,6 @@ let
         TMPLOG=$(mktemp)
         trap "rm -f $TMPLOG" EXIT
         
-        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
         ${lisp'}/bin/${mainProgram} ${extraArgs} ${evalFlag} '(require "asdf")' ${evalFlag} "$(cat <<EOF
           (progn
             (asdf:test-system :${pname})
@@ -212,7 +208,6 @@ let
   };
 in
 {
-  inherit LD_LIBRARY_PATH;
   dev-packages = builtins.map mkDevPackage availableLispImpls;
   packages = builtins.listToAttrs (builtins.concatMap mkPackages availableLispImpls);
   apps = builtins.listToAttrs (builtins.concatMap mkApps availableLispImpls) // { inherit coverage-sbcl; };

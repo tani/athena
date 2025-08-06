@@ -16,7 +16,7 @@
   "Test variable-p predicate for Prolog variable identification.
    Validates correct identification of Prolog variables (symbols starting with ?).
    This is fundamental for unification and term processing."
-  (is-false (variable-p '?x) "?x should be recognized as a Prolog variable")
+  (is-true (variable-p '?x) "?x should be recognized as a Prolog variable")
   (is-true (variable-p '?) "? should be recognized as an anonymous variable")
   (is-false (variable-p 'foo) "foo should not be recognized as a variable (atom)")
   (is-false (variable-p '(?x)) "(?x) should not be recognized as a variable (list)"))
