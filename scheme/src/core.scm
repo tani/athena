@@ -268,26 +268,24 @@
             (make-success bindings new-continuation))))))
 
   (define (prove goals bindings)
-    (let ((goal (car goals))
-          (remaining-goals (cdr goals)))
-      (with-spy
-        goal
-        bindings
+    (let* ((goal (car goals))
+           (remaining-goals (cdr goals))
+           (predicate-symbol (if (pair? goal) (car goal) goal))
+           (predicate-handler (get-clauses predicate-symbol))
+           (args (if (pair? goal) (cdr goal) '()))
+           (goal-arity (length args)))
+      (with-spy goal bindings
         (lambda ()
-          (parameterize ((current-remaining-goals remaining-goals)
-                         (current-bindings bindings))
-            (let* ((predicate-symbol (if (pair? goal) (car goal) goal))
-                   (predicate-handler (get-clauses predicate-symbol))
-                   (args (if (pair? goal) (cdr goal) '()))
-                   (goal-arity (length args))
-                   (get-min-arity (lambda (c) (min-arity (cdar c)))))
-              (if (procedure? predicate-handler)
-                (apply predicate-handler args)
-                (if (and
-                     (not (null? predicate-handler))
-                     (< goal-arity (apply min (map get-min-arity predicate-handler))))
-                  (make-failure)
-                  (try-clauses goals bindings predicate-handler)))))))))
+          (if (procedure? predicate-handler)
+            (parameterize ((current-remaining-goals remaining-goals)
+                           (current-bindings bindings))
+              (apply predicate-handler args))
+            (if (and (not (null? predicate-handler))
+                 (< goal-arity (apply min (map (lambda (c) (min-arity (cdar c)))
+                                           predicate-handler))))
+              (make-failure)
+              (try-clauses goals bindings predicate-handler)))))))
+
   (define (insert-choice-point clause choice-point)
     (define (insert-cut-term term)
       (cond
@@ -297,15 +295,14 @@
     (map insert-cut-term clause))
 
   (define (try-clauses goals bindings all-clauses)
-    (let ((goal (car goals)))
+    (let* ((goal (car goals))
+           (goal-arity (if (pair? goal) (length (cdr goal)) 0)))
       (call-with-current-choice-point
         (lambda (choice-point)
-          (define goal-arity (if (pair? goal) (length (cdr goal)) 0))
           (define (clause-match? clause)
             (let* ((required (min-arity (cdar clause)))
                    (variadic? (not (list? (cdar clause)))))
-              (and
-                (>= goal-arity required)
+              (and (>= goal-arity required)
                 (or variadic? (= goal-arity required)))))
           (define (try-one-by-one clauses-to-try)
             (if (null? clauses-to-try)
@@ -320,8 +317,8 @@
                          (result-continuation (success-continuation result))
                          (new-continuation (combine result-continuation try-next-clause)))
                     (make-success result-bindings new-continuation))))))
-          (let ((clauses (filter clause-match? all-clauses)))
-            (try-one-by-one clauses))))))
+          (let ((matching-clauses (filter clause-match? all-clauses)))
+            (try-one-by-one matching-clauses))))))
 
   (define (prove-all goals bindings)
     (cond
