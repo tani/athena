@@ -73,14 +73,17 @@
           # Scheme test app builder
           mkSchemeTest = { name, cmd }: {
             type = "app";
-            program = pkgs.writeShellScriptBin "test-${name}" cmd;
+            program = pkgs.writeShellScriptBin "test-${name}" ''
+              set -e
+              ${cmd}
+            '';
           };
 
           schemeTests = {
             test-racket = mkSchemeTest {
               name = "racket";
               cmd = ''
-                ${pkgs.racket-minimal}/bin/raco pkg install --user --auto srfi-lib
+                ${pkgs.racket-minimal}/bin/raco pkg install --user --auto srfi-lib || :
                 ${pkgs.racket-minimal}/bin/racket scheme/test/test.rkt
               '';
             };
@@ -152,11 +155,16 @@
                 inherit (lisp) meta;
               };
               testExe = pkgs.writeShellScriptBin "${pname}-test" ''
+                set -e
                 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
                 ${lisp'}/bin/${mainProgram} ${extraArgs} ${evalFlag} '(require "asdf")' ${evalFlag} "$(cat <<EOF
-                  (progn
-                    (asdf:test-system :${pname})
-                    (quit))
+                  (handler-case
+                    (progn
+                      (asdf:test-system :${pname})
+                      (uiop:quit 0))
+                    (error (c)
+                      (format t "~&Test failed: ~A~%" c)
+                      (uiop:quit 1)))
                 EOF
                 )" -- "$@"
               '';
@@ -172,11 +180,16 @@
                 inherit (lisp) meta;
               };
               testExe = pkgs.writeShellScriptBin "${pname}-test" ''
+                set -e
                 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
                 ${lisp'}/bin/${mainProgram} ${extraArgs} ${evalFlag} '(require "asdf")' ${evalFlag} "$(cat <<EOF
-                  (progn
-                    (asdf:test-system :${pname})
-                    (quit))
+                  (handler-case
+                    (progn
+                      (asdf:test-system :${pname})
+                      (uiop:quit 0))
+                    (error (c)
+                      (format t "~&Test failed: ~A~%" c)
+                      (uiop:quit 1)))
                 EOF
                 )" -- "$@"
               '';
