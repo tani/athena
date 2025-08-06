@@ -326,7 +326,7 @@
                (t term))))
     (mapcar #'insert-cut-term clause)))
 
-(defun process-one (goals clause bindings)
+(defun process-one (goals bindings clause)
   (let* ((goal (car goals))
          (remaining-goals (cdr goals))
          (goal-for-unify (if (consp goal) goal (list goal)))
@@ -349,10 +349,10 @@
           (make-success :bindings bindings :continuation new-continuation))))))
 
 (defun try-clauses (goals bindings all-clauses)
-  (let* ((goal (car goals))
-         (goal-arity (if (consp goal) (length (cdr goal)) 0)))
-    (call-with-current-choice-point
-      (lambda (choice-point)
+  (call-with-current-choice-point
+    (lambda (choice-point)
+      (let* ((goal (car goals))
+             (goal-arity (if (consp goal) (length (cdr goal)) 0)))
         (labels ((clause-match-p (clause)
                    (let* ((required (min-arity (cdar clause)))
                           (variadic-p (not (proper-list-p (cdar clause)))))
@@ -364,7 +364,7 @@
                      (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
                             (remaining-clauses (cdr clauses-to-try))
                             (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                            (result (process-one goals current-clause bindings)))
+                            (result (process-one goals bindings current-clause)))
                        (if (failure-p result)
                          (funcall try-next-clause)
                          (let* ((result-bindings (success-bindings result))

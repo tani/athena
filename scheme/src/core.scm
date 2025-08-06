@@ -245,7 +245,7 @@
                 (spy-message "EXIT" goal (success-bindings result)))))))
       result))
 
-  (define (process-one goals clause bindings)
+  (define (process-one goals bindings clause)
     (let* ((goal (car goals))
            (remaining-goals (cdr goals))
            (goal-for-unify (if (pair? goal) goal (list goal)))
@@ -295,10 +295,10 @@
     (map insert-cut-term clause))
 
   (define (try-clauses goals bindings all-clauses)
-    (let* ((goal (car goals))
-           (goal-arity (if (pair? goal) (length (cdr goal)) 0)))
-      (call-with-current-choice-point
-        (lambda (choice-point)
+    (call-with-current-choice-point
+      (lambda (choice-point)
+        (let* ((goal (car goals))
+               (goal-arity (if (pair? goal) (length (cdr goal)) 0)))
           (define (clause-match? clause)
             (let* ((required (min-arity (cdar clause)))
                    (variadic? (not (list? (cdar clause)))))
@@ -310,7 +310,7 @@
               (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
                      (remaining-clauses (cdr clauses-to-try))
                      (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                     (result (process-one goals current-clause bindings)))
+                     (result (process-one goals bindings current-clause)))
                 (if (failure? result)
                   (try-next-clause)
                   (let* ((result-bindings (success-bindings result))
