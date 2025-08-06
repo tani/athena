@@ -176,7 +176,7 @@ let
   mkDevPackage = impl:
     pkgs.${impl}.withPackages (ps: lispLibs pkgs.${impl});
 
-  mkOverlays = config: impl: [
+  mkOverlays = impl: [
     {
       name = impl;
       value = pkgs.${impl}.withOverrides
@@ -211,5 +211,5 @@ in
   dev-packages = builtins.map mkDevPackage availableLispImpls;
   packages = builtins.listToAttrs (builtins.concatMap mkPackages availableLispImpls);
   apps = builtins.listToAttrs (builtins.concatMap mkApps availableLispImpls) // { inherit coverage-sbcl; };
-  overlayAttrs = builtins.listToAttrs (builtins.concatMap (mkOverlays config) availableLispImpls);
+  overlayAttrs = builtins.listToAttrs (builtins.concatMap mkOverlays availableLispImpls);
 }
