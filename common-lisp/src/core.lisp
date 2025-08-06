@@ -264,10 +264,13 @@
          (body (cdr clause-parts))
          (name (if (consp head) (car head) head))
          (args (if (consp head) (cdr head) '()))
-         (arity (min-arity args)))
+         (arity (min-arity args))
+         (clause (if (consp head)
+                  (cons head body)
+                  (cons (list head) body))))
     `(progn
       (remove-clauses-with-arity! ',name ,arity)
-      (add-clause! (replace-anonymous-variables ',(cons head body))))))
+      (add-clause! (replace-anonymous-variables ',clause)))))
 
 ;;; Query macro (simplified for now)
 (defmacro ?- (&rest goals)

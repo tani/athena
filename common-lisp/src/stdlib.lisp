@@ -3,7 +3,7 @@
 
 (in-package :prolog/stdlib)
 
-(<- true)
+(<-- true)
 
 (<- and true)
 (<- (and ?g . ?gs) (call ?g) (call (and . ?gs)))
