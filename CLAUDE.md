@@ -7,30 +7,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Athena is a comprehensive Prolog engine with dual implementations in Scheme and Common Lisp. The project is organized into separate language-specific directories:
 
 - `scheme/` - Scheme implementation supporting multiple implementations (Racket, Gauche, Chez, Guile, Chibi, Sagittarius, Gambit, Chicken)
-- `common-lisp/` - Common Lisp implementation supporting multiple implementations (SBCL, ABCL, CLISP, ECL)
+- `common-lisp/` - Common Lisp implementation supporting multiple implementations (SBCL, ECL, CLISP, ABCL, CCL, MKCL, CMUCL, CLASP)
 
 ## Development Commands
 
 ### Testing
 ```bash
-# Run all tests across all implementations (Scheme and Common Lisp)
-make all
-
 # Test specific Scheme implementations
-make test-racket      # Racket
-make test-gauche      # Gauche with R7RS
-make test-chicken     # Chicken Scheme with R7RS
-make test-guile       # Guile with R7RS
-make test-chibi       # Chibi Scheme
-make test-sagittarius # Sagittarius Scheme
-make test-chez        # Chez Scheme with R6RS
-make test-gambit      # Gambit with R7RS
+nix run .#test-racket      # Racket
+nix run .#test-gauche      # Gauche with R7RS
+nix run .#test-chicken     # Chicken Scheme with R7RS
+nix run .#test-guile       # Guile with R7RS
+nix run .#test-chibi       # Chibi Scheme
+nix run .#test-sagittarius # Sagittarius Scheme
+nix run .#test-chez        # Chez Scheme with R6RS
+nix run .#test-gambit      # Gambit with R7RS
 
 # Common Lisp testing
-make test-sbcl        # SBCL
-make test-ecl         # ECL  
-make test-clisp       # CLISP
-make test-abcl        # ABCL
+nix run .#test-sbcl        # SBCL
+nix run .#test-ecl         # ECL  
+nix run .#test-clisp       # CLISP
+nix run .#test-abcl        # ABCL
+nix run .#test-ccl         # CCL (platform-specific)
+nix run .#test-mkcl        # MKCL (platform-specific)
+nix run .#test-cmucl_binary  # CMUCL (platform-specific)
+nix run .#test-clasp-common-lisp  # CLASP (platform-specific)
 
 # Or use ASDF directly (in REPL)
 asdf:test-system :prolog
@@ -90,7 +91,7 @@ make clean           # Remove log files
   - `scheme/test/core.scm`, `scheme/test/helpers.scm`, `scheme/test/lib.scm`: Test utilities
 - **Common Lisp**: FiveAM framework
   - `common-lisp/test/`: Modular test files with ASDF integration
-  - Supports SBCL, ECL, CLISP, and ABCL implementations
+  - Supports SBCL, ECL, CLISP, ABCL, CCL, MKCL, CMUCL, and CLASP implementations
 
 ## Key Development Patterns
 

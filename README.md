@@ -8,15 +8,25 @@ Athena is a comprehensive Prolog engine with dual implementations in Scheme and 
   - **Seamless Scheme Integration**: Define Prolog predicates using Scheme procedures and evaluate Scheme code from within Prolog.
   - **Interactive Querying**: Use the `?-` macro for running interactive Prolog queries directly in your REPL.
   - **Debugging Tools**: Includes spy functionality for tracing predicate execution.
-  - **Cross-Implementation Support**: Compatible with multiple Scheme standards (R6RS/R7RS) and implementations:
-    - Racket
-    - Gambit
-    - Chez Scheme
-    - Gauche
-    - Sagittarius
-    - Chibi Scheme
-    - Guile
-    - Chicken Scheme
+  - **Cross-Implementation Support**:
+    - **Scheme**: Compatible with R6RS/R7RS standards and implementations:
+      - Racket
+      - Gambit
+      - Chez Scheme
+      - Gauche
+      - Sagittarius
+      - Chibi Scheme
+      - Guile
+      - Chicken Scheme
+    - **Common Lisp**: Compatible with multiple implementations:
+      - SBCL (Steel Bank Common Lisp)
+      - ECL (Embeddable Common Lisp)
+      - CLISP
+      - ABCL (Armed Bear Common Lisp)
+      - CCL (Clozure Common Lisp)
+      - MKCL (ManKai Common Lisp)
+      - CMUCL (Carnegie Mellon University Common Lisp)
+      - CLASP (Common Lisp using LLVM)
 
 ## Getting Started
 
@@ -38,6 +48,8 @@ For development, use Nix to set up an environment with all supported implementat
 ```bash
 nix develop     # Enters shell with all Scheme and Common Lisp interpreters
 ```
+
+The project uses `flake.nix` and `flake.lock` for reproducible development environments.
 
 Try Athena online at [https://tani.github.io/athena](https://tani.github.io/athena).
 
@@ -124,30 +136,28 @@ The Prolog engine includes a simple spy functionality for debugging.
 
 ### Testing
 
-Run tests across all supported Scheme implementations:
-
-```bash
-make all
-```
-
-Test specific implementations:
+Run tests for specific implementations using nix:
 
 ```bash
 # Scheme implementations
-make test-racket      # Test with Racket
-make test-gauche      # Test with Gauche
-make test-chicken     # Test with Chicken Scheme
-make test-chez        # Test with Chez Scheme
-make test-guile       # Test with Guile
-make test-chibi       # Test with Chibi Scheme
-make test-sagittarius # Test with Sagittarius
-make test-gambit      # Test with Gambit
+nix run .#test-racket      # Test with Racket
+nix run .#test-gauche      # Test with Gauche
+nix run .#test-chicken     # Test with Chicken Scheme
+nix run .#test-chez        # Test with Chez Scheme
+nix run .#test-guile       # Test with Guile
+nix run .#test-chibi       # Test with Chibi Scheme
+nix run .#test-sagittarius # Test with Sagittarius
+nix run .#test-gambit      # Test with Gambit
 
 # Common Lisp implementations
-make test-sbcl        # Test with SBCL
-make test-ecl         # Test with ECL
-make test-clisp       # Test with CLISP
-make test-abcl        # Test with ABCL
+nix run .#test-sbcl        # Test with SBCL
+nix run .#test-ecl         # Test with ECL
+nix run .#test-clisp       # Test with CLISP
+nix run .#test-abcl        # Test with ABCL
+nix run .#test-ccl         # Test with CCL (platform-specific)
+nix run .#test-mkcl        # Test with MKCL (platform-specific)
+nix run .#test-cmucl_binary  # Test with CMUCL (platform-specific)
+nix run .#test-clasp-common-lisp  # Test with CLASP (platform-specific)
 ```
 
 ### Code Formatting
@@ -155,7 +165,7 @@ make test-abcl        # Test with ABCL
 Format all source and test files:
 
 ```bash
-make format      # Format using schemat
+make format      # Format using schemat (requires 'sponge' from moreutils)
 ```
 
 ### Building for Web
@@ -163,8 +173,10 @@ make format      # Format using schemat
 Build the Gambit version for web deployment:
 
 ```bash
-./script/build.sh
+./script/build.sh    # Builds JavaScript version using Gambit
 ```
+
+The build process includes applying patches for web compatibility.
 
 ### Git Hooks
 
@@ -179,7 +191,7 @@ Git hooks will automatically run `make format` before each commit and stage any 
 ### Clean
 
 ```bash
-make clean       # Remove log files
+make clean       # Remove log files from root and scheme directories
 ```
 
 ### Testing Framework
@@ -196,7 +208,13 @@ make clean       # Remove log files
 
 ## Architecture
 
-The project is organized into language-specific directories:
+The project is organized into language-specific directories with shared configuration:
+
+### Root Level Files
+- **`flake.nix` & `flake.lock`**: Nix flake configuration for reproducible development environments
+- **`lefthook.yml`**: Git hooks configuration for automated code formatting
+- **`Makefile`**: Build and test automation
+- **`CLAUDE.md`**: AI assistant instructions for codebase navigation
 
 ### Scheme Implementation (`scheme/`)
 **Core Components:**

@@ -83,6 +83,6 @@
          (not (find-package :asdf)))
     (run-all-tests)))
 
-(load #p"./common-lisp/test/core.lisp")
-(load #p"./common-lisp/test/primitive.lisp")
-(load #p"./common-lisp/test/stdlib.lisp")
+(load (merge-pathnames "core.lisp" *load-pathname*))
+(load (merge-pathnames "primitive.lisp" *load-pathname*))
+(load (merge-pathnames "stdlib.lisp" *load-pathname*))
