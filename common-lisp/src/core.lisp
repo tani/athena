@@ -281,12 +281,11 @@
   (let ((resolved (substitute-bindings bindings goal)))
     (format t "Spy on ~S? [l=leap c=creep n=nodebug] " resolved)
     (force-output *standard-output*)
-    (let ((input (read)))
-      (cond
-        ((symbol= input 'l) (setf *current-spy-mode* 'always) t)
-        ((symbol= input 'c) t)
-        ((symbol= input 'n) (setf *current-spy-mode* 'disabled) nil)
-        (t t)))))
+    (case (read-char)
+      ((#\l) (setf *current-spy-mode* 'always) t)
+      ((#\c) t)
+      ((#\n) (setf *current-spy-mode* 'disabled) nil)
+      (otherwise t))))
 
 (defun spy-message (kind goal bindings)
   (let ((resolved (substitute-bindings bindings goal)))
@@ -432,12 +431,12 @@
   (terpri)
   (format t "Continue ? (y/n) ")
   (force-output *standard-output*)
-  (let ((input (read)))
-    (cond
-      ((symbol= input 'y) t)
-      ((symbol= input 'n) nil)
-      (t (format t " Type y for more, or n to stop.~%")
-        (continue-prompt-p)))))
+  (case (read-char)
+    ((#\y) t)
+    ((#\n) nil)
+    (otherwise
+      (format t " Type y for more, or n to stop.~%")
+      (continue-prompt-p))))
 
 (defun run-query (goals)
   (block query-exit
