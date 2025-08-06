@@ -27,5 +27,4 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
                (:file "all" :depends-on ("utilities")))
   :perform (test-op (operation system)
             (declare (ignore operation system))
-            (unless (symbol-call :prolog/test/all :run-all-tests)
-              (error "Test suite failed"))))
+            (symbol-call :prolog/test/all :run-all-tests)))

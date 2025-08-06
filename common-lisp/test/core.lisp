@@ -405,7 +405,7 @@
    Validates that successful queries produce appropriate output
    and handle user interaction correctly."
   (let ((output (make-string-output-stream))
-        (input (make-string-input-stream "n")))
+        (input (make-string-input-stream "n\n")))
     (let ((*standard-input* input)
           (*standard-output* output))
       (run-query '((= ?a 1))))
@@ -427,11 +427,11 @@
    Validates that the ?- macro correctly delegates to run-query
    and produces expected output for queries."
   (let ((output (make-string-output-stream))
-        (input (make-string-input-stream "n")))
+        (input (make-string-input-stream "n\n")))
     (let ((*standard-input* input)
           (*standard-output* output))
       (?- (= ?v ok)))
-    (is (not (string= (get-output-stream-string output) (format nil "No.~%"))) "?- macro should work for successful query")))
+    (is (not (string= (get-output-stream-string output) "No.\n")) "?- macro should work for successful query")))
 
 ;; -----------------------------------------------------------
 ;; Engine simple recursion tests
