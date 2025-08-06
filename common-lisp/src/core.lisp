@@ -278,13 +278,14 @@
 
 ;;; Spy/debugging support
 (defun spy-prompt (goal bindings)
-  (let ((resolved (substitute-bindings bindings goal)))
+  (let ((resolved (substitute-bindings bindings goal))
+        (*package* (find-package :prolog/core)))
     (format t "Spy on ~S? [l=leap c=creep n=nodebug] " resolved)
     (force-output *standard-output*)
-    (case (read-char)
-      ((#\l) (setf *current-spy-mode* 'always) t)
-      ((#\c) t)
-      ((#\n) (setf *current-spy-mode* 'disabled) nil)
+    (case (read)
+      ((l) (setf *current-spy-mode* 'always) t)
+      ((c) t)
+      ((n) (setf *current-spy-mode* 'disabled) nil)
       (otherwise t))))
 
 (defun spy-message (kind goal bindings)
@@ -428,15 +429,16 @@
       (format t "~A = ~A" (car var-val) (cdr var-val)))))
 
 (defun continue-prompt-p ()
-  (terpri)
-  (format t "Continue ? (y/n) ")
-  (force-output *standard-output*)
-  (case (read-char)
-    ((#\y) t)
-    ((#\n) nil)
-    (otherwise
-      (format t " Type y for more, or n to stop.~%")
-      (continue-prompt-p))))
+  (let ((*package* (find-package :prolog/core)))
+    (terpri)
+    (format t "Continue ? (y/n) ")
+    (force-output *standard-output*)
+    (case (read)
+      ((y) t)
+      ((n) nil)
+      (otherwise
+        (format t " Type y for more, or n to stop.~%")
+        (continue-prompt-p)))))
 
 (defun run-query (goals)
   (block query-exit
