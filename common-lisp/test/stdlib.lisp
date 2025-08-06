@@ -5,8 +5,8 @@
 (in-package :prolog/test/all)
 
 ;; Define test suite for standard library
-(def-suite *prolog-stdlib-tests* :in *prolog-test-suite*)
-(in-suite *prolog-stdlib-tests*)
+(def-suite :prolog-stdlib-tests :in :prolog-test-suite)
+(in-suite :prolog-stdlib-tests)
 
 ;; -----------------------------------------------------------
 ;; Control flow predicates

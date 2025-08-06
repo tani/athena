@@ -44,45 +44,13 @@
     #:test
     #:run!
     #:run
-    #:pass)
-  (:export #:run-all-tests
-    #:*prolog-test-suite*))
+    #:pass))
 
 (in-package :prolog/test/all)
 
 ;;; Test Suite Definition
 ;;; =====================
 
-(def-suite *prolog-test-suite*
+(def-suite :prolog-test-suite
   :description
   "Main test suite for Athena Prolog Engine")
-
-;;; Test Runner
-;;; ============
-
-(defun run-all-tests ()
-  "Run all Prolog tests and return success status"
-  (format t "~%Running Athena Prolog Engine Test Suite~%")
-  (format t "=======================================~%")
-
-  (let ((results (run! '*prolog-test-suite*)))
-    (if results
-      (progn
-        (format t "~%✅ All tests passed!~%")
-        t)
-      (progn
-        (format t "~%❌ Some tests failed!~%")
-        nil))))
-
-;;; Direct Execution Support
-;;; ========================
-
-(eval-when (:execute)
-  (when (and (boundp '*load-pathname*)
-         *load-pathname*
-         (not (find-package :asdf)))
-    (run-all-tests)))
-
-(load (merge-pathnames "core.lisp" *load-pathname*))
-(load (merge-pathnames "primitive.lisp" *load-pathname*))
-(load (merge-pathnames "stdlib.lisp" *load-pathname*))

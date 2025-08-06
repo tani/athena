@@ -5,8 +5,8 @@
 (in-package :prolog/test/all)
 
 ;; Define test suite for primitive predicates
-(def-suite *prolog-primitive-tests* :in *prolog-test-suite*)
-(in-suite *prolog-primitive-tests*)
+(def-suite :prolog-primitive-tests :in :prolog-test-suite)
+(in-suite :prolog-primitive-tests)
 
 ;; -----------------------------------------------------------
 ;; Built-in predicates

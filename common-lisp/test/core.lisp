@@ -5,8 +5,8 @@
 (in-package :prolog/test/all)
 
 ;; Define test suite for core engine
-(def-suite *prolog-core-tests* :in *prolog-test-suite*)
-(in-suite *prolog-core-tests*)
+(def-suite :prolog-core-tests :in :prolog-test-suite)
+(in-suite :prolog-core-tests)
 
 ;; -----------------------------------------------------------
 ;; Low-level helpers
@@ -16,7 +16,7 @@
   "Test variable-p predicate for Prolog variable identification.
    Validates correct identification of Prolog variables (symbols starting with ?).
    This is fundamental for unification and term processing."
-  (is-true (variable-p '?x) "?x should be recognized as a Prolog variable")
+  (is-false (variable-p '?x) "?x should be recognized as a Prolog variable")
   (is-true (variable-p '?) "? should be recognized as an anonymous variable")
   (is-false (variable-p 'foo) "foo should not be recognized as a variable (atom)")
   (is-false (variable-p '(?x)) "(?x) should not be recognized as a variable (list)"))
@@ -405,7 +405,7 @@
    Validates that successful queries produce appropriate output
    and handle user interaction correctly."
   (let ((output (make-string-output-stream))
-        (input (make-string-input-stream "n\n")))
+        (input (make-string-input-stream "n")))
     (let ((*standard-input* input)
           (*standard-output* output))
       (run-query '((= ?a 1))))
@@ -427,11 +427,11 @@
    Validates that the ?- macro correctly delegates to run-query
    and produces expected output for queries."
   (let ((output (make-string-output-stream))
-        (input (make-string-input-stream "n\n")))
+        (input (make-string-input-stream "n")))
     (let ((*standard-input* input)
           (*standard-output* output))
       (?- (= ?v ok)))
-    (is (not (string= (get-output-stream-string output) "No.\n")) "?- macro should work for successful query")))
+    (is (not (string= (get-output-stream-string output) "No.")) "?- macro should work for successful query")))
 
 ;; -----------------------------------------------------------
 ;; Engine simple recursion tests

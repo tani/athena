@@ -23,8 +23,12 @@ backtracking, cut operator, built-in predicates, and seamless Lisp integration."
   :license "GPL-3.0"
   :pathname "test"
   :depends-on ("prolog" "fiveam")
+  :serial t
   :components ((:file "utilities")
-               (:file "all" :depends-on ("utilities")))
+               (:file "all")
+               (:file "core")
+               (:file "primitive")
+               (:file "stdlib"))
   :perform (test-op (operation system)
             (declare (ignore operation system))
-            (symbol-call :prolog/test/all :run-all-tests)))
+            (symbol-call :fiveam :run! :prolog-test-suite)))
