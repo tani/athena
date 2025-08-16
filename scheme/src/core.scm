@@ -17,16 +17,40 @@
           (set! counter (+ counter 1))
           (string->symbol name)))))
 
+  (define (wrap-success-with-cut-handler result tag)
+    ;; Wrap RESULT so that any future cut with TAG is caught and handled.
+    ;; If RESULT is a success, its continuation is wrapped; wrapping is
+    ;; applied recursively to all subsequent successes.
+    (if (success? result)
+      (let ((bindings (success-bindings result))
+            (cont (success-continuation result)))
+        (make-success
+          bindings
+          (lambda ()
+            (guard (exception
+                    ((and (cut-exception? exception)
+                          (eq? tag (cut-exception-tag exception)))
+                      (wrap-success-with-cut-handler
+                        (cut-exception-value exception) tag))
+                    (else (raise exception)))
+              (let ((next (cont)))
+                (wrap-success-with-cut-handler next tag))))))
+      result))
+
   (define (call-with-current-choice-point proc)
+    ;; Execute PROC with a fresh choice point tag for cut handling.
+    ;; Ensures the cut handler remains active across continuations.
     (let ((tag (gensym "choice-point-")))
       (guard (exception
               ((and
                   (cut-exception? exception)
                   (eq? tag (cut-exception-tag exception)))
-                (cut-exception-value exception))
+                (wrap-success-with-cut-handler
+                  (cut-exception-value exception) tag))
               (else
                 (raise exception)))
-        (proc tag))))
+        (let ((result (proc tag)))
+          (wrap-success-with-cut-handler result tag)))))
 
   ;; Bindings and unification
 
@@ -245,7 +269,10 @@
                 (spy-message "EXIT" goal (success-bindings result)))))))
       result))
 
-  (define (process-one goals bindings clause)
+  (define (apply-clause-to-goal goals bindings clause)
+    ;; Apply CLAUSE to prove the first goal in GOALS with BINDINGS.
+    ;; Attempts to unify the goal with the clause head, then proves the
+    ;; clause body plus remaining goals if unification succeeds.
     (let* ((goal (car goals))
            (remaining-goals (cdr goals))
            (goal-for-unify (if (pair? goal) goal (list goal)))
@@ -255,19 +282,25 @@
            (new-bindings (unify goal-for-unify clause-head bindings)))
       (if (failure? new-bindings)
         (make-failure)
-        (prove-all (append clause-body remaining-goals) new-bindings))))
+        (prove-goal-sequence (append clause-body remaining-goals) new-bindings))))
 
-  (define (combine continuation-a continuation-b)
+  (define (merge-continuations continuation-a continuation-b)
+    ;; Merge two backtracking continuations into a single continuation.
+    ;; Returns a continuation that first tries continuation-a, and if that fails
+    ;; or produces no more solutions, tries continuation-b.
     (lambda ()
       (let ((result-a (continuation-a)))
         (if (or (not result-a) (failure? result-a))
           (continuation-b)
           (let* ((bindings (success-bindings result-a))
                  (result-continuation (success-continuation result-a))
-                 (new-continuation (combine result-continuation continuation-b)))
+                 (new-continuation (merge-continuations result-continuation continuation-b)))
             (make-success bindings new-continuation))))))
 
-  (define (prove goals bindings)
+  (define (prove-goal goals bindings)
+    ;; Prove the first goal in GOALS with the given BINDINGS.
+    ;; Looks up the predicate handler (clauses or built-in function) and attempts
+    ;; resolution. This is the core resolution function that drives the proof search.
     (let* ((goal (car goals))
            (remaining-goals (cdr goals))
            (predicate-symbol (if (pair? goal) (car goal) goal))
@@ -284,7 +317,7 @@
                  (< goal-arity (apply min (map (lambda (c) (min-arity (cdar c)))
                                            predicate-handler))))
               (make-failure)
-              (try-clauses goals bindings predicate-handler)))))))
+              (search-matching-clauses goals bindings predicate-handler)))))))
 
   (define (insert-choice-point clause choice-point)
     (define (insert-cut-term term)
@@ -294,7 +327,10 @@
         (else term)))
     (map insert-cut-term clause))
 
-  (define (try-clauses goals bindings all-clauses)
+  (define (search-matching-clauses goals bindings all-clauses)
+    ;; Search through ALL-CLAUSES to find matches for the first goal in GOALS.
+    ;; Tries each clause with backtracking. Uses choice points to handle cut
+    ;; operations correctly.
     (call-with-current-choice-point
       (lambda (choice-point)
         (define (clause-match? clause)
@@ -310,23 +346,25 @@
             (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
                    (remaining-clauses (cdr clauses-to-try))
                    (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                   (result (process-one goals bindings current-clause)))
+                   (result (apply-clause-to-goal goals bindings current-clause)))
               (if (failure? result)
                 (try-next-clause)
                 (let* ((result-bindings (success-bindings result))
                        (result-continuation (success-continuation result))
-                       (new-continuation (combine result-continuation try-next-clause)))
+                       (new-continuation (merge-continuations result-continuation try-next-clause)))
                   (make-success result-bindings new-continuation))))))
         (let ((matching-clauses (filter clause-match? all-clauses)))
           (try-one-by-one matching-clauses)))))
 
-  (define (prove-all goals bindings)
+  (define (prove-goal-sequence goals bindings)
+    ;; Prove a sequence of GOALS with the given BINDINGS.
+    ;; Returns success with terminal continuation if all goals are proven.
     (cond
       ((failure? bindings) (make-failure))
       ((null? goals)
         (let ((terminal-cont (lambda () (make-failure))))
           (make-success bindings terminal-cont)))
-      (else (prove goals bindings))))
+      (else (prove-goal goals bindings))))
 
   (define (solve goals on-success on-failure)
     (define (initial-continuation)
@@ -334,7 +372,7 @@
         (lambda (choice-point)
           (let* ((prepared-goals (replace-anonymous-variables goals))
                  (cut-goals (insert-choice-point prepared-goals choice-point)))
-            (prove-all cut-goals '())))))
+            (prove-goal-sequence cut-goals '())))))
     (define (retrieve-success-bindings result)
       (let* ((bindings (success-bindings result))
              (query-variables (variables-in goals))
