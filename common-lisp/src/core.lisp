@@ -34,13 +34,17 @@
     :remove-clauses-with-arity!
 
     ;; Prover internals (needed by builtins)
+    :prove-goal
+    :prove-goal-sequence
     :prove
     :prove-all
     :insert-choice-point
     :call-with-current-choice-point
-    :combine
+    :merge-continuations
+    :wrap-success-with-cut-handler
     :*current-bindings*
     :*current-remaining-goals*
+    :*current-dynamic-parameters*
 
     ;; Parameters (special variables)
     :*current-clause-database*
@@ -59,7 +63,15 @@
     ;; Exceptions
     :cut-exception
     :cut-exception-tag
-    :cut-exception-value))
+    :cut-exception-value
+    
+    ;; Utility functions  
+    :ground-p
+    
+    ;; Enhanced API
+    :prolog-solve
+    :define-predicate
+    :define-predicate!))
 
 (in-package :prolog/core)
 
@@ -93,15 +105,40 @@
 (defparameter *current-bindings* '())
 (defparameter *current-remaining-goals* '())
 
-; Utility functions
+; Cut & Choice Point Handling
+(defun wrap-success-with-cut-handler (result tag)
+  "Wrap RESULT so that any future cut with TAG is caught and handled.
+  If RESULT is a success, its continuation is wrapped; wrapping is
+  applied recursively to all subsequent successes."
+  (if (success-p result)
+      (let ((bindings (success-bindings result))
+            (cont (success-continuation result)))
+        (make-success
+         :bindings bindings
+         :continuation
+         (lambda ()
+           (handler-case
+               (let ((next (funcall cont)))
+                 (wrap-success-with-cut-handler next tag))
+             (cut-exception (err)
+               (if (eq tag (cut-exception-tag err))
+                   (wrap-success-with-cut-handler
+                    (cut-exception-value err) tag)
+                   (error err)))))))
+      result))
+
 (defun call-with-current-choice-point (proc)
+  "Execute PROC with a fresh choice point tag for cut handling.
+  Ensures the cut handler remains active across continuations."
   (let ((tag (gensym "CHOICE-POINT-")))
     (handler-case
-      (funcall proc tag)
-      (cut-exception (e)
-        (if (eq tag (cut-exception-tag e))
-          (cut-exception-value e)
-          (error e))))))
+        (let ((result (funcall proc tag)))
+          (wrap-success-with-cut-handler result tag))
+      (cut-exception (err)
+        (if (eq tag (cut-exception-tag err))
+            (wrap-success-with-cut-handler
+             (cut-exception-value err) tag)
+            (error err))))))
 
 ;;; Variables and unification helpers
 (defun variable-p (term)
@@ -252,25 +289,6 @@
          (alist (mapcar #'make-renaming-pair variables)))
     (sublis* alist expression)))
 
-;;; Macros for defining clauses
-(defmacro <- (&rest clause-parts)
-  (let ((clause (if (consp (car clause-parts))
-                 clause-parts
-                 (cons (list (car clause-parts)) (cdr clause-parts)))))
-    `(add-clause! (replace-anonymous-variables ',clause))))
-
-(defmacro <-- (&rest clause-parts)
-  (let* ((head (car clause-parts))
-         (body (cdr clause-parts))
-         (name (if (consp head) (car head) head))
-         (args (if (consp head) (cdr head) '()))
-         (arity (min-arity args))
-         (clause (if (consp head)
-                  (cons head body)
-                  (cons (list head) body))))
-    `(progn
-      (remove-clauses-with-arity! ',name ,arity)
-      (add-clause! (replace-anonymous-variables ',clause)))))
 
 ;;; Query macro (simplified for now)
 (defmacro ?- (&rest goals)
@@ -315,24 +333,49 @@
             (spy-message "EXIT" goal (success-bindings result))))))
     result))
 
-;;; Prover engine
-(defun prove-all (goals bindings)
+;;; Proof Engine Core
+(defun prove-goal-sequence (goals bindings)
+  "Prove a sequence of GOALS with the given BINDINGS.
+  GOALS is a list of goals to prove in sequence.
+  BINDINGS is the current variable binding environment.
+  
+  Returns success with terminal continuation if all goals are proven,
+  otherwise delegates to `prove-goal' for the goal sequence.
+  Base case for empty goal lists returns success with a terminal continuation."
   (cond
     ((failure-p bindings) (make-failure))
     ((null goals)
      (let ((terminal-cont (lambda () (make-failure))))
        (make-success :bindings bindings :continuation terminal-cont)))
-    (t (prove goals bindings))))
+    (t (prove-goal goals bindings))))
 
 (defun insert-choice-point (clause choice-point)
+  "Insert CHOICE-POINT tag into cut operators (!) within CLAUSE.
+  CLAUSE is the clause to modify.
+  CHOICE-POINT is the unique tag to associate with cuts in this clause.
+  
+  Transforms bare ! atoms and (!) lists to include the choice point tag
+  for proper cut semantics. Used to link cuts to their originating choice points."
   (labels ((insert-cut-term (term)
              (cond
-               ((and (consp term) (symbol= '! (car term))) (list '! choice-point))
-               ((and (atom-p term) (symbol= '! term)) (list '! choice-point))
+               ((and (consp term) (symbol= '! (car term)) (consp (cdr term)))
+                (error "Invalid choice-point insertion happened"))
+               ((and (consp term) (symbol= '! (car term)) (null (cdr term)))
+                (list '! choice-point))
+               ((and (atom-p term) (symbol= '! term))
+                (list '! choice-point))
                (t term))))
     (mapcar #'insert-cut-term clause)))
 
-(defun process-one (goals bindings clause)
+(defun apply-clause-to-goal (goals bindings clause)
+  "Apply CLAUSE to prove the first goal in GOALS with BINDINGS.
+  GOALS is the list of goals, where the first will be unified with the
+  clause head. BINDINGS is the current variable binding environment.
+  CLAUSE is the clause to apply (head + body).
+  
+  Attempts to unify the goal with the clause head, then proves the
+  clause body plus remaining goals if unification succeeds.
+  Returns success object on success, failure object on failure."
   (let* ((goal (car goals))
          (remaining-goals (cdr goals))
          (goal-for-unify (if (consp goal) goal (list goal)))
@@ -341,82 +384,96 @@
          (clause-body (cdr renamed-clause))
          (new-bindings (unify goal-for-unify clause-head bindings)))
     (if (failure-p new-bindings)
-      (make-failure)
-      (prove-all (append clause-body remaining-goals) new-bindings))))
+        (make-failure)
+        (prove-goal-sequence (append clause-body remaining-goals) new-bindings))))
 
-(defun combine (continuation-a continuation-b)
+(defun merge-continuations (continuation-a continuation-b)
+  "Merge two backtracking continuations into a single continuation.
+  CONTINUATION-A is the first continuation to try.
+  CONTINUATION-B is the second continuation to try if the first fails.
+  
+  Returns a continuation that first tries CONTINUATION-A, and if that fails
+  or produces no more solutions, tries CONTINUATION-B. This is the core
+  backtracking mechanism that enables trying alternative solutions."
   (lambda ()
     (let ((result-a (funcall continuation-a)))
       (if (or (not result-a) (failure-p result-a))
-        (funcall continuation-b)
-        (let* ((bindings (success-bindings result-a))
-               (result-continuation (success-continuation result-a))
-               (new-continuation (combine result-continuation continuation-b)))
-          (make-success :bindings bindings :continuation new-continuation))))))
+          (funcall continuation-b)
+          (let* ((bindings (success-bindings result-a))
+                 (result-continuation (success-continuation result-a))
+                 (new-continuation (merge-continuations result-continuation continuation-b)))
+            (make-success :bindings bindings :continuation new-continuation))))))
 
-(defun try-clauses (goals bindings all-clauses)
+(defun search-matching-clauses (goals bindings all-clauses)
+  "Search through ALL-CLAUSES to find matches for the first goal in GOALS.
+  GOALS is the list of goals to prove.
+  BINDINGS is the current variable binding environment.
+  ALL-CLAUSES is the list of clauses to try.
+  
+  Tries each clause with backtracking. Uses choice points to handle cut
+  operations correctly. Returns success object with continuation for
+  backtracking, or failure if no clauses match."
   (call-with-current-choice-point
     (lambda (choice-point)
-      (labels ((clause-match-p (clause)
-                 (let* ((goal (car goals))
-                        (goal-arity (if (consp goal) (length (cdr goal)) 0))
-                        (required (min-arity (cdar clause)))
-                        (variadic-p (not (proper-list-p (cdar clause)))))
-                   (and (>= goal-arity required)
-                     (or variadic-p (= goal-arity required)))))
-               (try-one-by-one (clauses-to-try)
+      (labels ((try-one-by-one (clauses-to-try)
                  (if (null clauses-to-try)
-                   (make-failure)
-                   (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
-                          (remaining-clauses (cdr clauses-to-try))
-                          (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
-                          (result (process-one goals bindings current-clause)))
-                     (if (failure-p result)
-                       (funcall try-next-clause)
-                       (let* ((result-bindings (success-bindings result))
-                              (result-continuation (success-continuation result))
-                              (new-continuation (combine result-continuation try-next-clause)))
-                         (make-success :bindings result-bindings
-                           :continuation
-                           new-continuation)))))))
-        (let ((matching-clauses (remove-if-not #'clause-match-p all-clauses)))
-          (try-one-by-one matching-clauses))))))
+                     (make-failure)
+                     (let* ((current-clause (insert-choice-point (car clauses-to-try) choice-point))
+                            (remaining-clauses (cdr clauses-to-try))
+                            (try-next-clause (lambda () (try-one-by-one remaining-clauses)))
+                            (result (apply-clause-to-goal goals bindings current-clause)))
+                       (if (failure-p result)
+                           (funcall try-next-clause)
+                           (let* ((result-bindings (success-bindings result))
+                                  (result-continuation (success-continuation result))
+                                  (new-continuation (merge-continuations result-continuation try-next-clause)))
+                             (make-success :bindings result-bindings :continuation new-continuation)))))))
+        (try-one-by-one all-clauses)))))
 
-(defun prove (goals bindings)
+(defun prove-goal (goals bindings)
+  "Prove the first goal in GOALS with the given BINDINGS.
+  GOALS is a list of goals where the first will be proven.
+  BINDINGS is the current variable binding environment.
+  
+  Looks up the predicate handler (clauses or built-in function) and attempts
+  resolution. Handles spy tracing and delegates to appropriate resolution method.
+  This is the core resolution function that drives the proof search."
   (let* ((goal (car goals))
          (remaining-goals (cdr goals))
          (predicate-symbol (if (consp goal) (car goal) goal))
          (predicate-handler (get-clauses predicate-symbol))
-         (args (if (consp goal) (cdr goal) '()))
-         (goal-arity (length args)))
+         (args (if (consp goal) (cdr goal) '())))
     (with-spy goal bindings
       (lambda ()
-        (if (functionp predicate-handler)
-          (let* ((*current-remaining-goals* remaining-goals)
-                 (*current-bindings* bindings))
-            (apply predicate-handler args))
-          (if (and (not (null predicate-handler))
-               (< goal-arity (apply #'min (mapcar (lambda (c) (min-arity (cdar c)))
-                                           predicate-handler))))
-            (make-failure)
-            (try-clauses goals bindings predicate-handler)))))))
+        (cond
+          ((functionp predicate-handler)
+           (let* ((*current-remaining-goals* remaining-goals)
+                  (*current-bindings* bindings))
+             (apply predicate-handler args)))
+          (t (search-matching-clauses goals bindings predicate-handler)))))))
 
 (defun solve (goals on-success on-failure)
+  "Solve GOALS and call callbacks for each solution.
+  GOALS is the list of goals to solve.
+  ON-SUCCESS is a function called with variable bindings for each solution found.
+  ON-FAILURE is a function called once when no more solutions exist.
+  
+  This is the core solution iterator that drives the proof search and handles
+  solution enumeration through backtracking."
   (labels ((initial-continuation ()
              (call-with-current-choice-point
-               (lambda (choice-point)
-                 (let* ((prepared-goals (replace-anonymous-variables goals))
-                        (cut-goals (insert-choice-point prepared-goals choice-point)))
-                   (prove-all cut-goals '())))))
+               (lambda (_choice-point)
+                 (let* ((prepared-goals (replace-anonymous-variables goals)))
+                   (prove-goal-sequence prepared-goals '())))))
            (retrieve-success-bindings (result)
              (let* ((bindings (success-bindings result))
-                    (query-variables (variables-in goals)))
-               (mapcar (lambda (v) (cons v (substitute-bindings bindings v)))
-                 query-variables)))
+                    (query-variables (variables-in goals))
+                    (make-binding-pair (lambda (v) (cons v (substitute-bindings bindings v)))))
+               (mapcar make-binding-pair query-variables)))
            (execute-success-continuation (result)
              (funcall (success-continuation result))))
     (do ((result (initial-continuation) (execute-success-continuation result)))
-      ((not (success-p result)) (funcall on-failure))
+        ((not (success-p result)) (funcall on-failure))
       (funcall on-success (retrieve-success-bindings result)))))
 
 (defun display-solution (bindings)
@@ -437,6 +494,12 @@
         (continue-prompt-p)))))
 
 (defun run-query (goals)
+  "Execute GOALS as an interactive query with user continuation prompt.
+  GOALS is the list of goals to execute.
+  
+  Displays each solution and prompts whether to continue searching for more.
+  Shows 'No' if no solutions exist. This is the main entry point for
+  interactive queries initiated by `?-'."
   (block query-exit
     (solve goals
       (lambda (solution)
@@ -444,5 +507,103 @@
         (unless (continue-prompt-p)
           (return-from query-exit)))
       (lambda ()
-        (format t "No.~%")
+        (format t "~%No")
         (return-from query-exit)))))
+
+;;; Utility functions
+(defun ground-p (term)
+  "Check if TERM is fully ground (contain no unbound variables).
+  TERM is the term to check for groundness.
+  
+  A term is ground if it contains no variables or all variables in it
+  are bound to ground terms. Uses the current binding environment
+  from `*current-bindings*'.
+  
+  Returns non-nil if TERM is ground, nil otherwise."
+  (let ((resolved-term (substitute-bindings *current-bindings* term)))
+    (cond
+      ((variable-p resolved-term) nil)
+      ((consp resolved-term)
+       (and (ground-p (car resolved-term))
+            (ground-p (cdr resolved-term))))
+      (t t))))
+
+;;; Convenience macros and public API improvements
+
+;; Enhanced solve function matching eprolog-solve
+(defun prolog-solve (goals &key (on-success (lambda (bindings) (declare (ignore bindings)))) 
+                              (on-failure (lambda ())))
+  "Solve GOALS and call callbacks for each solution.
+  GOALS is the list of goals to solve.
+  
+  Keyword arguments:
+  :ON-SUCCESS - Function called with variable bindings for each solution found.
+                Defaults to a no-op function.
+  :ON-FAILURE - Function called once when no more solutions exist.
+                Defaults to a no-op function.
+  
+  This is the core solution iterator that drives the proof search and handles
+  solution enumeration through backtracking."
+  (solve goals on-success on-failure))
+
+;; Convenience aliases
+(defmacro define-predicate (head &rest body)
+  "Define a Prolog clause (fact or rule) and add it to the clause database.
+  HEAD is the predicate head, a list of (NAME . ARGS), or a symbol for
+  predicates with no arguments.
+  BODY is the optional list of goals forming the rule body.
+  
+  If BODY is empty, defines a fact. If BODY is non-empty, defines a rule.
+  Anonymous variables are automatically replaced with unique variables."
+  (let* ((head-list (if (consp head) head (list head)))
+         (clause (cons head-list body)))
+    `(add-clause! (replace-anonymous-variables ',clause))))
+
+(defmacro define-predicate! (head &rest body)
+  "Define a Prolog clause, replacing existing clauses with the same arity.
+  HEAD is the predicate head, a list of (NAME . ARGS), or a symbol for
+  predicates with no arguments.
+  BODY is the optional list of goals forming the rule body.
+  
+  Similar to `define-predicate' but removes existing
+  clauses for the predicate with the same arity before adding the new
+  clause. Used for predicate redefinition."
+  (let* ((head-list (if (consp head) head (list head)))
+         (name (car head-list))
+         (args (cdr head-list))
+         (arity (min-arity args))
+         (clause (cons head-list body)))
+    `(progn
+       (remove-clauses-with-arity! ',name ,arity)
+       (add-clause! (replace-anonymous-variables ',clause)))))
+
+;; Aliases for convenience (matching eprolog)
+(defmacro <- (&rest clause-parts)
+  "Alias for defining clauses."
+  (let ((clause (if (consp (car clause-parts))
+                 clause-parts
+                 (cons (list (car clause-parts)) (cdr clause-parts)))))
+    `(add-clause! (replace-anonymous-variables ',clause))))
+
+(defmacro <-- (&rest clause-parts)
+  "Alias for defining clauses with replacement."
+  (let* ((head (car clause-parts))
+         (body (cdr clause-parts))
+         (name (if (consp head) (car head) head))
+         (args (if (consp head) (cdr head) '()))
+         (arity (min-arity args))
+         (clause (if (consp head)
+                  (cons head body)
+                  (cons (list head) body))))
+    `(progn
+      (remove-clauses-with-arity! ',name ,arity)
+      (add-clause! (replace-anonymous-variables ',clause)))))
+
+;;; Backward compatibility aliases
+(defun prove (goals bindings)
+  "Backward compatibility wrapper for prove-goal."
+  (prove-goal goals bindings))
+
+(defun prove-all (goals bindings)
+  "Backward compatibility wrapper for prove-goal-sequence."
+  (prove-goal-sequence goals bindings))
