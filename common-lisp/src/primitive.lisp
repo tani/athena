@@ -148,7 +148,7 @@
 (define-predicate (or &rest goals)
   (let* ((or-2-goal (reduce (lambda (expr acc) `(or-2 ,expr ,acc)) 
                              goals 
-                             :initial-value 'false
+                             :initial-value 'fail
                              :from-end t))
          (next-goals (cons or-2-goal *current-remaining-goals*)))
     (prove-goal-sequence next-goals *current-bindings*)))

@@ -507,7 +507,7 @@
         (unless (continue-prompt-p)
           (return-from query-exit)))
       (lambda ()
-        (format t "~%No")
+        (format t "No.~%")
         (return-from query-exit)))))
 
 ;;; Utility functions
