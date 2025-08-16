@@ -80,6 +80,14 @@
           (result-handler evaluated-result)
           (prove-goal-sequence (current-remaining-goals) (current-bindings))))))
 
+  ;; Keep the old predicate as the core implementation for backward compatibility
+  (define-predicate (--lisp-eval-internal result-variable expression)
+    (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
+           (evaluated-result (eval scheme-expression (current-lisp-environment)))
+           (result-term (substitute-bindings (current-bindings) result-variable))
+           (new-bindings (unify result-term evaluated-result (current-bindings))))
+      (prove-goal-sequence (current-remaining-goals) new-bindings)))
+
   (define-predicate (lisp result-variable . expressions)
     ;; Evaluate EXPRESSIONS as Lisp and unify result with RESULT-VARIABLE
     (eval-lisp-expressions
@@ -103,10 +111,6 @@
         (if (not evaluated-result)
           (make-failure)
           (prove-goal-sequence (current-remaining-goals) (current-bindings))))))
-
-  ;; Keep the old predicate for backward compatibility
-  (define-predicate (--lisp-eval-internal result-variable expression)
-    (lisp result-variable expression))
 
   ;; Type checking predicates
 

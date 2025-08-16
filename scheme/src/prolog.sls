@@ -21,7 +21,7 @@
     <--
     define-predicate
     call-with-current-choice-point
-    prove-all
+    prove-goal-sequence
     ?-
     current-lisp-environment
     current-spy-predicates
@@ -34,7 +34,7 @@
     (rnrs)
     (rnrs eval)
     (srfi :39)
-    (only (srfi :1) alist-delete alist-cons delete-duplicates)
+    (only (srfi :1) alist-delete alist-cons delete-duplicates fold-right)
     (only (chezscheme) include open-output-string get-output-string interaction-environment))
 
   ;; Implementation

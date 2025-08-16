@@ -79,9 +79,9 @@
     (remove-clauses-with-arity! 'r 1)
     (test-equal "arity removal" 1 (length (get-clauses 'r))))
 
-  ;; prove-all and success structures
-  (let ((res (prove-all '((= ?x 1) (member ?y (1 2))) '())))
-    (test-assert "prove-all success" (success? res))
+  ;; prove-goal-sequence and success structures
+  (let ((res (prove-goal-sequence '((= ?x 1) (member ?y (1 2))) '())))
+    (test-assert "prove-goal-sequence success" (success? res))
     (test-equal "success ?x" 1 (substitute-bindings (success-bindings res) '?x))
     (test-equal "success ?y" 1 (substitute-bindings (success-bindings res) '?y))
     (let ((next ((success-continuation res))))

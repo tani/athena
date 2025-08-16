@@ -20,7 +20,7 @@
     <-
     <--
     define-predicate
-    prove-all
+    prove-goal-sequence
     ?-
     min-arity
     call-with-current-choice-point
@@ -36,7 +36,7 @@
     (scheme read)
     (scheme eval)
     (scheme r5rs)
-    (only (srfi 1) alist-delete alist-cons filter delete-duplicates))
+    (only (srfi 1) alist-delete alist-cons filter delete-duplicates fold-right))
 
   ;; Implementation
   (begin

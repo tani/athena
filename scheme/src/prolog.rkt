@@ -23,7 +23,7 @@
   <--
   define-predicate
   call-with-current-choice-point
-  prove-all
+  prove-goal-sequence
   ?-
   current-lisp-environment
   current-spy-predicates
@@ -33,7 +33,7 @@
 
 ;; Imports
 (require
-  (only-in srfi/1 alist-delete alist-cons delete-duplicates)
+  (only-in srfi/1 alist-delete alist-cons delete-duplicates fold-right)
   (only-in rnrs flush-output-port guard raise))
 
 ;; Implementation
