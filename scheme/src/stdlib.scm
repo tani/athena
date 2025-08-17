@@ -14,6 +14,15 @@
   (<-- true)
   (<-- false (fail))
 
+  ;; Type checking predicates (implemented as Prolog clauses)
+  ;; Note: For atom/1, we need to check that it's a symbol but not a variable
+  (<-- (atom ?term) (lispp (and (symbol? '?term) (not (variable? '?term)))))
+  (<-- (atomic ?term) (lispp (and (not (variable? '?term)) (not (pair? '?term)))))
+  (<-- (number ?term) (lispp (number? '?term)))
+  (<-- (string ?term) (lispp (string? '?term)))
+  ;; ground/1 checks if the term contains no unbound variables
+  (<-- (ground ?term) (lispp '?term))
+
   ;; Basic logical predicates - these use the built-in predicates from primitive.scm
   ;; but also provide clause-based alternatives for compatibility
 

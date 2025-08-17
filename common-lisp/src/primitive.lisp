@@ -91,35 +91,6 @@
       (prove-goal-sequence *current-remaining-goals* *current-bindings*)
       (make-failure)))
 
-;; Type checking predicates
-(define-predicate (atom term)
-  (let ((value (substitute-bindings *current-bindings* term)))
-    (if (and (symbolp value) (not (variable-p value)))
-        (prove-goal-sequence *current-remaining-goals* *current-bindings*)
-        (make-failure))))
-
-(define-predicate (atomic term)
-  (let ((value (substitute-bindings *current-bindings* term)))
-    (if (and (not (variable-p value)) (not (consp value)))
-        (prove-goal-sequence *current-remaining-goals* *current-bindings*)
-        (make-failure))))
-
-(define-predicate (ground term)
-  (if (ground-p term)
-      (prove-goal-sequence *current-remaining-goals* *current-bindings*)
-      (make-failure)))
-
-(define-predicate (number term)
-  (let ((value (substitute-bindings *current-bindings* term)))
-    (if (numberp value)
-        (prove-goal-sequence *current-remaining-goals* *current-bindings*)
-        (make-failure))))
-
-(define-predicate (string term)
-  (let ((value (substitute-bindings *current-bindings* term)))
-    (if (stringp value)
-        (prove-goal-sequence *current-remaining-goals* *current-bindings*)
-        (make-failure))))
 
 (define-predicate (fail)
   (make-failure))

@@ -7,6 +7,15 @@
 (<-- true)
 (<-- false (fail))
 
+;; Type checking predicates (implemented as Prolog clauses)
+;; Note: For atom/1, we need to check that it's a symbol but not a variable
+(<-- (atom ?term) (lispp (and (symbolp '?term) (not (variable-p '?term)))))
+(<-- (atomic ?term) (lispp (and (not (variable-p '?term)) (not (consp '?term)))))
+(<-- (number ?term) (lispp (numberp '?term)))
+(<-- (string ?term) (lispp (stringp '?term)))
+;; ground/1 checks if the term contains no unbound variables
+(<-- (ground ?term) (lispp '?term))
+
 (<-- (not ?goal) (call ?goal) ! (fail))
 (<- (not ?goal))
 
