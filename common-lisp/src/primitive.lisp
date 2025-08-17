@@ -193,19 +193,6 @@
          (make-failure)
          (prove-goal-sequence *current-remaining-goals* *current-bindings*)))))
 
-;; Backward compatibility
-(define-predicate (--lisp-eval-internal result-variable expression)
-  (let* ((lisp-expression (substitute-bindings *current-bindings* expression))
-         (evaluated-result (handler-case
-                             (eval lisp-expression)
-                             (error (e)
-                               (format t "Evaluation error: ~A~%" e)
-                               nil)))
-         (result-term (substitute-bindings *current-bindings* result-variable))
-         (new-bindings (unify result-term evaluated-result *current-bindings*)))
-    (if new-bindings
-        (prove-goal-sequence *current-remaining-goals* new-bindings)
-        (make-failure))))
 
 ;; Dynamic parameter predicates
 (define-predicate (dynamic-put variable-symbol value-expression)
