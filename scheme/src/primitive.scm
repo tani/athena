@@ -18,21 +18,31 @@
       (write object p)
       (get-output-string p)))
 
+  (define (eval-lisp-expressions expressions result-handler)
+    ;; Helper function to evaluate expressions as Lisp code
+    (if (not (ground? expressions))
+      (make-failure)
+      (let* ((lisp-expression (substitute-bindings (current-bindings) `(begin ,@expressions)))
+             (evaluated-result (eval lisp-expression (current-lisp-environment))))
+        (if result-handler
+          (result-handler evaluated-result)
+          (prove-goal-sequence (current-remaining-goals) (current-bindings))))))
+
   ;; Macro for defining pure Scheme predicates
 
   (define-syntax define-predicate
     (syntax-rules ()
       ((_ (name . arguments) . body)
-        (set-clauses! 'name (lambda arguments . body)))))
+       (set-clauses! 'name (lambda arguments . body)))))
 
   (define (ground? term)
     (let ((resolved-term (substitute-bindings (current-bindings) term)))
       (cond
         ((variable? resolved-term) #f)
         ((pair? resolved-term)
-          (let ((car-ground? (ground? (car resolved-term)))
-                (cdr-ground? (ground? (cdr resolved-term))))
-            (and car-ground? cdr-ground?)))
+         (let ((car-ground? (ground? (car resolved-term)))
+               (cdr-ground? (ground? (cdr resolved-term))))
+           (and car-ground? cdr-ground?)))
         (else #t))))
 
   ;; Basic predicates
@@ -70,23 +80,6 @@
 
   ;; Evaluation predicates
 
-  (define (eval-lisp-expressions expressions result-handler)
-    ;; Helper function to evaluate expressions as Lisp code
-    (if (not (ground? expressions))
-      (make-failure)
-      (let* ((lisp-expression (substitute-bindings (current-bindings) `(begin ,@expressions)))
-             (evaluated-result (eval lisp-expression (current-lisp-environment))))
-        (if result-handler
-          (result-handler evaluated-result)
-          (prove-goal-sequence (current-remaining-goals) (current-bindings))))))
-
-  ;; Keep the old predicate as the core implementation for backward compatibility
-  (define-predicate (--lisp-eval-internal result-variable expression)
-    (let* ((scheme-expression (substitute-bindings (current-bindings) expression))
-           (evaluated-result (eval scheme-expression (current-lisp-environment)))
-           (result-term (substitute-bindings (current-bindings) result-variable))
-           (new-bindings (unify result-term evaluated-result (current-bindings))))
-      (prove-goal-sequence (current-remaining-goals) new-bindings)))
 
   (define-predicate (lisp result-variable . expressions)
     ;; Evaluate EXPRESSIONS as Lisp and unify result with RESULT-VARIABLE
@@ -178,10 +171,11 @@
           (prove-goal-sequence next-goals (current-bindings))))))
 
   (define-predicate (or-2 goal1 goal2)
-    (let* ((goals-1 (cons `(call ,goal1) (current-remaining-goals)))
-           (try-goals-1 (lambda () (prove-goal-sequence goals-1 (current-bindings))))
+    (let* ((original-bindings (current-bindings))
+           (goals-1 (cons `(call ,goal1) (current-remaining-goals)))
+           (try-goals-1 (lambda () (prove-goal-sequence goals-1 original-bindings)))
            (goals-2 (cons `(call ,goal2) (current-remaining-goals)))
-           (try-goals-2 (lambda () (prove-goal-sequence goals-2 (current-bindings))))
+           (try-goals-2 (lambda () (prove-goal-sequence goals-2 original-bindings)))
            (result-1 (try-goals-1)))
       (if (failure? result-1)
         (try-goals-2)

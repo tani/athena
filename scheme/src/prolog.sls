@@ -34,7 +34,7 @@
     (rnrs)
     (rnrs eval)
     (srfi :39)
-    (only (srfi :1) alist-delete alist-cons delete-duplicates fold-right)
+    (only (srfi :1) alist-delete alist-cons delete-duplicates)
     (only (chezscheme) include open-output-string get-output-string interaction-environment))
 
   ;; Implementation
