@@ -8,7 +8,7 @@ index 928585fb..baa04db3 100644
      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 +    <script type="module">
 +      await new Promise(resolve => setTimeout(resolve, 1000));
-+      const paths = ['prolog.sld', 'prolog-core.scm', 'prolog-lib.scm'];
++      const paths = ['prolog.sld', 'core.scm', 'primitive.scm', 'stdlib.scm'];
 +      for (const path of paths) {
 +        fetch(path).then(res => res.text()).then(txt => {
 +          main_vm.ui.write_file(path, txt)
